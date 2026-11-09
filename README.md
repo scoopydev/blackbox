@@ -69,7 +69,7 @@ Everything on screen is built in code from procedural meshes, and every sound is
 
 ## Making circuits
 
-Circuits are JSON files. [Docs/PuzzleFormat.md](Docs/PuzzleFormat.md) describes the format. After changing one, run **BLACKBOX → Validate Puzzles**. It solves every circuit by brute force and reports any that can't be solved, are solved at the start, or have unwired parts. The same checks run in the EditMode tests (**Window → General → Test Runner**).
+Circuits are JSON files. [Docs/PuzzleFormat.md](Docs/PuzzleFormat.md) describes the format. After changing one, run **BLACKBOX → Validate Puzzles**. It solves every circuit by brute force and reports any that can't be solved, are solved at the start, or have unwired parts. The same checks run in the EditMode tests (**Window → General → Test Runner**). The tests only compile when the **Test Framework** package is installed, so a project without it still plays.
 
 **BLACKBOX → Save** has tools for testing: show the save file, erase it, or mark every circuit solved.
 
