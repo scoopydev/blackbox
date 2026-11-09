@@ -82,6 +82,41 @@ namespace Blackbox.Tests
             Assert.That(progress.ContinueTarget(), Is.Not.Null);
         }
 
+        /// <summary>
+        /// Plays the whole game the way the title screen's Continue does: open the
+        /// suggested circuit, set its boxes to a solution, run, record the solve.
+        /// Every circuit must be reached, and each one must open in play.
+        /// </summary>
+        [Test]
+        public void ContinueReachesEveryCircuit()
+        {
+            var library = TestContent.Library;
+            var save = new SaveData();
+            var progress = new Progress(library, save);
+            int total = library.AllPuzzles.Count();
+
+            for (int step = 0; step < total; step++)
+            {
+                var target = progress.ContinueTarget();
+                Assert.That(target, Is.Not.Null, $"Continue had nowhere to go after {step} circuits");
+                Assert.That(progress.IsUnlocked(target), Is.True, $"Continue chose {target.Id}, which is locked");
+                Assert.That(progress.IsSolved(target), Is.False, $"Continue chose {target.Id}, which is already solved");
+                save.LastPuzzle = target.Id;
+
+                var report = PuzzleSolver.Analyse(target, 1);
+                var session = new PuzzleSession(target, save.Settings.TryGetValue(target.Id, out var resume) ? resume : null);
+                for (int b = 0; b < target.Boxes.Count; b++) session.SetSetting(b, report.Solutions[0][b]);
+                var run = session.Run();
+                Assert.That(run.AllMatched, Is.True, target.Id);
+                Assert.That(session.SolvedNow, Is.True, target.Id);
+                save.RecordSolve(target.Id, session.Tests);
+                save.Settings[target.Id] = session.CopySettings();
+            }
+
+            Assert.That(progress.TotalSolved, Is.EqualTo(total));
+            foreach (var chapter in library.Chapters) Assert.That(progress.IsUnlocked(chapter), Is.True, chapter.Title);
+        }
+
         [Test]
         public void SaveRoundTrips()
         {
