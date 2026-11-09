@@ -1,0 +1,4 @@
+# The interface fonts are small (about 60 KB each) and stored as ordinary
+# files rather than through Git LFS, so a fresh clone always has them, even
+# where LFS isn't set up. Other fonts in the project still go through LFS.
+Resources/BlackboxFonts/*.ttf -filter -diff -merge binary
