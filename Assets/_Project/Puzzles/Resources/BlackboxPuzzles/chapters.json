@@ -1,0 +1,7 @@
+{
+  // Chapter files in play order. Each name is a JSON file in this folder.
+  "chapters": [
+    "chapter-1-first-light",
+    "chapter-2-afterglow"
+  ]
+}
