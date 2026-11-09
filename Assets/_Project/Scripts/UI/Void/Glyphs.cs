@@ -105,6 +105,7 @@ namespace Blackbox.UI
     }
 
     /// <summary>Draws one glyph to fit its rect.</summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class GlyphGraphic : VoidGraphic
     {
         string _glyph;

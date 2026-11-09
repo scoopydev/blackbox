@@ -23,6 +23,7 @@ namespace Blackbox.UI
     }
 
     /// <summary>Base for the procedural Void graphics.</summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public abstract class VoidGraphic : MaskableGraphic
     {
         Matrix4x4 _toFrame = Matrix4x4.identity;
@@ -80,6 +81,7 @@ namespace Blackbox.UI
     /// quad instead of nothing, and turns off the canvas culling of transparent
     /// meshes. An empty or culled hit area would never be clicked.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class HitArea : Graphic
     {
         protected override void Awake()

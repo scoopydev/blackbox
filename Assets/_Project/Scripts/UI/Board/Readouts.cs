@@ -13,6 +13,7 @@ namespace Blackbox.UI.Board
     /// A square wave over ticks. Values that are on glow like a live wire; wanted
     /// values are a dashed ghost behind; misses get a violet mark below.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class WaveGraphic : VoidGraphic
     {
         bool[] _values;
@@ -502,6 +503,7 @@ namespace Blackbox.UI.Board
     }
 
     /// <summary>Faint dots marking tick boundaries.</summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class TickMarks : VoidGraphic
     {
         public int Count;

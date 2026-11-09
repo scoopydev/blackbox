@@ -10,6 +10,7 @@ namespace Blackbox.UI
     /// Wires use it to light up progressively as a signal travels along them.
     /// Points are in the graphic's local space; give it a stretched rect.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class PathGraphic : VoidGraphic
     {
         readonly List<Vector2> _points = new List<Vector2>(96);
@@ -96,6 +97,7 @@ namespace Blackbox.UI
     /// along the path. Kept separate from the wire so only this cheap mesh is
     /// rebuilt every frame.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class FlowGraphic : VoidGraphic
     {
         public PathGraphic Source;

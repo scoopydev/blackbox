@@ -11,6 +11,7 @@ namespace Blackbox.UI
     /// fill, outline (solid, dashed or signal gradient) and glow. Boxes, ports,
     /// buttons and the circuit-select tiles are all one of these.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class ShapeGraphic : VoidGraphic
     {
         ShapeKind _shape = ShapeKind.RoundedRect;
