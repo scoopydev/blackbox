@@ -1,119 +1,153 @@
+using System.Collections.Generic;
 using System.Linq;
 using Blackbox.Components;
 using NUnit.Framework;
 
 namespace Blackbox.Tests
 {
+    /// <summary>The block kinds and the four signal media.</summary>
     public class ComponentTests
     {
-        static bool[] Run(string kind, int setting, params bool[] ins)
-        {
-            var logic = KindCatalog.Get(kind).CreateLogic(setting);
-            logic.Reset();
-            return new[] { logic.Step(ins) };
-        }
+        static IEnumerable<BlockKind> AllKinds() => KindCatalog.All;
 
-        static string Sequence(string kind, int setting, string input, string input2 = null)
-        {
-            var logic = KindCatalog.Get(kind).CreateLogic(setting);
-            logic.Reset();
-            var output = new char[input.Length];
-            for (int t = 0; t < input.Length; t++)
-            {
-                var ins = input2 == null ? new[] { input[t] == '1' } : new[] { input[t] == '1', input2[t] == '1' };
-                output[t] = logic.Step(ins) ? '1' : '0';
-            }
-            return new string(output);
-        }
+        static int Apply(string kind, int state, params int[] inputs) => KindCatalog.Get(kind).Apply(inputs, state);
 
-        static string Table(string kind, int setting)
+        /// <summary>Every combination of input values a kind can be given.</summary>
+        static IEnumerable<int[]> InputsFor(BlockKind kind)
         {
-            var k = KindCatalog.Get(kind);
-            var chars = new char[1 << k.InputCount];
-            for (int i = 0; i < chars.Length; i++)
-            {
-                var ins = new bool[k.InputCount];
-                for (int p = 0; p < k.InputCount; p++) ins[p] = ((i >> (k.InputCount - 1 - p)) & 1) == 1;
-                var logic = k.CreateLogic(setting);
-                logic.Reset();
-                chars[i] = logic.Step(ins) ? '1' : '0';
-            }
-            return new string(chars);
+            int size = Media.Size(kind.Medium);
+            if (kind.InputCount == 1)
+                for (int a = 0; a < size; a++) yield return new[] { a };
+            else
+                for (int a = 0; a < size; a++)
+                    for (int b = 0; b < size; b++) yield return new[] { a, b };
         }
 
         [Test]
-        public void EveryKindHasSettingsAndUniqueBehaviours()
+        public void EachMediumHasFourKinds()
         {
-            Assert.That(KindCatalog.All.Count, Is.GreaterThanOrEqualTo(9));
-            foreach (var kind in KindCatalog.All)
-            {
-                Assert.That(kind.SettingCount, Is.GreaterThan(0), kind.Id);
-                Assert.That(kind.Spoilers.Distinct().Count(), Is.EqualTo(kind.SettingCount), kind.Id);
-            }
+            foreach (Medium m in new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave })
+                Assert.That(KindCatalog.All.Count(k => k.Medium == m), Is.EqualTo(4), m.ToString());
+        }
+
+        [TestCaseSource(nameof(AllKinds))]
+        public void KindIsWellFormed(BlockKind kind)
+        {
+            Assert.That(kind.InputCount, Is.InRange(1, 2));
+            Assert.That(kind.StateCount, Is.GreaterThanOrEqualTo(2));
+            Assert.That(kind.Spoilers.Count, Is.EqualTo(kind.StateCount));
+            Assert.That(KindCatalog.Get(kind.Id), Is.SameAs(kind));
+        }
+
+        [TestCaseSource(nameof(AllKinds))]
+        public void KindAlwaysSendsAValueOfItsMedium(BlockKind kind)
+        {
+            foreach (var inputs in InputsFor(kind))
+                for (int s = 0; s < kind.StateCount; s++)
+                {
+                    int v = kind.Apply(inputs, s);
+                    Assert.That(Media.IsValid(kind.Medium, v), Is.True, $"{kind.Id} state {s} on [{string.Join(",", inputs)}] gave {v}");
+                }
+        }
+
+        [TestCaseSource(nameof(AllKinds))]
+        public void EveryStateBehavesDifferently(BlockKind kind)
+        {
+            // If two states agree on every input, one of them is a wasted click.
+            for (int s = 0; s < kind.StateCount; s++)
+                for (int t = s + 1; t < kind.StateCount; t++)
+                {
+                    bool differ = InputsFor(kind).Any(x => kind.Apply(x, s) != kind.Apply(x, t));
+                    Assert.That(differ, Is.True, $"{kind.Id}: states {s} and {t} are the same");
+                }
         }
 
         [Test]
-        public void LogicKindsMatchTheirTruthTables()
+        public void BinaryRules()
         {
-            Assert.That(Table("K1", 0), Is.EqualTo("10"));
-            Assert.That(Table("K1", 1), Is.EqualTo("01"));
-            Assert.That(Table("K2", 0), Is.EqualTo("11"));
-            Assert.That(Table("K2", 2), Is.EqualTo("00"));
-            Assert.That(Table("K3", 0), Is.EqualTo("0111"));
-            Assert.That(Table("K3", 1), Is.EqualTo("0001"));
-            Assert.That(Table("K4", 0), Is.EqualTo("0110"));
-            Assert.That(Table("K4", 2), Is.EqualTo("0010"), "top and not bottom: only 10 is on");
+            Assert.That(Apply("B1", 0, 1), Is.EqualTo(0), "invert");
+            Assert.That(Apply("B1", 1, 1), Is.EqualTo(1), "pass");
+            Assert.That(Apply("B2", 0, 1, 0), Is.EqualTo(0), "and");
+            Assert.That(Apply("B2", 1, 1, 0), Is.EqualTo(1), "or");
+            Assert.That(Apply("B3", 0, 0), Is.EqualTo(1), "always 1");
+            Assert.That(Apply("B3", 2, 1), Is.EqualTo(0), "always 0");
+            Assert.That(Apply("B4", 0, 1, 1), Is.EqualTo(0), "xor");
+            Assert.That(Apply("B4", 2, 1, 0), Is.EqualTo(1), "top and not bottom");
+            Assert.That(Apply("B4", 2, 1, 1), Is.EqualTo(0), "top and not bottom");
         }
 
         [Test]
-        public void ThresholdCountsInputs()
+        public void DecimalRulesWrap()
         {
-            Assert.That(Table("K5", 0), Is.EqualTo("01111111"));
-            Assert.That(Table("K5", 1), Is.EqualTo("00010111"));
-            Assert.That(Table("K5", 2), Is.EqualTo("00000001"));
+            Assert.That(Apply("D1", 0, 9), Is.EqualTo(0), "add 1 wraps");
+            Assert.That(Apply("D1", 2, 8), Is.EqualTo(1), "add 3 wraps");
+            Assert.That(Apply("D2", 0, 7, 5), Is.EqualTo(2), "sum wraps");
+            Assert.That(Apply("D2", 1, 2, 5), Is.EqualTo(7), "difference wraps");
+            Assert.That(Apply("D3", 0, 6), Is.EqualTo(2), "double wraps");
+            Assert.That(Apply("D3", 1, 7), Is.EqualTo(3), "halve rounds down");
+            Assert.That(Apply("D3", 2, 2), Is.EqualTo(7), "mirror");
+            Assert.That(Apply("D4", 0, 3, 8), Is.EqualTo(8), "larger");
+            Assert.That(Apply("D4", 1, 3, 8), Is.EqualTo(3), "smaller");
         }
 
         [Test]
-        public void DelayRepeatsInputLater()
+        public void ShapeRules()
         {
-            Assert.That(Sequence("K6", 0, "1011000"), Is.EqualTo("0101100"));
-            Assert.That(Sequence("K6", 1, "1011000"), Is.EqualTo("0010110"));
-            Assert.That(Sequence("K6", 2, "1011000"), Is.EqualTo("0001011"));
-            Assert.That(KindCatalog.Get("K6").CreateLogic(0).Registered, Is.True);
+            int hollowCircle = Shapes.Make(0, false), solidCircle = Shapes.Make(0, true);
+            int solidTriangle = Shapes.Make(1, true), hollowSquare = Shapes.Make(2, false), solidHexagon = Shapes.Make(3, true);
+            Assert.That(Apply("S1", 0, hollowCircle), Is.EqualTo(solidCircle), "flip fill");
+            Assert.That(Apply("S2", 0, solidHexagon), Is.EqualTo(solidCircle), "next form wraps and keeps fill");
+            Assert.That(Apply("S2", 1, solidCircle), Is.EqualTo(solidHexagon), "previous form wraps");
+            Assert.That(Apply("S3", 0, hollowSquare, solidTriangle), Is.EqualTo(Shapes.Make(2, true)), "form of top, fill of bottom");
+            Assert.That(Apply("S3", 1, hollowSquare, solidTriangle), Is.EqualTo(Shapes.Make(1, false)), "form of bottom, fill of top");
+            Assert.That(Apply("S4", 0, solidTriangle, hollowSquare), Is.EqualTo(hollowSquare), "more corners");
+            Assert.That(Apply("S4", 1, solidTriangle, hollowSquare), Is.EqualTo(solidTriangle), "fewer corners");
+            Assert.That(Apply("S4", 1, hollowCircle, solidCircle), Is.EqualTo(hollowCircle), "top on a tie");
         }
 
         [Test]
-        public void EdgeWatchesChanges()
+        public void WaveRules()
         {
-            Assert.That(Sequence("K7", 0, "0110100"), Is.EqualTo("0101110"));
-            Assert.That(Sequence("K7", 1, "0110100"), Is.EqualTo("0100100"));
-            Assert.That(Sequence("K7", 2, "0110100"), Is.EqualTo("0001010"));
-            Assert.That(Sequence("K7", 1, "1100"), Is.EqualTo("1000"), "starts as if the input was off");
+            int sineHigh = Waves.Make(Waves.Sine, 2), sawLow = Waves.Make(Waves.Saw, 0), squareMid = Waves.Make(Waves.SquareWave, 1);
+            Assert.That(Apply("W1", 0, sineHigh), Is.EqualTo(Waves.Make(Waves.Sine, 0)), "raise pitch wraps");
+            Assert.That(Apply("W1", 1, sawLow), Is.EqualTo(Waves.Make(Waves.Saw, 2)), "lower pitch wraps");
+            Assert.That(Apply("W2", 2, sineHigh), Is.EqualTo(Waves.Make(Waves.Saw, 2)), "make saw keeps pitch");
+            Assert.That(Apply("W3", 0, sawLow, sineHigh), Is.EqualTo(Waves.Make(Waves.Saw, 2)), "form of top, pitch of bottom");
+            Assert.That(Apply("W4", 0, sawLow, squareMid), Is.EqualTo(squareMid), "higher");
+            Assert.That(Apply("W4", 1, sawLow, squareMid), Is.EqualTo(sawLow), "lower");
         }
 
         [Test]
-        public void ToggleFlips()
+        public void ValuesReadBackFromTheirDescriptions()
         {
-            Assert.That(Sequence("K8", 0, "1110011"), Is.EqualTo("1011101"));
-            Assert.That(Sequence("K8", 1, "1110011"), Is.EqualTo("1111100"));
+            foreach (Medium m in new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave })
+                foreach (int v in Media.All(m))
+                {
+                    string words = Media.Describe(m, v);
+                    Assert.That(Media.TryParse(m, words, out int back), Is.True, $"{m}: '{words}'");
+                    Assert.That(back, Is.EqualTo(v), $"{m}: '{words}'");
+                }
+            Assert.That(Media.TryParse(Medium.Binary, "2", out _), Is.False);
+            Assert.That(Media.TryParse(Medium.Shape, "solid octagon", out _), Is.False);
         }
 
         [Test]
-        public void LatchSetsAndClears()
+        public void EncodingsRoundTrip()
         {
-            Assert.That(Sequence("K9", 0, "0100100", "0001000"), Is.EqualTo("0110111"));
-            Assert.That(Sequence("K9", 1, "0001000", "0100100"), Is.EqualTo("0110111"));
-            Assert.That(Sequence("K9", 0, "110", "010"), Is.EqualTo("111"), "both on keeps the bit");
-        }
-
-        [Test]
-        public void ResetForgetsState()
-        {
-            var logic = KindCatalog.Get("K8").CreateLogic(0);
-            logic.Reset();
-            logic.Step(new[] { true });
-            logic.Reset();
-            Assert.That(logic.Step(new[] { false }), Is.False);
+            for (int f = 0; f < Shapes.Forms; f++)
+                foreach (bool solid in new[] { false, true })
+                {
+                    int v = Shapes.Make(f, solid);
+                    Assert.That(Shapes.Form(v), Is.EqualTo(f));
+                    Assert.That(Shapes.Solid(v), Is.EqualTo(solid));
+                }
+            for (int f = 0; f < Waves.Forms; f++)
+                for (int p = 0; p < Waves.Pitches; p++)
+                {
+                    int v = Waves.Make(f, p);
+                    Assert.That(Waves.Form(v), Is.EqualTo(f));
+                    Assert.That(Waves.Pitch(v), Is.EqualTo(p));
+                }
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Blackbox.Puzzles
             int ColumnOf(NodeDef n, HashSet<NodeDef> visiting)
             {
                 if (col.TryGetValue(n, out int c)) return c;
-                if (!visiting.Add(n)) return 0; // a loop: break it here
+                if (!visiting.Add(n)) return 0; // a loop (the loader rejects these): break it here
                 int best = 0;
                 if (incoming.TryGetValue(n, out var sources))
                     foreach (var s in sources) best = Math.Max(best, ColumnOf(s, visiting) + 1);
@@ -33,9 +33,9 @@ namespace Blackbox.Puzzles
                 return col[n];
             }
 
-            foreach (var b in p.Boxes) ColumnOf(b, new HashSet<NodeDef>());
-            int lastBoxCol = p.Boxes.Count == 0 ? 0 : p.Boxes.Max(b => col[b]);
-            foreach (var o in p.Outputs) col[o] = lastBoxCol + 1;
+            foreach (var b in p.Blocks) ColumnOf(b, new HashSet<NodeDef>());
+            int lastBlockCol = p.Blocks.Count == 0 ? 0 : p.Blocks.Max(b => col[b]);
+            foreach (var o in p.Outputs) col[o] = lastBlockCol + 1;
 
             // Respect hand-placed columns.
             foreach (var n in p.AllNodes) if (n.HasPosition) col[n] = (int)Math.Round(n.At.Col);
@@ -84,12 +84,6 @@ namespace Blackbox.Puzzles
             {
                 minCol = Math.Min(minCol, n.At.Col); maxCol = Math.Max(maxCol, n.At.Col);
                 minRow = Math.Min(minRow, n.At.Row); maxRow = Math.Max(maxRow, n.At.Row);
-            }
-            foreach (var w in p.Wires)
-            {
-                if (!w.ViaRow.HasValue) continue;
-                minRow = Math.Min(minRow, w.ViaRow.Value);
-                maxRow = Math.Max(maxRow, w.ViaRow.Value);
             }
         }
     }

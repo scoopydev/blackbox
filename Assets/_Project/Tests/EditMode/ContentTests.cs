@@ -1,12 +1,16 @@
 using System.Collections.Generic;
 using System.Linq;
+using Blackbox.Components;
 using Blackbox.Core;
 using Blackbox.Puzzles;
 using NUnit.Framework;
 
 namespace Blackbox.Tests
 {
-    /// <summary>Checks every shipped circuit: it loads, it can be solved, and it doesn't start solved.</summary>
+    /// <summary>
+    /// Checks every shipped circuit: it loads, it can be solved, it doesn't start
+    /// solved, and its goal can be put into words. Also the save file.
+    /// </summary>
     public class ContentTests
     {
         static IEnumerable<PuzzleDef> AllPuzzles() => TestContent.Library.AllPuzzles;
@@ -15,14 +19,18 @@ namespace Blackbox.Tests
         public void ChaptersLoad()
         {
             var library = TestContent.Library;
-            Assert.That(library.Chapters.Count, Is.GreaterThanOrEqualTo(2));
+            Assert.That(library.Chapters.Count, Is.EqualTo(4));
             foreach (var chapter in library.Chapters)
             {
-                Assert.That(chapter.Puzzles.Count, Is.GreaterThanOrEqualTo(6), chapter.Title);
+                Assert.That(chapter.Puzzles.Count, Is.EqualTo(6), chapter.Title);
                 Assert.That(chapter.Tagline, Is.Not.Empty, chapter.Title);
+                Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
+                Assert.That(chapter.Puzzles.All(p => p.Medium == chapter.Medium), Is.True, chapter.Title);
             }
+            Assert.That(library.Chapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(4), "one chapter for each medium");
             Assert.That(library.Chapters[0].UnlockAfter, Is.Null.Or.Empty);
-            Assert.That(library.Chapters[1].UnlockAfter, Is.EqualTo(library.Chapters[0].Id));
+            for (int i = 1; i < library.Chapters.Count; i++)
+                Assert.That(library.Chapters[i].UnlockAfter, Is.EqualTo(library.Chapters[i - 1].Id));
         }
 
         [TestCaseSource(nameof(AllPuzzles))]
@@ -31,6 +39,29 @@ namespace Blackbox.Tests
             var report = PuzzleSolver.Analyse(puzzle);
             Assert.That(report.Errors, Is.Empty, report.ToString());
             Assert.That(report.SolutionCount, Is.GreaterThan(0), report.ToString());
+            Assert.That(puzzle.Targets.Count, Is.GreaterThan(0));
+            Assert.That(report.StartMatched, Is.LessThan(puzzle.Targets.Count), "starts solved");
+            Assert.That(report.FewestChanges, Is.GreaterThan(0));
+        }
+
+        [TestCaseSource(nameof(AllPuzzles))]
+        public void GoalCanBeRead(PuzzleDef puzzle)
+        {
+            var goal = GoalText.For(puzzle);
+            Assert.That(goal, Is.Not.Empty);
+            Assert.That(goal, Does.Not.Contain("?"), "every target is a value of the medium");
+            if (puzzle.Targets.Count <= GoalText.MaxListed)
+                foreach (var t in puzzle.Targets) Assert.That(goal, Does.Contain(t.Node.Id), $"the goal names {t.Node.Id}");
+        }
+
+        [Test]
+        public void EveryChapterEndsOnAUniqueSolution()
+        {
+            foreach (var chapter in TestContent.Library.Chapters)
+            {
+                var report = PuzzleSolver.Analyse(chapter.Puzzles.Last());
+                Assert.That(report.SolutionCount, Is.EqualTo(1), report.ToString());
+            }
         }
 
         [Test]
@@ -46,16 +77,38 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void ChaptersOnlyUseKindsTheyIntroduceOrInherit()
+        public void LockedBlocksCanBeLearned()
         {
-            // Every kind should first appear in a circuit where it is not locked,
-            // so the player gets to turn its dial before having to reason about it.
+            // A locked block can't be changed, so the player must be able to learn it
+            // some other way: by having changed one of its kind before, or by changing
+            // an input that reaches it and watching what comes out.
             var seenFree = new HashSet<string>();
             foreach (var p in TestContent.Library.AllPuzzles)
             {
-                foreach (var box in p.Boxes.Where(b => !b.Locked)) seenFree.Add(box.Kind.Id);
-                foreach (var box in p.Boxes.Where(b => b.Locked))
-                    Assert.That(seenFree, Does.Contain(box.Kind.Id), $"{p.Id}: locked {box.Kind.Id} before the player has used one");
+                var circuit = new Blackbox.Circuits.CompiledCircuit(p);
+                foreach (var block in p.Blocks.Where(b => b.Locked))
+                {
+                    if (seenFree.Contains(block.Kind.Id)) continue;
+                    int node = circuit.BlockNode(block.Index);
+                    bool reachable = Enumerable.Range(0, p.Inputs.Count).Any(i => p.InputChangeable(i) && circuit.Downstream(i)[node]);
+                    Assert.That(reachable, Is.True, $"{p.Id}: locked {block.Kind.Id} {block.Id} is new and no adjustable input reaches it");
+                }
+                foreach (var block in p.Blocks.Where(b => !b.Locked)) seenFree.Add(block.Kind.Id);
+            }
+        }
+
+        [Test]
+        public void EveryChapterOpensGently()
+        {
+            // The first circuit of a chapter shows the new signals with one kind of
+            // block, nothing locked and no probes to think about.
+            foreach (var chapter in TestContent.Library.Chapters)
+            {
+                var first = chapter.Puzzles[0];
+                Assert.That(first.Blocks.Select(b => b.Kind.Id).Distinct().Count(), Is.EqualTo(1), chapter.Title);
+                Assert.That(first.Blocks.Any(b => b.Locked), Is.False, chapter.Title);
+                Assert.That(first.Blocks.Count, Is.LessThanOrEqualTo(2), chapter.Title);
+                Assert.That(first.Probes, Is.EqualTo(0), chapter.Title);
             }
         }
 
@@ -84,8 +137,8 @@ namespace Blackbox.Tests
 
         /// <summary>
         /// Plays the whole game the way the title screen's Continue does: open the
-        /// suggested circuit, set its boxes to a solution, run, record the solve.
-        /// Every circuit must be reached, and each one must open in play.
+        /// suggested circuit, set it to a solution, record the solve. Every circuit
+        /// must be reached, and each one must be solvable in play.
         /// </summary>
         [Test]
         public void ContinueReachesEveryCircuit()
@@ -104,13 +157,17 @@ namespace Blackbox.Tests
                 save.LastPuzzle = target.Id;
 
                 var report = PuzzleSolver.Analyse(target, 1);
-                var session = new PuzzleSession(target, save.Settings.TryGetValue(target.Id, out var resume) ? resume : null);
-                for (int b = 0; b < target.Boxes.Count; b++) session.SetSetting(b, report.Solutions[0][b]);
-                var run = session.Run();
-                Assert.That(run.AllMatched, Is.True, target.Id);
-                Assert.That(session.SolvedNow, Is.True, target.Id);
-                save.RecordSolve(target.Id, session.Tests);
-                save.Settings[target.Id] = session.CopySettings();
+                var solution = report.Solutions[0];
+                var session = new PuzzleSession(target, save.Circuits.TryGetValue(target.Id, out var resume) ? resume : null);
+                for (int i = 0; i < target.Inputs.Count; i++)
+                    if (session.CanChangeInput(i)) session.SetInput(i, solution.Inputs[i]);
+                    else Assert.That(solution.Inputs[i], Is.EqualTo(target.Inputs[i].Value), $"{target.Id}: the solver changed fixed input {target.Inputs[i].Id}");
+                for (int b = 0; b < target.Blocks.Count; b++)
+                    if (session.CanChangeBlock(b)) session.SetState(b, solution.States[b]);
+                    else Assert.That(solution.States[b], Is.EqualTo(target.Blocks[b].State), $"{target.Id}: the solver turned locked block {target.Blocks[b].Id}");
+                Assert.That(session.Solved, Is.True, target.Id);
+                save.RecordSolve(target.Id, session.Moves);
+                save.Circuits[target.Id] = session.Snapshot();
             }
 
             Assert.That(progress.TotalSolved, Is.EqualTo(total));
@@ -124,9 +181,12 @@ namespace Blackbox.Tests
             save.RecordSolve("a", 7);
             save.RecordSolve("a", 4);
             save.RecordSolve("a", 9);
-            save.Settings["b"] = new[] { 2, 0, 1 };
-            save.SetName("K4", 2, RuleName.FromGlyph("gt"));
-            save.SetName("K1", 0, RuleName.FromText("NOT"));
+            var circuit = new CircuitState { Inputs = new[] { 1, 0 }, States = new[] { 2, 0, 1 } };
+            circuit.Probes.Add((3, 250));
+            save.Circuits["b"] = circuit;
+            var stroke = new InkStroke { Color = 2 };
+            stroke.Points.AddRange(new[] { 100, 200, 104, 207, 110, 215 });
+            save.InkFor("b").Add(stroke);
             save.SeenIntros.Add("first-light");
             save.LastPuzzle = "b";
             save.Prefs.MusicVolume = 0.25f;
@@ -134,11 +194,13 @@ namespace Blackbox.Tests
 
             var copy = SaveData.FromJson(save.ToJson());
             Assert.That(copy.Solved, Does.Contain("a"));
-            Assert.That(copy.BestTests["a"], Is.EqualTo(4));
-            Assert.That(copy.Settings["b"], Is.EqualTo(new[] { 2, 0, 1 }));
-            Assert.That(copy.GetName("K4", 2).Glyph, Is.EqualTo("gt"));
-            Assert.That(copy.GetName("K1", 0).Text, Is.EqualTo("NOT"));
-            Assert.That(copy.GetName("K1", 1).IsEmpty, Is.True);
+            Assert.That(copy.BestMoves["a"], Is.EqualTo(4));
+            Assert.That(copy.Circuits["b"].Inputs, Is.EqualTo(new[] { 1, 0 }));
+            Assert.That(copy.Circuits["b"].States, Is.EqualTo(new[] { 2, 0, 1 }));
+            Assert.That(copy.Circuits["b"].Probes, Is.EqualTo(new[] { (3, 250) }));
+            Assert.That(copy.Ink["b"].Count, Is.EqualTo(1));
+            Assert.That(copy.Ink["b"][0].Color, Is.EqualTo(2));
+            Assert.That(copy.Ink["b"][0].Points, Is.EqualTo(stroke.Points));
             Assert.That(copy.SeenIntros, Does.Contain("first-light"));
             Assert.That(copy.LastPuzzle, Is.EqualTo("b"));
             Assert.That(copy.Prefs.MusicVolume, Is.EqualTo(0.25f).Within(0.0001f));
@@ -148,10 +210,19 @@ namespace Blackbox.Tests
         [Test]
         public void DamagedSaveFallsBackToDefaults()
         {
-            var save = SaveData.FromJson(@"{ ""solved"": 5, ""names"": { ""K1:0"": ""??"" }, ""preferences"": { ""masterVolume"": 9 } }");
+            var save = SaveData.FromJson(@"{ ""version"": 2, ""solved"": 5, ""circuits"": { ""a"": 3 }, ""ink"": { ""a"": [""x"", ""1:"", 7] }, ""preferences"": { ""masterVolume"": 9 } }");
             Assert.That(save.Solved, Is.Empty);
-            Assert.That(save.Names, Is.Empty);
+            Assert.That(save.Circuits, Is.Empty);
+            Assert.That(save.Ink, Is.Empty);
             Assert.That(save.Prefs.MasterVolume, Is.EqualTo(1f));
+        }
+
+        [Test]
+        public void SavesFromBeforeTheRedesignKeepOnlyPreferences()
+        {
+            var save = SaveData.FromJson(@"{ ""solved"": [""first-light-01""], ""bestTests"": { ""first-light-01"": 2 }, ""preferences"": { ""musicVolume"": 0.3 } }");
+            Assert.That(save.Solved, Is.Empty, "old circuits don't carry over");
+            Assert.That(save.Prefs.MusicVolume, Is.EqualTo(0.3f).Within(0.0001f));
         }
 
         [Test]

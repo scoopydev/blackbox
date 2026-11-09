@@ -1,127 +1,224 @@
 using System;
 using System.Collections.Generic;
 using Blackbox.Circuits;
+using Blackbox.Components;
+using Blackbox.Core;
 
 namespace Blackbox.Puzzles
 {
+    /// <summary>A probe on a wire: which wire, and how far along it (0 at the source, 1 at the end).</summary>
+    public struct Probe
+    {
+        public int Wire;
+        public float At;
+        public Probe(int wire, float at) { Wire = wire; At = at; }
+    }
+
+    public enum ChangeKind { Input, Block }
+
     /// <summary>
-    /// One attempt at one circuit: the current box settings, the last test run and
-    /// an undo history. Has no Unity dependencies, so the whole play loop can be
-    /// tested without the engine. The board view listens to its events.
+    /// One attempt at one circuit: input values, block states, probes and an undo
+    /// history. The circuit is live: every change settles it at once, and it is
+    /// solved the moment every target matches. Has no Unity dependencies, so the whole
+    /// play loop can be tested without the engine. The screen listens to its events.
     /// </summary>
     public sealed class PuzzleSession
     {
-        readonly int[] _settings;
-        readonly Stack<(int box, int previous)> _undo = new Stack<(int, int)>();
+        readonly int[] _inputs;
+        readonly int[] _states;
+        readonly int[] _values;
+        readonly List<Probe> _probes = new List<Probe>();
+        readonly Stack<(ChangeKind kind, int index, int previous)> _undo = new Stack<(ChangeKind, int, int)>();
 
         public PuzzleDef Puzzle { get; }
         public CompiledCircuit Circuit { get; }
+        public Medium Medium => Puzzle.Medium;
 
-        /// <summary>The most recent test run, which may be out of date if settings changed since.</summary>
-        public RunResult LastRun { get; private set; }
+        /// <summary>Changes made on this visit, undos included.</summary>
+        public int Moves { get; private set; }
 
-        /// <summary>How many times the player has pressed Run on this attempt.</summary>
-        public int Tests { get; private set; }
-
-        /// <summary>True once any run on this attempt matched every case.</summary>
+        /// <summary>True once the circuit has been solved on this visit.</summary>
         public bool EverSolved { get; private set; }
 
-        /// <summary>A box's setting changed: (box index).</summary>
-        public event Action<int> SettingChanged;
-        /// <summary>A test run finished.</summary>
-        public event Action<RunResult> Ran;
-        /// <summary>The settings were reset, or undo restored a box.</summary>
+        /// <summary>An input or block changed: (what, its index). The circuit has already settled.</summary>
+        public event Action<ChangeKind, int> Changed;
+        /// <summary>Everything went back to the start.</summary>
         public event Action Reset;
+        /// <summary>A probe was placed or removed.</summary>
+        public event Action ProbesChanged;
 
-        public PuzzleSession(PuzzleDef puzzle, int[] resumeSettings = null)
+        public PuzzleSession(PuzzleDef puzzle, CircuitState resume = null)
         {
             Puzzle = puzzle;
             Circuit = new CompiledCircuit(puzzle);
-            _settings = puzzle.StartSettings();
+            _inputs = puzzle.StartInputs();
+            _states = puzzle.StartStates();
+            _values = new int[Circuit.NodeCount];
 
-            if (resumeSettings != null && resumeSettings.Length == _settings.Length)
+            if (resume != null)
             {
-                for (int b = 0; b < _settings.Length; b++)
-                {
-                    var box = puzzle.Boxes[b];
-                    if (!box.Locked && resumeSettings[b] >= 0 && resumeSettings[b] < box.Kind.SettingCount)
-                        _settings[b] = resumeSettings[b];
-                }
+                if (resume.Inputs.Length == _inputs.Length)
+                    for (int i = 0; i < _inputs.Length; i++)
+                        if (puzzle.InputChangeable(i) && Media.IsValid(Medium, resume.Inputs[i])) _inputs[i] = resume.Inputs[i];
+                if (resume.States.Length == _states.Length)
+                    for (int b = 0; b < _states.Length; b++)
+                        if (puzzle.BlockChangeable(b) && resume.States[b] >= 0 && resume.States[b] < puzzle.Blocks[b].Kind.StateCount) _states[b] = resume.States[b];
+                foreach (var (wire, at) in resume.Probes)
+                    if (wire >= 0 && wire < puzzle.Wires.Count && _probes.Count < puzzle.Probes)
+                        _probes.Add(new Probe(wire, Clamp01(at / 1000f)));
             }
+            Settle();
         }
 
-        public int SettingOf(int box) => _settings[box];
-        public int[] CopySettings() => (int[])_settings.Clone();
+        void Settle()
+        {
+            Circuit.Evaluate(_inputs, _states, _values);
+            if (Solved) EverSolved = true;
+        }
 
-        public bool CanChange(int box) => box >= 0 && box < _settings.Length && !Puzzle.Boxes[box].Locked;
+        // ------------------------------------------------------------------ reading
 
-        /// <summary>True when the last run used exactly the current settings.</summary>
-        public bool RunIsCurrent
+        public int InputValue(int input) => _inputs[input];
+        public int State(int block) => _states[block];
+        public int Value(int node) => _values[node];
+        public int ValueOf(NodeDef node) => _values[Circuit.NodeOf(node)];
+        public int[] CopyInputs() => (int[])_inputs.Clone();
+        public int[] CopyStates() => (int[])_states.Clone();
+        public int[] CopyValues() => (int[])_values.Clone();
+
+        public bool TargetMatched(int target)
+        {
+            var t = Puzzle.Targets[target];
+            return ValueOf(t.Node) == t.Want;
+        }
+
+        public int MatchedTargets
         {
             get
             {
-                if (LastRun == null) return false;
-                for (int b = 0; b < _settings.Length; b++)
-                    if (LastRun.Settings[b] != _settings[b]) return false;
-                return true;
+                int n = 0;
+                for (int t = 0; t < Puzzle.Targets.Count; t++) if (TargetMatched(t)) n++;
+                return n;
             }
         }
 
-        /// <summary>The circuit is solved right now: the latest run is current and matched everything.</summary>
-        public bool SolvedNow => RunIsCurrent && LastRun.AllMatched;
+        /// <summary>Every target matches. A circuit with no targets is never solved.</summary>
+        public bool Solved => Puzzle.Targets.Count > 0 && MatchedTargets == Puzzle.Targets.Count;
 
         public bool AtStart
         {
             get
             {
-                for (int b = 0; b < _settings.Length; b++)
-                    if (_settings[b] != Puzzle.Boxes[b].Setting) return false;
+                for (int i = 0; i < _inputs.Length; i++) if (_inputs[i] != Puzzle.Inputs[i].Value) return false;
+                for (int b = 0; b < _states.Length; b++) if (_states[b] != Puzzle.Blocks[b].State) return false;
                 return true;
             }
         }
 
-        public bool SetSetting(int box, int value)
+        // ------------------------------------------------------------------ changing
+
+        public bool CanChangeInput(int input) => input >= 0 && input < _inputs.Length && Puzzle.InputChangeable(input);
+        public bool CanChangeBlock(int block) => block >= 0 && block < _states.Length && Puzzle.BlockChangeable(block);
+
+        public bool SetInput(int input, int value)
         {
-            if (!CanChange(box)) return false;
-            int count = Puzzle.Boxes[box].Kind.SettingCount;
-            value = ((value % count) + count) % count;
-            if (_settings[box] == value) return false;
-            _undo.Push((box, _settings[box]));
-            _settings[box] = value;
-            SettingChanged?.Invoke(box);
+            if (!CanChangeInput(input)) return false;
+            int size = Media.Size(Medium);
+            value = ((value % size) + size) % size;
+            if (_inputs[input] == value) return false;
+            _undo.Push((ChangeKind.Input, input, _inputs[input]));
+            _inputs[input] = value;
+            Moves++;
+            Settle();
+            Changed?.Invoke(ChangeKind.Input, input);
             return true;
         }
 
-        /// <summary>Steps a box to its next (+1) or previous (-1) setting, wrapping around.</summary>
-        public bool Cycle(int box, int direction) => CanChange(box) && SetSetting(box, _settings[box] + direction);
+        /// <summary>Steps an input to its next (+1) or previous (-1) value, wrapping round.</summary>
+        public bool CycleInput(int input, int direction) => CanChangeInput(input) && SetInput(input, _inputs[input] + direction);
+
+        public bool SetState(int block, int state)
+        {
+            if (!CanChangeBlock(block)) return false;
+            int count = Puzzle.Blocks[block].Kind.StateCount;
+            state = ((state % count) + count) % count;
+            if (_states[block] == state) return false;
+            _undo.Push((ChangeKind.Block, block, _states[block]));
+            _states[block] = state;
+            Moves++;
+            Settle();
+            Changed?.Invoke(ChangeKind.Block, block);
+            return true;
+        }
+
+        /// <summary>Steps a block to its next (+1) or previous (-1) state, wrapping round.</summary>
+        public bool CycleState(int block, int direction) => CanChangeBlock(block) && SetState(block, _states[block] + direction);
 
         public bool CanUndo => _undo.Count > 0;
 
         public bool Undo()
         {
             if (_undo.Count == 0) return false;
-            var (box, previous) = _undo.Pop();
-            _settings[box] = previous;
-            SettingChanged?.Invoke(box);
+            var (kind, index, previous) = _undo.Pop();
+            if (kind == ChangeKind.Input) _inputs[index] = previous;
+            else _states[index] = previous;
+            Moves++;
+            Settle();
+            Changed?.Invoke(kind, index);
             return true;
         }
 
-        /// <summary>Puts every box back where the circuit started and forgets the last run.</summary>
+        /// <summary>Puts every input and block back where the circuit started. Probes stay.</summary>
         public void ResetToStart()
         {
-            for (int b = 0; b < _settings.Length; b++) _settings[b] = Puzzle.Boxes[b].Setting;
+            for (int i = 0; i < _inputs.Length; i++) _inputs[i] = Puzzle.Inputs[i].Value;
+            for (int b = 0; b < _states.Length; b++) _states[b] = Puzzle.Blocks[b].State;
             _undo.Clear();
-            LastRun = null;
+            Settle();
             Reset?.Invoke();
         }
 
-        public RunResult Run()
+        // ------------------------------------------------------------------ probes
+
+        public IReadOnlyList<Probe> Probes => _probes;
+        public int ProbesLeft => Puzzle.Probes - _probes.Count;
+
+        /// <summary>The value a probe reads: the signal its wire carries.</summary>
+        public int ProbeValue(int probe) => _values[Circuit.NodeOf(Puzzle.Wires[_probes[probe].Wire].From)];
+
+        public bool AddProbe(int wire, float at)
         {
-            Tests++;
-            LastRun = Circuit.Run(_settings);
-            if (LastRun.AllMatched) EverSolved = true;
-            Ran?.Invoke(LastRun);
-            return LastRun;
+            if (ProbesLeft <= 0 || wire < 0 || wire >= Puzzle.Wires.Count) return false;
+            _probes.Add(new Probe(wire, Clamp01(at)));
+            ProbesChanged?.Invoke();
+            return true;
         }
+
+        public bool RemoveProbe(int probe)
+        {
+            if (probe < 0 || probe >= _probes.Count) return false;
+            _probes.RemoveAt(probe);
+            ProbesChanged?.Invoke();
+            return true;
+        }
+
+        public void ClearProbes()
+        {
+            if (_probes.Count == 0) return;
+            _probes.Clear();
+            ProbesChanged?.Invoke();
+        }
+
+        // ------------------------------------------------------------------ saving
+
+        /// <summary>Where the player is, for the save file.</summary>
+        public CircuitState Snapshot()
+        {
+            var state = new CircuitState { Inputs = CopyInputs(), States = CopyStates() };
+            foreach (var p in _probes) state.Probes.Add((p.Wire, (int)Math.Round(p.At * 1000f)));
+            return state;
+        }
+
+        static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : v;
     }
 }

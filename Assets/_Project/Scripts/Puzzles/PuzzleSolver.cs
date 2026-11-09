@@ -2,16 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Blackbox.Circuits;
+using Blackbox.Components;
 
 namespace Blackbox.Puzzles
 {
+    /// <summary>One way to solve a circuit: every input value and block state.</summary>
+    public sealed class Solution
+    {
+        public int[] Inputs;
+        public int[] States;
+        /// <summary>How many inputs and blocks differ from where the circuit starts.</summary>
+        public int Changes;
+    }
+
     public sealed class PuzzleReport
     {
         public PuzzleDef Puzzle;
-        /// <summary>How many setting combinations the player could try.</summary>
+        /// <summary>How many combinations of input values and block states the player could try.</summary>
         public long SearchSpace;
         public int SolutionCount;
-        public readonly List<int[]> Solutions = new List<int[]>();
+        public readonly List<Solution> Solutions = new List<Solution>();
+        /// <summary>The fewest inputs and blocks that must change from the start to solve it.</summary>
+        public int FewestChanges = -1;
+        /// <summary>Targets already matching when the circuit opens.</summary>
+        public int StartMatched;
         /// <summary>Problems that make the puzzle broken.</summary>
         public readonly List<string> Errors = new List<string>();
         /// <summary>Things worth a second look, but not necessarily wrong.</summary>
@@ -19,13 +33,16 @@ namespace Blackbox.Puzzles
 
         public bool Ok => Errors.Count == 0;
 
-        public string Describe(int[] settings)
+        public string Describe(Solution s)
         {
+            var p = Puzzle;
             var parts = new List<string>();
-            for (int b = 0; b < Puzzle.Boxes.Count; b++)
+            for (int i = 0; i < p.Inputs.Count; i++)
+                if (p.Inputs[i].Adjustable) parts.Add($"{p.Inputs[i].Id}={Media.Describe(p.Medium, s.Inputs[i])}");
+            for (int b = 0; b < p.Blocks.Count; b++)
             {
-                var box = Puzzle.Boxes[b];
-                parts.Add($"{box.Id}={box.Kind.Spoilers[settings[b]]}{(box.Locked ? " (locked)" : "")}");
+                var block = p.Blocks[b];
+                parts.Add($"{block.Id}={block.Kind.Spoilers[s.States[b]]}{(block.Locked ? " (locked)" : "")}");
             }
             return string.Join(", ", parts);
         }
@@ -34,9 +51,9 @@ namespace Blackbox.Puzzles
         {
             var lines = new List<string>
             {
-                $"{Puzzle.Id} \"{Puzzle.Name}\": {SolutionCount} solution(s) in {SearchSpace} combinations",
+                $"{Puzzle.Id} \"{Puzzle.Name}\": {SolutionCount} solution(s) in {SearchSpace} combinations, fewest changes {FewestChanges}, {StartMatched}/{Puzzle.Targets.Count} targets matched at start",
             };
-            foreach (var s in Solutions.Take(4)) lines.Add("  solution: " + Describe(s));
+            foreach (var s in Solutions.Take(4)) lines.Add($"  solution ({s.Changes} changes): " + Describe(s));
             foreach (var e in Errors) lines.Add("  ERROR: " + e);
             foreach (var w in Warnings) lines.Add("  warning: " + w);
             return string.Join("\n", lines);
@@ -44,13 +61,14 @@ namespace Blackbox.Puzzles
     }
 
     /// <summary>
-    /// Checks puzzles by brute force: tries every combination of settings on the boxes
-    /// the player can change. Every shipped puzzle must have at least one solution and
-    /// must not start solved. Used by the edit mode tests and the editor menu.
+    /// Checks circuits by brute force: tries every combination of the inputs and
+    /// blocks the player can change. Every shipped circuit must have a target, at
+    /// least one solution, and must not start solved. Used by the edit mode tests,
+    /// the editor menu and the design tool.
     /// </summary>
     public static class PuzzleSolver
     {
-        public const long MaxSearch = 5_000_000;
+        public const long MaxSearch = 20_000_000;
 
         public static PuzzleReport Analyse(PuzzleDef p, int keepSolutions = 16)
         {
@@ -64,77 +82,79 @@ namespace Blackbox.Puzzles
                 return report;
             }
 
-            var free = p.Boxes.Where(b => !b.Locked).ToList();
+            if (p.Targets.Count == 0) report.Errors.Add("has no targets, so it can never be solved.");
+
+            var start = new PuzzleSession(p);
+            report.StartMatched = start.MatchedTargets;
+            if (start.Solved) report.Errors.Add("is solved before the player touches it.");
+
+            // The dials the player can turn: (is input, index, how many values).
+            var dials = new List<(bool input, int index, int count)>();
+            for (int i = 0; i < p.Inputs.Count; i++)
+                if (p.InputChangeable(i)) dials.Add((true, i, Media.Size(p.Medium)));
+            for (int b = 0; b < p.Blocks.Count; b++)
+                if (p.BlockChangeable(b)) dials.Add((false, b, p.Blocks[b].Kind.StateCount));
+
             long space = 1;
-            foreach (var b in free) space *= b.Kind.SettingCount;
+            foreach (var d in dials) space *= d.count;
             report.SearchSpace = space;
             if (space > MaxSearch)
             {
-                report.Errors.Add($"{space} combinations is too many to check.");
+                report.Errors.Add($"has {space} combinations, too many to check (limit {MaxSearch}).");
                 return report;
             }
 
-            var settings = p.StartSettings();
-            if (circuit.Passes(settings)) report.Errors.Add("It is already solved at its starting settings.");
+            var inputs = p.StartInputs();
+            var states = p.StartStates();
+            var startInputs = p.StartInputs();
+            var startStates = p.StartStates();
+            var values = new int[circuit.NodeCount];
+            var targetNodes = p.Targets.Select(t => circuit.NodeOf(t.Node)).ToArray();
+            var wants = p.Targets.Select(t => t.Want).ToArray();
+            var digits = new int[dials.Count];
 
-            // Count up through every combination like an odometer.
-            var digits = new int[free.Count];
-            for (long i = 0; i < space; i++)
+            for (long combo = 0; combo < space; combo++)
             {
-                for (int d = 0; d < free.Count; d++) settings[free[d].Index] = digits[d];
-                if (circuit.Passes(settings))
+                for (int k = 0; k < dials.Count; k++)
+                {
+                    var d = dials[k];
+                    if (d.input) inputs[d.index] = digits[k];
+                    else states[d.index] = digits[k];
+                }
+
+                circuit.Evaluate(inputs, states, values);
+                bool ok = targetNodes.Length > 0;
+                for (int t = 0; t < targetNodes.Length && ok; t++) ok = values[targetNodes[t]] == wants[t];
+                if (ok)
                 {
                     report.SolutionCount++;
-                    if (report.Solutions.Count < keepSolutions) report.Solutions.Add((int[])settings.Clone());
+                    int changes = 0;
+                    for (int i = 0; i < inputs.Length; i++) if (inputs[i] != startInputs[i]) changes++;
+                    for (int b = 0; b < states.Length; b++) if (states[b] != startStates[b]) changes++;
+                    if (report.FewestChanges < 0 || changes < report.FewestChanges) report.FewestChanges = changes;
+                    if (report.Solutions.Count < keepSolutions)
+                        report.Solutions.Add(new Solution { Inputs = (int[])inputs.Clone(), States = (int[])states.Clone(), Changes = changes });
                 }
-                for (int d = 0; d < free.Count; d++)
+
+                // Count up like an odometer.
+                for (int k = 0; k < dials.Count; k++)
                 {
-                    if (++digits[d] < free[d].Kind.SettingCount) break;
-                    digits[d] = 0;
+                    if (++digits[k] < dials[k].count) break;
+                    digits[k] = 0;
                 }
             }
-            if (report.SolutionCount == 0) report.Errors.Add("No combination of settings solves it.");
+            report.Solutions.Sort((a, b) => a.Changes.CompareTo(b.Changes));
 
-            CheckStructure(p, circuit, report);
+            if (report.SolutionCount == 0 && p.Targets.Count > 0) report.Errors.Add("has no solution.");
+
+            if (p.Probes > p.Wires.Count) report.Warnings.Add($"allows {p.Probes} probes but has only {p.Wires.Count} wires.");
+            foreach (var t in p.Targets)
+                if (t.Node is InputDef input && !input.Adjustable && input.Value != t.Want)
+                    report.Errors.Add($"input '{input.Id}' is fixed at {Media.Describe(p.Medium, input.Value)} but its target is {Media.Describe(p.Medium, t.Want)}.");
+            foreach (var b in p.Blocks)
+                if (b.Locked && b.Kind.StateCount == 1) report.Warnings.Add($"block '{b.Id}' is locked but only has one state anyway.");
+
             return report;
-        }
-
-        static void CheckStructure(PuzzleDef p, CompiledCircuit circuit, PuzzleReport report)
-        {
-            foreach (var input in p.Inputs)
-                if (!p.Wires.Any(w => w.From == input)) report.Warnings.Add($"Input {input.Id} is not wired to anything.");
-            foreach (var box in p.Boxes)
-                if (!p.Wires.Any(w => w.From == box)) report.Warnings.Add($"Box {box.Id} drives nothing.");
-
-            // Inputs that never change across the cases can't teach the player anything.
-            for (int i = 0; i < p.Inputs.Count; i++)
-            {
-                bool seen0 = false, seen1 = false;
-                foreach (var cs in p.Cases)
-                    for (int t = 0; t < cs.Ticks; t++)
-                    {
-                        if (cs.Inputs[t][i]) seen1 = true; else seen0 = true;
-                    }
-                if (p.Cases.Count > 1 && !(seen0 && seen1))
-                    report.Warnings.Add($"Input {p.Inputs[i].Id} has the same value in every case.");
-            }
-
-            // Two identical cases are noise.
-            if (p.Mode == PuzzleMode.Table)
-            {
-                var keys = new HashSet<string>();
-                foreach (var cs in p.Cases)
-                {
-                    var key = string.Concat(cs.Inputs[0].Select(b => b ? '1' : '0'));
-                    if (!keys.Add(key)) report.Errors.Add($"The table lists inputs {key} twice.");
-                }
-            }
-
-            foreach (var w in p.Wires)
-            {
-                if (w.From.At.Col >= w.To.At.Col && !w.ViaRow.HasValue)
-                    report.Warnings.Add($"Wire {w.From.Id} -> {w.To.Id} runs backwards without a \"via\" row; it will be routed below the board.");
-            }
         }
     }
 }

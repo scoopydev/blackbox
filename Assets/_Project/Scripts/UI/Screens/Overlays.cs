@@ -31,7 +31,7 @@ namespace Blackbox.UI.Screens
             const float step = 58f;
             _menu.Add(MenuItem.Create(Root, "RESUME", cx, y), () => { App.Sound(Sfx.Close); Close(); });
             _menu.Add(MenuItem.Create(Root, "RESET CIRCUIT", cx, y += step), () =>
-                Game.Confirm("Put every box back where it started?", "RESET", false, () =>
+                Game.Confirm("Put every input and block back where it started? Probes and notes stay.", "RESET", false, () =>
                 {
                     Close();
                     Owner.ResetCircuit();
@@ -93,13 +93,10 @@ namespace Blackbox.UI.Screens
             y += 22f;
             AddToggle("FULLSCREEN", y += step, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); });
             AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); });
-            AddToggle("FAST RUNS", y += step, prefs.FastRuns, v => { prefs.FastRuns = v; Game.ApplyPrefs(); });
-            var note = UIKit.Text(Root, "SKIPS THE RUN ANIMATION", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
-            note.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
-            y += 40f;
+            y += 10f;
             UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, y + 30f, Palette.Rule);
             AddAction("ERASE PROGRESS", y += step + 10f, true, () =>
-                Game.Confirm("Erase every solved circuit and every name you've given? Settings are kept.", "ERASE", true, () =>
+                Game.Confirm("Erase every solved circuit, every circuit in progress and every note you've written? Settings are kept.", "ERASE", true, () =>
                 {
                     Game.EraseProgress();
                 }));
@@ -284,7 +281,8 @@ namespace Blackbox.UI.Screens
     /// <summary>How to play, and every control.</summary>
     public sealed class HelpOverlay : Overlay
     {
-        public bool Trace;
+        /// <summary>The chapter being played, for a line about its signals. Optional.</summary>
+        public ChapterDef Chapter;
 
         protected internal override void Build()
         {
@@ -292,48 +290,47 @@ namespace Blackbox.UI.Screens
             var title = UIKit.Text(Root, "HOW IT WORKS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
             title.rectTransform.At(VoidFrame.Width * 0.5f, 170f, 400f, 22f);
 
-            string[] ideas =
+            var ideas = new List<string>
             {
-                "Every box hides a rule. Its dots are its settings: click the box, or a dot, to change it.",
-                "Run tests the whole circuit. A row that gives what's wanted lights up.",
-                "Probe a box to see what it did with each input it was given.",
-                "Name a behaviour once you've worked it out. The name follows it into every circuit.",
-                Trace
-                    ? "Some boxes remember. Time runs left to right along the bottom: click any moment to see the circuit then."
-                    : "A dashed box is locked. You can't change it, but you can probe it.",
+                "The goal is written above the circuit. Every target shows a tick once it's met. Meet them all to finish.",
+                "Each block keeps a hidden rule. Click it, or one of its dots, to change what it does. A padlock means it can't be changed.",
+                "Inputs with arrows can be changed; the rest are fixed. Sometimes an input has to end at a target of its own.",
+                "Wires hide their signals. Click a wire to put a probe on it and read what it carries. Each circuit has only so many.",
+                "Use the pen to label blocks and note down what you learn. Notes stay with the circuit.",
             };
-            float y = 270f;
+            if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
+            float y = 260f;
             foreach (var idea in ideas)
             {
                 var t = UIKit.Text(Root, idea, TextStyle.Body.WithSize(21), TextAnchor.UpperLeft);
                 t.horizontalOverflow = HorizontalWrapMode.Wrap;
-                t.rectTransform.At(250f + 330f, y + 40f, 660f, 80f);
+                t.rectTransform.At(250f + 340f, y + 40f, 680f, 80f);
                 var dot = UIKit.Shape(Root, "Dot", ShapeKind.Circle);
                 dot.rectTransform.At(226f, y + 15f, 6f, 6f);
                 dot.Style(Paint.Signal, Color.white, Paint.None, Color.clear);
-                y += 96f;
+                y += 98f;
             }
 
             string[] keys =
             {
-                "CLICK", "next setting",
-                "SCROLL", "turn a box either way",
-                "RIGHT-CLICK  ·  N", "name a behaviour",
-                "SPACE  ·  ENTER", "run",
-                "P  ·  HOLD SHIFT", "probe",
+                "CLICK  ·  SCROLL", "change a block or input",
+                "RIGHT-CLICK", "change it the other way",
+                "CLICK A WIRE", "place a probe",
+                "CLICK A PROBE", "take it off",
+                "D  ·  E", "pen  ·  eraser",
+                "RIGHT-DRAG", "rub out a note",
                 "Z  ·  BACKSPACE", "undo",
-                "TAB  ·  R", "choose a box, turn it",
-                Trace ? "LEFT  ·  RIGHT" : "UP  ·  DOWN", Trace ? "move through time" : "choose a row",
+                "TAB  ·  LEFT RIGHT", "choose something, change it",
                 "ESC", "menu",
             };
             float ky = 280f;
             for (int i = 0; i + 1 < keys.Length; i += 2)
             {
                 var k = UIKit.Text(Root, keys[i], TextStyle.Label.WithSize(13).WithTracking(0.16f).WithColor(Palette.Dim), TextAnchor.MiddleRight);
-                k.rectTransform.At(1220f - 120f, ky, 240f, 22f);
+                k.rectTransform.At(1230f - 120f, ky, 240f, 22f);
                 var a = UIKit.Text(Root, keys[i + 1], TextStyle.Body.WithSize(19), TextAnchor.MiddleLeft);
-                a.rectTransform.At(1250f + 160f, ky, 320f, 26f);
-                ky += 50f;
+                a.rectTransform.At(1260f + 160f, ky, 320f, 26f);
+                ky += 52f;
             }
 
             Chrome.KeyHints(Root, VoidFrame.Width * 0.5f - 60f, 1000f, false, "ESC", "CLOSE");
@@ -379,10 +376,15 @@ namespace Blackbox.UI.Screens
             title.rectTransform.At(cx, 530f, 1000f, 64f);
             var tagline = UIKit.Text(Root, Chapter.Tagline, TextStyle.Body.WithSize(23));
             tagline.rectTransform.At(cx, 592f, 1000f, 34f);
+            if (!string.IsNullOrEmpty(Chapter.Signals))
+            {
+                var signals = UIKit.Text(Root, Chapter.Signals, TextStyle.Body.WithSize(19).WithColor(Palette.Dim));
+                signals.rectTransform.At(cx, 640f, 1000f, 28f);
+            }
 
             var line = UIKit.Add<PathGraphic>(Root, "Line");
             line.raycastTarget = false;
-            line.rectTransform.At(cx, 660f, 480f, 10f);
+            line.rectTransform.At(cx, 700f, 480f, 10f);
             line.BaseColor = Palette.Rule;
             line.BaseWidth = 1f;
             line.LitWidth = 1.6f;

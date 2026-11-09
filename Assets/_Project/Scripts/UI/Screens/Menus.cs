@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Blackbox.Circuits;
+using Blackbox.Components;
 using Blackbox.Core;
 using Blackbox.Game;
 using Blackbox.Puzzles;
@@ -9,27 +10,29 @@ using UnityEngine;
 namespace Blackbox.UI.Screens
 {
     /// <summary>
-    /// The title: the wordmark, a one-box circuit quietly pulsing beneath it, and
-    /// the main menu. The box can be clicked, like any other.
+    /// The title: the wordmark, a one-block circuit quietly ticking beneath it,
+    /// and the main menu. The circuit is live: its input flips by itself, and the
+    /// block and input can be clicked like any other.
     /// </summary>
     public sealed class TitleScreen : GameScreen, IBoardHost
     {
         const string DemoJson = @"{
-            ""id"": ""title"", ""name"": ""BLACKBOX"",
-            ""inputs"": { ""A"": [0, 0] },
-            ""boxes"": { ""k"": { ""kind"": ""K1"", ""setting"": 1, ""at"": [1, 0] } },
+            ""id"": ""title"", ""name"": ""BLACKBOX"", ""probes"": 0,
+            ""inputs"": { ""A"": { ""at"": [0, 0], ""value"": 0, ""adjustable"": true } },
+            ""blocks"": { ""k"": { ""kind"": ""B1"", ""state"": 0, ""at"": [1, 0] } },
             ""outputs"": { ""X"": [2, 0] },
-            ""wires"": [""A -> k"", ""k -> X""],
-            ""table"": [""0 > -"", ""1 > -""]
+            ""wires"": [""A -> k"", ""k -> X""]
         }";
+
+        const float Tick = 1.7f;
+        /// <summary>After the player touches the circuit, it waits this long before ticking again.</summary>
+        const float TouchPause = 5f;
 
         MenuList _menu;
         BoardView _board;
-        CompiledCircuit _circuit;
-        readonly int[] _settings = { 1 };
-        RunResult _run;
+        PuzzleSession _demo;
         float _timer;
-        int _case = 1;
+        bool _auto;
 
         protected internal override void Build()
         {
@@ -66,29 +69,33 @@ namespace Blackbox.UI.Screens
 
         void BuildDemo()
         {
-            var demo = PuzzleLoader.ReadPuzzle(JsonValue.Parse(DemoJson), "title");
-            _circuit = new CompiledCircuit(demo);
-            var holder = UIKit.Rect(Root, "Demo").Stretch();
-            // The board sits in the middle of its usual area; lift it to sit under the wordmark.
-            holder.anchoredPosition = new Vector2(0f, -22f);
-            _board = BoardView.Create(holder, demo, _circuit, this);
-            _board.StepTime = 0.22f;
+            var def = PuzzleLoader.ReadPuzzle(JsonValue.Parse(DemoJson), "title", Medium.Binary);
+            _demo = new PuzzleSession(def);
+            _demo.Changed += OnDemoChanged;
+            var metrics = BoardMetrics.Fit(def, new Rect(560f, 360f, 800f, 230f));
+            metrics.Scale = 0.86f;
+            _board = BoardView.Create(Root, _demo, this, metrics);
             _board.Quiet = true;
-            foreach (var o in _board.Outputs) o.ShowWant = false;
-            _board.Boxes[0].SetSetting(_settings[0], false);
-            _run = _circuit.Run(_settings);
-            _board.ShowInputsOnly(demo.Cases[0], 0);
-            _timer = 0.8f;
+            _timer = 0.9f;
+        }
+
+        void OnDemoChanged(ChangeKind kind, int index)
+        {
+            if (kind == ChangeKind.Input) _board.Inputs[index].SetValue(_demo.InputValue(index), !_auto);
+            else _board.Blocks[index].SetState(_demo.State(index), true);
+            _board.Refresh(true);
+            _board.Pulse(kind == ChangeKind.Input ? index : _demo.Circuit.BlockNode(index));
         }
 
         void Update()
         {
-            if (!Built || _board == null) return;
+            if (!Built || _demo == null) return;
             _timer -= Time.unscaledDeltaTime;
             if (_timer > 0f) return;
-            _timer = 1.7f;
-            _case = 1 - _case;
-            _board.Show(_run.Cases[_case], 0, !App.ReduceMotion, false);
+            _timer = Tick;
+            _auto = true;
+            _demo.SetInput(0, 1 - _demo.InputValue(0));
+            _auto = false;
         }
 
         public override void HandleInput()
@@ -96,22 +103,30 @@ namespace Blackbox.UI.Screens
             _menu.HandleKeys();
         }
 
-        // The demo box behaves like any box on a circuit.
-        public void BoxClicked(int box) => Turn(1);
-        public void BoxScrolled(int box, int direction) => Turn(direction);
-        public void PipClicked(int box, int setting) { if (setting != _settings[0]) Turn(1); }
-        public void BoxRightClicked(int box) { }
-        public void BoxHover(int box, bool hovering) => _board.Boxes[box].Highlight = hovering ? BoxHighlight.Hover : BoxHighlight.None;
-        public RuleName NameOf(BoxDef box, int setting) => Game.Save.GetName(box.Kind.Id, setting);
-
-        void Turn(int direction)
+        // The demo circuit behaves like any circuit.
+        public void InputStep(int input, int direction)
         {
-            _settings[0] = (_settings[0] + direction + 2) % 2;
-            _board.Boxes[0].SetSetting(_settings[0], true);
-            _run = _circuit.Run(_settings);
-            _board.Show(_run.Cases[_case], 0, false, false);
-            App.Sound(Sfx.Dial);
+            _timer = TouchPause;
+            if (_demo.CycleInput(input, direction)) App.Sound(Sfx.Dial);
         }
+
+        public void BlockStep(int block, int direction)
+        {
+            _timer = TouchPause;
+            if (_demo.CycleState(block, direction)) App.Sound(Sfx.Dial);
+        }
+
+        public void BlockPip(int block, int state)
+        {
+            _timer = TouchPause;
+            if (_demo.SetState(block, state)) App.Sound(Sfx.Dial);
+        }
+
+        public void WireClicked(int wire, float at) { }
+        public void ProbeClicked(int probe) { }
+        public void PlayValue(int value) { }
+        public void Hover(BoardItem item, int index, bool on) { }
+        public bool CanPlaceProbe => false;
     }
 
     /// <summary>
@@ -255,14 +270,15 @@ namespace Blackbox.UI.Screens
             var tagline = UIKit.Text(_page, chapter.Tagline, TextStyle.Body.WithSize(22).WithColor(open ? Palette.Dim : Palette.Faint));
             tagline.rectTransform.At(cx, 356f, 1200f, 32f);
 
+            string signals = $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
             string countText;
-            if (open) countText = $"{solved} OF {chapter.Puzzles.Count} SOLVED";
+            if (open) countText = $"{signals}  ·  {solved} OF {chapter.Puzzles.Count} SOLVED";
             else
             {
                 var before = Game.Library.FindChapter(chapter.UnlockAfter);
                 int need = Mathf.Min(chapter.UnlockSolved, before != null ? before.Puzzles.Count : 0);
                 int have = before != null ? Game.Progress.SolvedIn(before) : 0;
-                countText = before != null ? $"SOLVE {need} IN {before.Title}  ·  {have} OF {need} SO FAR" : "LOCKED";
+                countText = before != null ? $"{signals}  ·  SOLVE {need} IN {before.Title.ToUpperInvariant()}  ·  {have} OF {need} SO FAR" : "LOCKED";
             }
             var count = UIKit.Text(_page, countText, TextStyle.Label.WithSize(12).WithTracking(0.3f).WithColor(open ? Palette.Faint : Palette.Dim));
             count.rectTransform.At(cx, 404f, 1000f, 18f);
@@ -445,8 +461,8 @@ namespace Blackbox.UI.Screens
             _infoName.color = f.Open ? Palette.Text : Palette.Faint;
             if (f.Solved)
             {
-                Game.Save.BestTests.TryGetValue(p.Id, out int best);
-                _infoStatus.text = best > 0 ? $"SOLVED  ·  BEST {best} {(best == 1 ? "TEST" : "TESTS")}" : "SOLVED";
+                Game.Save.BestMoves.TryGetValue(p.Id, out int best);
+                _infoStatus.text = best > 0 ? $"SOLVED  ·  BEST {best} {(best == 1 ? "MOVE" : "MOVES")}" : "SOLVED";
                 _infoStatus.color = Palette.Cyan;
             }
             else if (f.Open)

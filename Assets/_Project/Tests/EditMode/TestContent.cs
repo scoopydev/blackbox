@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Blackbox.Components;
 using Blackbox.Puzzles;
 
 namespace Blackbox.Tests
@@ -31,9 +32,9 @@ namespace Blackbox.Tests
 
         public static ContentLibrary Library => s_Library ?? (s_Library = ContentLibrary.Load(Read));
 
-        public static PuzzleDef Parse(string circuitJson)
+        public static PuzzleDef Parse(string circuitJson, Medium medium = Medium.Binary)
         {
-            return PuzzleLoader.ReadPuzzle(Blackbox.Core.JsonValue.Parse(circuitJson), "test");
+            return PuzzleLoader.ReadPuzzle(Blackbox.Core.JsonValue.Parse(circuitJson), "test", medium);
         }
     }
 }

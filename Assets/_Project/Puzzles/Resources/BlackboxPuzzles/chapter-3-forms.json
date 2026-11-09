@@ -1,0 +1,150 @@
+// Chapter III: shape signals. See Docs/PuzzleFormat.md for the format.
+// Block kinds: S1, S2, S3, S4. Notes above each circuit give its solution.
+{
+  "id": "forms",
+  "numeral": "III",
+  "title": "Forms",
+  "medium": "shape",
+  "tagline": "Every shape is a message.",
+  "signals": "Signals here are shapes: a circle, triangle, square or hexagon, each hollow or solid.",
+  "unlock": {"after": "tally", "solved": 4},
+  "circuits": [
+    {
+      // Introduces S1. Solution: f = flip fill, g = pass.
+      "id": "forms-01",
+      "name": "Fill",
+      "hint": "Signals are shapes now: a circle, triangle, square or hexagon, hollow or solid.",
+      "probes": 0,
+      "inputs": {
+        "A": {"at": [0, 0], "value": "hollow circle"},
+        "B": {"at": [0, 1], "value": "solid square"}
+      },
+      "blocks": {
+        "f": {"kind": "S1", "state": 1, "at": [1, 0]},
+        "g": {"kind": "S1", "state": 0, "at": [1, 1]}
+      },
+      "outputs": {
+        "X": {"at": [2, 0], "target": "solid circle"},
+        "Y": {"at": [2, 1], "target": "solid square"}
+      },
+      "wires": ["A -> f", "f -> X", "B -> g", "g -> Y"]
+    },
+    {
+      // Introduces S2. r is locked on next form, so A = solid hexagon. t must go back one form.
+      // Solution: A = solid hexagon, t = previous form.
+      "id": "forms-02",
+      "name": "Turn",
+      "hint": "Click an input to step through its shapes. Right-click to step back.",
+      "probes": 0,
+      "inputs": {
+        "A": {"at": [0, 0], "value": "hollow triangle", "adjustable": true},
+        "B": {"at": [0, 1], "value": "hollow square"}
+      },
+      "blocks": {
+        "r": {"kind": "S2", "state": 0, "locked": true, "at": [1, 0]},
+        "t": {"kind": "S2", "state": 0, "at": [1, 1]}
+      },
+      "outputs": {
+        "X": {"at": [2, 0], "target": "solid circle"},
+        "Y": {"at": [2, 1], "target": "hollow triangle"}
+      },
+      "wires": ["A -> r", "r -> X", "B -> t", "t -> Y"]
+    },
+    {
+      // Introduces S3. k (locked, previous form) needs a solid hexagon, which only the form-of-bottom state can make.
+      // Solutions: g = form of bottom, fill of top, with B a hexagon (hollow or solid).
+      "id": "forms-03",
+      "name": "Graft",
+      "hint": "Two shapes in, one shape out. A probe shows what the block made.",
+      "probes": 1,
+      "inputs": {
+        "A": {"at": [0, 0], "value": "solid triangle"},
+        "B": {"at": [0, 2], "value": "hollow circle", "adjustable": true}
+      },
+      "blocks": {
+        "g": {"kind": "S3", "state": 0, "at": [1, 1]},
+        "k": {"kind": "S2", "state": 1, "locked": true, "at": [2, 1]}
+      },
+      "outputs": {
+        "X": {"at": [3, 1], "target": "solid square"}
+      },
+      "wires": ["A -> g.0", "B -> g.1", "g -> k", "k -> X"]
+    },
+    {
+      // Introduces S4, locked on fewer corners. Unique solution:
+      // A = hollow hexagon, B = solid square, a = form of bottom, fill of top, b = previous form.
+      "id": "forms-04",
+      "name": "Corners",
+      "hint": "The padlocked block compares. Feed it different shapes to find out how.",
+      "probes": 1,
+      "inputs": {
+        "A": {"at": [0, 0], "value": "hollow circle", "adjustable": true},
+        "B": {"at": [0, 2], "value": "solid hexagon", "adjustable": true}
+      },
+      "blocks": {
+        "g": {"kind": "S4", "state": 1, "locked": true, "at": [1, 1]},
+        "a": {"kind": "S3", "state": 0, "at": [2, 0]},
+        "b": {"kind": "S2", "state": 0, "at": [2, 2]}
+      },
+      "outputs": {
+        "X": {"at": [3, 0], "target": "hollow square"},
+        "Y": {"at": [3, 2], "target": "solid triangle"}
+      },
+      "wires": ["A -> g.0", "B -> g.1", "A -> a.0", "g -> a.1", "g -> b", "a -> X", "b -> Y"]
+    },
+    {
+      // Unique solution: p = flip fill, q = more corners, r = form of bottom, fill of top, s = previous form.
+      "id": "forms-05",
+      "name": "Homecoming",
+      "hint": "A and B already sit where they must end. Change them to learn what the blocks do, then put them back.",
+      "probes": 0,
+      "inputs": {
+        "A": {"at": [0, 0.5], "value": "hollow square", "adjustable": true, "target": "hollow square"},
+        "B": {"at": [0, 2.5], "value": "solid hexagon", "adjustable": true, "target": "solid hexagon"}
+      },
+      "blocks": {
+        "p": {"kind": "S1", "state": 1, "at": [1, 0]},
+        "q": {"kind": "S4", "state": 1, "at": [1, 2]},
+        "r": {"kind": "S3", "state": 0, "at": [2, 1]},
+        "s": {"kind": "S2", "state": 0, "at": [2, 3]}
+      },
+      "outputs": {
+        "X": {"at": [3, 0], "target": "solid square"},
+        "Y": {"at": [3, 1], "target": "solid hexagon"},
+        "Z": {"at": [3, 3], "target": "solid square"}
+      },
+      "wires": ["A -> p", "A -> q.0", "B -> q.1", "p -> r.0", "q -> r.1", "q -> s", "p -> X", "r -> Y", "s -> Z"]
+    },
+    {
+      // 16,384 combinations, one solution:
+      // A = hollow hexagon, B = hollow square, C = hollow square, p = fewer corners, q = previous form,
+      // s = more corners, v = form of top, fill of bottom, w = more corners.
+      // Locked: r = flip fill, t = more corners, u = next form.
+      "id": "forms-06",
+      "name": "Lattice",
+      "hint": "Every kind of block at once. Probe, test and take notes.",
+      "probes": 2,
+      "inputs": {
+        "A": {"at": [0, 0], "value": "solid circle", "adjustable": true},
+        "B": {"at": [0, 2], "value": "solid circle", "adjustable": true},
+        "C": {"at": [0, 4], "value": "hollow circle", "adjustable": true}
+      },
+      "blocks": {
+        "p": {"kind": "S4", "state": 0, "at": [1, 0.5]},
+        "q": {"kind": "S2", "state": 0, "at": [1, 2.5]},
+        "r": {"kind": "S1", "state": 0, "locked": true, "at": [1, 4]},
+        "s": {"kind": "S4", "state": 1, "at": [2, 1]},
+        "t": {"kind": "S4", "state": 0, "locked": true, "at": [2, 3]},
+        "u": {"kind": "S2", "state": 0, "locked": true, "at": [3, 0]},
+        "v": {"kind": "S3", "state": 1, "at": [3, 2]},
+        "w": {"kind": "S4", "state": 1, "at": [3, 4]}
+      },
+      "outputs": {
+        "X": {"at": [4, 0], "target": "hollow hexagon"},
+        "Y": {"at": [4, 2], "target": "solid square"},
+        "Z": {"at": [4, 4], "target": "hollow hexagon"}
+      },
+      "wires": ["A -> p.0", "B -> p.1", "B -> q", "C -> r", "p -> s.0", "q -> s.1", "q -> t.0", "r -> t.1", "s -> u", "s -> v.0", "t -> v.1", "t -> w.0", "A -> w.1", "u -> X", "v -> Y", "w -> Z"]
+    }
+  ]
+}

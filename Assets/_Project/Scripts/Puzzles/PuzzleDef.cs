@@ -3,16 +3,7 @@ using Blackbox.Components;
 
 namespace Blackbox.Puzzles
 {
-    /// <summary>How a circuit is tested.</summary>
-    public enum PuzzleMode
-    {
-        /// <summary>Each case is one row of a truth table: one tick, inputs in, outputs out.</summary>
-        Table,
-        /// <summary>Each case is a trace: inputs change over several ticks and outputs are watched over time.</summary>
-        Trace,
-    }
-
-    public enum NodeRole { Input, Box, Output }
+    public enum NodeRole { Input, Block, Output }
 
     /// <summary>A point on the board, in grid units. Columns run left to right, rows top to bottom.</summary>
     public struct GridPoint
@@ -30,18 +21,33 @@ namespace Blackbox.Puzzles
         /// <summary>Position on the board. Filled in by <see cref="BoardLayout"/> when the file leaves it out.</summary>
         public GridPoint At;
         public bool HasPosition;
-        /// <summary>Index within its role (input 0, 1, ...; box 0, 1, ...; output 0, 1, ...).</summary>
+        /// <summary>Index within its role (input 0, 1, ...; block 0, 1, ...; output 0, 1, ...).</summary>
         public int Index;
+        /// <summary>The value this node must end on, if it has a target.</summary>
+        public int? Target;
     }
 
-    public sealed class BoxDef : NodeDef
+    /// <summary>A signal source on the left of the board.</summary>
+    public sealed class InputDef : NodeDef
     {
-        public ComponentKind Kind;
-        /// <summary>The setting the box starts on.</summary>
-        public int Setting;
-        /// <summary>A locked box cannot be changed. It is drawn with a dashed outline.</summary>
+        /// <summary>The value it starts with.</summary>
+        public int Value;
+        /// <summary>True when the player may change it.</summary>
+        public bool Adjustable;
+    }
+
+    /// <summary>A block with a hidden rule. Its target, if any, is on the signal it sends.</summary>
+    public sealed class BlockDef : NodeDef
+    {
+        public BlockKind Kind;
+        /// <summary>The state the block starts in.</summary>
+        public int State;
+        /// <summary>A locked block keeps its state. It is drawn with a dashed outline and a padlock.</summary>
         public bool Locked;
     }
+
+    /// <summary>A readout on the right of the board.</summary>
+    public sealed class OutputDef : NodeDef { }
 
     public sealed class WireDef
     {
@@ -49,38 +55,36 @@ namespace Blackbox.Puzzles
         public NodeDef To;
         /// <summary>Input port on <see cref="To"/>. 0 is the top port.</summary>
         public int ToPort;
-        /// <summary>For wires that run backwards (loops): the board row the return path runs along.</summary>
-        public float? ViaRow;
+        /// <summary>Position in <see cref="PuzzleDef.Wires"/>.</summary>
+        public int Index;
     }
 
-    /// <summary>
-    /// One test the circuit must pass. A table row is a case with one tick.
-    /// </summary>
-    public sealed class CaseDef
+    /// <summary>One thing the player must make true: a node ending on a value.</summary>
+    public sealed class TargetDef
     {
-        public int Ticks;
-        /// <summary>[tick][input]</summary>
-        public bool[][] Inputs;
-        /// <summary>[tick][output]: 0, 1, or -1 when the output doesn't matter on that tick.</summary>
-        public sbyte[][] Want;
-
-        public bool Cares(int tick, int output) => Want[tick][output] >= 0;
-        public bool Wanted(int tick, int output) => Want[tick][output] == 1;
+        public NodeDef Node;
+        public int Want;
+        public int Index;
     }
 
     public sealed class PuzzleDef
     {
         public string Id;
         public string Name;
-        /// <summary>An optional quiet line about the controls. Never about what boxes do.</summary>
+        /// <summary>A line about the controls or what is new. Never about what blocks do.</summary>
         public string Hint;
-        public PuzzleMode Mode;
+        /// <summary>Overrides the goal sentence written from the targets.</summary>
+        public string Goal;
+        public Medium Medium;
+        /// <summary>How many probes the player may place.</summary>
+        public int Probes;
 
-        public readonly List<NodeDef> Inputs = new List<NodeDef>();
-        public readonly List<BoxDef> Boxes = new List<BoxDef>();
-        public readonly List<NodeDef> Outputs = new List<NodeDef>();
+        public readonly List<InputDef> Inputs = new List<InputDef>();
+        public readonly List<BlockDef> Blocks = new List<BlockDef>();
+        public readonly List<OutputDef> Outputs = new List<OutputDef>();
         public readonly List<WireDef> Wires = new List<WireDef>();
-        public readonly List<CaseDef> Cases = new List<CaseDef>();
+        /// <summary>Every target: inputs first, then blocks, then outputs.</summary>
+        public readonly List<TargetDef> Targets = new List<TargetDef>();
 
         /// <summary>Set when the puzzle is part of a chapter.</summary>
         public ChapterDef Chapter;
@@ -92,7 +96,7 @@ namespace Blackbox.Puzzles
             get
             {
                 foreach (var n in Inputs) yield return n;
-                foreach (var n in Boxes) yield return n;
+                foreach (var n in Blocks) yield return n;
                 foreach (var n in Outputs) yield return n;
             }
         }
@@ -104,28 +108,44 @@ namespace Blackbox.Puzzles
             return null;
         }
 
-        public int[] StartSettings()
+        public int[] StartInputs()
         {
-            var settings = new int[Boxes.Count];
-            for (int i = 0; i < Boxes.Count; i++) settings[i] = Boxes[i].Setting;
-            return settings;
+            var values = new int[Inputs.Count];
+            for (int i = 0; i < Inputs.Count; i++) values[i] = Inputs[i].Value;
+            return values;
         }
 
-        /// <summary>"Circuit 03"</summary>
+        public int[] StartStates()
+        {
+            var states = new int[Blocks.Count];
+            for (int b = 0; b < Blocks.Count; b++) states[b] = Blocks[b].State;
+            return states;
+        }
+
+        /// <summary>True when the player can change anything about this input.</summary>
+        public bool InputChangeable(int input) => Inputs[input].Adjustable;
+
+        /// <summary>True when the player can change this block's state.</summary>
+        public bool BlockChangeable(int block) => !Blocks[block].Locked && Blocks[block].Kind.StateCount > 1;
+
+        /// <summary>"03"</summary>
         public string Label => $"{Number + 1:00}";
 
         public override string ToString() => $"{Id} {Name}";
     }
 
-    /// <summary>A set of circuits that share a theme and get harder as they go.</summary>
+    /// <summary>A set of circuits on one medium that get harder as they go.</summary>
     public sealed class ChapterDef
     {
         public string Id;
         /// <summary>"I", "II", ...</summary>
         public string Numeral;
         public string Title;
+        public Medium Medium;
         /// <summary>One line shown when the chapter opens.</summary>
         public string Tagline;
+        /// <summary>What the signals in this chapter are, in a sentence, for the title card and help.</summary>
+        public string Signals;
         /// <summary>Position in the game, from 0.</summary>
         public int Number;
 

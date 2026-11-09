@@ -2,6 +2,8 @@
   // Chapter files in play order. Each name is a JSON file in this folder.
   "chapters": [
     "chapter-1-first-light",
-    "chapter-2-afterglow"
+    "chapter-2-tally",
+    "chapter-3-forms",
+    "chapter-4-resonance"
   ]
 }

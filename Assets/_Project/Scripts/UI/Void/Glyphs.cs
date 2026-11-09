@@ -19,14 +19,6 @@ namespace Blackbox.UI
 
         static readonly Dictionary<string, Glyph> s_Glyphs = new Dictionary<string, Glyph>();
 
-        /// <summary>The symbols a player can give a box, in palette order.</summary>
-        public static readonly string[] Palette =
-        {
-            "pass", "not", "one", "zero", "and", "or",
-            "xor", "xnor", "nand", "nor", "gt", "lt",
-            "delay", "rise", "fall", "change", "toggle", "hold",
-        };
-
         static Glyphs()
         {
             Add("pass", Line(-0.7f, 0.28f, 0.7f, 0.28f), Line(-0.7f, -0.28f, 0.7f, -0.28f));
@@ -57,6 +49,19 @@ namespace Blackbox.UI
             Add("cross", Line(-0.6f, -0.6f, 0.6f, 0.6f), Line(-0.6f, 0.6f, 0.6f, -0.6f));
             Add("probe", Line(-0.9f, 0f, -0.35f, 0f), Line(0.35f, 0f, 0.9f, 0f), Line(0f, -0.9f, 0f, -0.35f), Line(0f, 0.35f, 0f, 0.9f));
             AddClosed("probe", Ellipse(0f, 0f, 0.55f, 0.55f));
+            Add("check", Poly(-0.72f, 0.02f, -0.22f, -0.5f, 0.74f, 0.58f));
+            Add("equals", Line(-0.66f, 0.26f, 0.66f, 0.26f), Line(-0.66f, -0.26f, 0.66f, -0.26f));
+            Add("notequal", Line(-0.66f, 0.26f, 0.66f, 0.26f), Line(-0.66f, -0.26f, 0.66f, -0.26f), Line(0.32f, 0.78f, -0.32f, -0.78f));
+            Add("up", Poly(-0.7f, -0.3f, 0f, 0.4f, 0.7f, -0.3f));
+            Add("down", Poly(-0.7f, 0.3f, 0f, -0.4f, 0.7f, 0.3f));
+            AddClosed("pen", new[] { V(-0.52f, -0.26f), V(0.46f, 0.72f), V(0.74f, 0.44f), V(-0.24f, -0.54f) });
+            Add("pen", Poly(-0.52f, -0.26f, -0.82f, -0.84f, -0.24f, -0.54f), Line(0.3f, 0.56f, 0.58f, 0.28f));
+            AddClosed("eraser", new[] { V(-0.78f, -0.12f), V(0.02f, 0.68f), V(0.72f, -0.02f), V(-0.08f, -0.82f) });
+            Add("eraser", Line(-0.38f, 0.28f, 0.32f, -0.42f), Line(-0.9f, -0.92f, 0.9f, -0.92f));
+            Add("undo", Arc(0.08f, -0.18f, 0.62f, 180f, 0f), Poly(-0.82f, 0.08f, -0.54f, -0.2f, -0.24f, 0.08f));
+            Add("reset", Arc(0f, 0f, 0.66f, 70f, 380f), Poly(0.04f, 0.92f, 0.24f, 0.62f, -0.08f, 0.44f));
+            AddClosed("sound", new[] { V(-0.85f, 0.28f), V(-0.45f, 0.28f), V(-0.02f, 0.68f), V(-0.02f, -0.68f), V(-0.45f, -0.28f), V(-0.85f, -0.28f) });
+            Add("sound", Arc(0.08f, 0f, 0.36f, -50f, 50f, 12), Arc(0.08f, 0f, 0.7f, -50f, 50f, 16));
         }
 
         public static bool TryGet(string id, out Glyph glyph) => s_Glyphs.TryGetValue(id ?? string.Empty, out glyph);

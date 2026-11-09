@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Blackbox.Components;
 using UnityEngine;
 
 namespace Blackbox.Game
@@ -37,6 +38,9 @@ namespace Blackbox.Game
         float _effects = 0.8f, _musicVolume = 0.5f, _master = 0.8f;
         float _musicFade = 1f;
         readonly Dictionary<Sfx, float> _lastPlayed = new Dictionary<Sfx, float>();
+        /// <summary>The wave signals as sounds, by value: form * 3 + pitch.</summary>
+        AudioClip[] _waves;
+        AudioSource _tone;
 
         public void Init()
         {
@@ -47,6 +51,9 @@ namespace Blackbox.Game
                 src.spatialBlend = 0f;
                 _voices.Add(src);
             }
+            _tone = gameObject.AddComponent<AudioSource>();
+            _tone.playOnAwake = false;
+            _tone.spatialBlend = 0f;
             _music = gameObject.AddComponent<AudioSource>();
             _music.loop = true;
             _music.playOnAwake = false;
@@ -71,6 +78,9 @@ namespace Blackbox.Game
             });
             _clips[Sfx.Name] = Make("name", 0.4f, (t, s) => (Sine(1318.5f, t) * 0.6f + Sine(1975.5f, t) * 0.3f) * Env(t, 0.003f, 0.25f) * 0.12f);
             _clips[Sfx.Tick] = Make("tick", 0.06f, (t, s) => Sine(1600f, t) * Env(t, 0.001f, 0.025f) * 0.08f);
+
+            _waves = new AudioClip[Waves.Forms * Waves.Pitches];
+            for (int v = 0; v < _waves.Length; v++) _waves[v] = WaveTone(Waves.Form(v), Waves.Pitch(v));
 
             _music.clip = Drone();
         }
@@ -112,7 +122,55 @@ namespace Blackbox.Game
             voice.Play();
         }
 
+        /// <summary>
+        /// Plays a wave signal as the tone it stands for. A new tone cuts off the
+        /// one before it, so clicking through waves never piles up.
+        /// </summary>
+        public void PlayWave(int value)
+        {
+            if (_waves == null || _tone == null || value < 0 || value >= _waves.Length) return;
+            _tone.Stop();
+            _tone.clip = _waves[value];
+            _tone.volume = _master * _effects;
+            _tone.Play();
+        }
+
         // ------------------------------------------------------------------ synthesis
+
+        /// <summary>The pitches the wave signals use: A3, E4 and A4.</summary>
+        static readonly float[] WavePitches = { 220f, 329.63f, 440f };
+
+        /// <summary>
+        /// One wave signal: a sine, square or saw, built from its harmonics up to
+        /// about 7 kHz so the edges stay soft and nothing aliases.
+        /// </summary>
+        static AudioClip WaveTone(int form, int pitch)
+        {
+            float hz = WavePitches[Mathf.Clamp(pitch, 0, WavePitches.Length - 1)];
+            int harmonics = form == 0 ? 1 : Mathf.Max(1, Mathf.FloorToInt(7000f / hz));
+            // Each form at roughly the same loudness.
+            float gain = form == 0 ? 0.26f : form == 1 ? 0.15f : 0.17f;
+            const float length = 0.8f;
+            return Make($"wave_{Waves.FormNames[form]}_{Waves.PitchNames[pitch]}", length, (t, s) =>
+            {
+                float v = 0f;
+                float w = 2f * Mathf.PI * hz * t;
+                if (form == 0) v = Mathf.Sin(w);
+                else if (form == 1)
+                {
+                    for (int k = 1; k <= harmonics; k += 2) v += Mathf.Sin(k * w) / k;
+                    v *= 4f / Mathf.PI;
+                }
+                else
+                {
+                    for (int k = 1; k <= harmonics; k++) v += ((k & 1) == 1 ? 1f : -1f) * Mathf.Sin(k * w) / k;
+                    v *= 2f / Mathf.PI;
+                }
+                // Soft attack, a held middle, and a gentle release.
+                float env = Mathf.Clamp01(t / 0.02f) * (t < 0.45f ? 1f : Mathf.Exp(-(t - 0.45f) * 9f));
+                return v * env * gain;
+            });
+        }
 
         sealed class SynthState
         {

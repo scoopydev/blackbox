@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Blackbox.Circuits;
+using Blackbox.Components;
 using Blackbox.Core;
 using Blackbox.Game;
 using Blackbox.Puzzles;
@@ -9,9 +9,11 @@ using UnityEngine;
 namespace Blackbox.UI.Screens
 {
     /// <summary>
-    /// One circuit. The player sets the unknown boxes, runs the tests, probes boxes
-    /// to see what they did, names the behaviours they work out, and solves the
-    /// circuit when every test matches.
+    /// One circuit. The goal is written above the board and every target sits
+    /// beside the thing it belongs to with a live tick or cross. The player
+    /// changes adjustable inputs and unlocked blocks, places probes on wires to
+    /// read the signals inside, and keeps notes with the pen. The circuit is
+    /// solved the moment every target matches.
     /// </summary>
     public sealed class PuzzleScreen : GameScreen, IBoardHost
     {
@@ -19,86 +21,68 @@ namespace Blackbox.UI.Screens
 
         PuzzleSession _session;
         BoardView _board;
-        CaseTable _table;
-        Timeline _timeline;
-        ProbeCard _probe;
-        NamingPalette _naming;
+        InkLayer _ink;
 
-        VoidText _title, _record, _status;
-        VoidText _testsValue, _matchedValue, _matchedLabel;
-        PillButton _run, _probeButton;
+        VoidText _title, _record, _status, _moves;
+        VoidText _goal, _matchedValue, _matchedLabel;
+        PillButton _pen, _eraser, _undo, _reset;
+        readonly List<ShapeGraphic> _swatches = new List<ShapeGraphic>();
+        RectTransform _probeRow;
+        readonly List<ShapeGraphic> _probeDots = new List<ShapeGraphic>();
         CanvasGroup _controls, _solved;
-        VoidText _solvedStats, _unlockLine;
+        VoidText _solvedStats;
         PillButton _next, _circuits;
 
-        // What each behaviour (kind and setting) was seen to do, for logic circuits:
-        // input combination (port 0 as the high bit) -> output.
-        readonly Dictionary<string, Dictionary<int, bool>> _seen = new Dictionary<string, Dictionary<int, bool>>();
-
-        bool _probeMode;
-        bool _shift;
-        int _pinned = -1;
-        int _hover = -1;
-        int _namingBox = -1;
-        int _case;
-        int _tick;
-        bool _playing;
         bool _solvedShown;
-        string _probeSignature;
         string _hint;
         PuzzleDef _nextPuzzle;
 
-        bool IsTable => Puzzle.Mode == PuzzleMode.Table;
+        // Keyboard: the item the arrows change. Hover wins over Tab focus.
+        BoardItem _hoverItem;
+        int _hoverIndex = -1;
+        BoardItem _focusItem;
+        int _focusIndex = -1;
 
         // Layout, in frame coordinates from the top-left.
         const float Left = 90f;
         const float Right = 1830f;
         const float HeaderRule = 122f;
-        const float StatusY = 782f;
-        const float FooterRule = 800f;
-        const float FooterTop = 824f;
+        const float GoalY = 166f;
+        const float StatusY = 888f;
+        const float FooterRule = 912f;
+        const float ToolsY = 962f;
+        const float HintsY = 1036f;
+
+        Medium Medium => Puzzle.Medium;
 
         protected internal override void Build()
         {
             var p = Puzzle;
-            Game.Save.Settings.TryGetValue(p.Id, out var resume);
+            Game.Save.Circuits.TryGetValue(p.Id, out var resume);
             _session = new PuzzleSession(p, resume);
-            _session.SettingChanged += OnSettingChanged;
+            _session.Changed += OnChanged;
             _session.Reset += OnSessionReset;
+            _session.ProbesChanged += OnProbesChanged;
 
             BuildHeader();
-            _board = BoardView.Create(Root, p, _session.Circuit, this);
-            _board.StepTime = 0.15f;
-            for (int b = 0; b < p.Boxes.Count; b++) _board.Boxes[b].SetSetting(_session.SettingOf(b), false);
+            BuildGoal();
+            _board = BoardView.Create(Root, _session, this);
+
+            _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
+            _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
 
             _hint = p.Hint ?? "";
             _status = UIKit.Text(Root, _hint, TextStyle.Body.WithSize(19), TextAnchor.MiddleCenter, "Status");
             _status.rectTransform.At(VoidFrame.Width * 0.5f, StatusY, 1500f, 30f);
             UIKit.Rule(Root, Left, Right, FooterRule, Palette.Rule);
 
-            if (IsTable)
-            {
-                _table = CaseTable.Create(Root, p, Left, FooterTop);
-                _table.RowClicked = i => SelectCase(i, true);
-            }
-            else
-            {
-                _timeline = Timeline.Create(Root, p, Left, FooterTop, 1000f);
-                _timeline.TickChosen = SelectTick;
-                _timeline.ShowCase(0);
-            }
-
+            BuildTools();
             BuildControls();
             BuildSolvedPanel();
 
-            var popups = UIKit.Rect(Root, "Popups").Stretch();
-            _probe = ProbeCard.Create(popups);
-            _naming = NamingPalette.Create(popups);
-            _naming.Chosen = OnNamed;
-            _naming.Closed = () => { _namingBox = -1; _probeSignature = null; RefreshProbe(); };
-
-            ShowCurrent(false);
-            RefreshState();
+            RefreshCounters();
+            RefreshTools();
+            if (_session.Solved) SetSolvedShown(true, quiet: true);
         }
 
         // ------------------------------------------------------------------ layout
@@ -112,119 +96,166 @@ namespace Blackbox.UI.Screens
             _title = UIKit.Text(Root, p.Name, TextStyle.Heading.WithSize(34).WithWeight(200), TextAnchor.MiddleCenter, "Title");
             _title.rectTransform.At(VoidFrame.Width * 0.5f, 82f, 900f, 46f);
 
-            Chrome.Counter(Root, "TESTS", Right, 62f, out _testsValue);
-            _testsValue.text = "00";
+            Chrome.Counter(Root, "MOVES", Right, 62f, out _moves);
             _record = UIKit.Text(Root, "", TextStyle.Label.WithSize(11).WithTracking(0.2f).WithColor(Palette.Faint), TextAnchor.MiddleRight, "Record");
             _record.rectTransform.At(Right - 150f, 92f, 300f, 16f);
             if (Game.Progress.IsSolved(p))
             {
-                Game.Save.BestTests.TryGetValue(p.Id, out int best);
-                _record.text = best > 0 ? $"SOLVED BEFORE  ·  BEST {best}" : "SOLVED BEFORE";
+                Game.Save.BestMoves.TryGetValue(p.Id, out int best);
+                _record.text = best > 0 ? $"SOLVED BEFORE  ·  BEST {best} MOVES" : "SOLVED BEFORE";
             }
             UIKit.Rule(Root, Left, Right, HeaderRule, Palette.Rule);
         }
 
+        /// <summary>The goal, in words, right under the header: what finished looks like.</summary>
+        void BuildGoal()
+        {
+            var label = UIKit.Text(Root, "GOAL", TextStyle.Label.WithSize(13).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleLeft, "Goal label");
+            label.SignalFill = true;
+            label.rectTransform.At(Left + 40f, GoalY, 80f, 20f);
+
+            string sentence = GoalText.For(Puzzle);
+            _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(sentence.Length > 110 ? 21 : 24).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
+            _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _goal.LineHeight = 1.3f;
+            _goal.rectTransform.At(Left + 110f + 640f, GoalY, 1280f, 64f);
+
+            _matchedValue = UIKit.Text(Root, "", TextStyle.Value.WithSize(34).WithWeight(200), TextAnchor.MiddleRight, "Matched");
+            _matchedValue.rectTransform.At(Right - 100f, GoalY - 8f, 200f, 44f);
+            _matchedLabel = UIKit.Text(Root, "TARGETS MET", TextStyle.Label.WithSize(11).WithTracking(0.3f), TextAnchor.MiddleRight, "Matched label");
+            _matchedLabel.rectTransform.At(Right - 100f, GoalY + 22f, 200f, 16f);
+        }
+
+        void BuildTools()
+        {
+            _pen = PillButton.Create(Root, "PEN", Left + 66f, ToolsY, 132f, 46f, false, "pen");
+            _pen.Click.ClickSound = Sfx.Hover;
+            _pen.Click.Clicked = () => SetTool(_ink.Tool == InkTool.Pen ? InkTool.Off : InkTool.Pen);
+            _eraser = PillButton.Create(Root, "ERASE", Left + 132f + 14f + 75f, ToolsY, 150f, 46f, false, "eraser");
+            _eraser.Click.ClickSound = Sfx.Hover;
+            _eraser.Click.Clicked = () => SetTool(_ink.Tool == InkTool.Eraser ? InkTool.Off : InkTool.Eraser);
+
+            for (int i = 0; i < InkLayer.Inks.Length; i++)
+            {
+                int index = i;
+                var rt = UIKit.Rect(Root, "Swatch " + i).At(Left + 346f + i * 36f, ToolsY, 32f, 46f);
+                var dot = UIKit.Shape(rt, "Dot", ShapeKind.Circle);
+                dot.rectTransform.Centered(0f, 0f, 18f, 18f);
+                _swatches.Add(dot);
+                UIKit.Hit(rt).rectTransform.Stretch();
+                var c = rt.gameObject.AddComponent<Clickable>();
+                c.HoverSound = false;
+                c.ClickSound = Sfx.Tick;
+                c.Clicked = () =>
+                {
+                    _ink.Colour = index;
+                    if (_ink.Tool != InkTool.Pen) SetTool(InkTool.Pen);
+                    RefreshTools();
+                };
+            }
+
+            Chrome.TextButton(Root, "CLEAR NOTES", Left + 464f, ToolsY, false, () =>
+            {
+                if (_ink.StrokeCount == 0) { Say("There are no notes on this circuit yet. Press D for the pen.", 3f); return; }
+                Game.Confirm("Rub out every note on this circuit?", "CLEAR", true, () => { _ink.Clear(); Say("Notes cleared.", 2.5f); });
+            });
+
+            Chrome.KeyHints(Root, Left, HintsY, false, "D", "PEN", "E", "ERASE", "RIGHT-DRAG", "RUB OUT");
+        }
+
+        /// <summary>How many probes the circuit has, and how many are placed: one dot each, lit when in use.</summary>
+        void BuildProbes(Transform parent)
+        {
+            int n = Puzzle.Probes;
+            _probeRow = UIKit.Rect(parent, "Probes").At(VoidFrame.Width * 0.5f, ToolsY, 0f, 0f);
+            var label = UIKit.Text(_probeRow, n == 0 ? "NO PROBES ON THIS CIRCUIT" : "PROBES", TextStyle.Label.WithSize(13).WithColor(n == 0 ? Palette.Faint : Palette.Dim), TextAnchor.MiddleLeft, "Label");
+            float labelWidth = label.MeasureWidth();
+            const float gap = 18f, pitch = 26f, dot = 14f;
+            float total = labelWidth + (n > 0 ? gap + (n - 1) * pitch + dot : 0f);
+            float x = -total * 0.5f;
+            label.rectTransform.Centered(x + labelWidth * 0.5f + 2f, 0f, labelWidth + 4f, 20f);
+            x += labelWidth + gap + dot * 0.5f;
+            for (int i = 0; i < n; i++)
+            {
+                var d = UIKit.Shape(_probeRow, "Probe " + i, ShapeKind.Circle);
+                d.rectTransform.Centered(x + i * pitch, 0f, dot, dot);
+                d.raycastTarget = false;
+                _probeDots.Add(d);
+            }
+        }
+
         void BuildControls()
         {
-            var rt = UIKit.Rect(Root, "Controls").At(Right - 215f, FooterTop + 128f, 430f, 280f);
+            var rt = UIKit.Rect(Root, "Controls").Stretch();
             _controls = rt.Group();
-            const float w = 430f;
-
-            _matchedValue = UIKit.Text(rt, "–", TextStyle.Value.WithSize(44).WithWeight(200), TextAnchor.MiddleRight, "Matched");
-            _matchedValue.rectTransform.At(w - 100f, 30f, 200f, 56f);
-            _matchedLabel = UIKit.Text(rt, IsTable ? "ROWS MATCHED" : "TICKS MATCHED", TextStyle.Label.WithSize(13), TextAnchor.MiddleRight, "Matched label");
-            _matchedLabel.rectTransform.At(w - 120f, 74f, 240f, 20f);
-
-            _probeButton = PillButton.Create(rt, "PROBE", w - 170f - 16f - 75f, 150f, 150f, 50f, false, "probe");
-            _probeButton.Click.ClickSound = Sfx.Hover;
-            _probeButton.Click.Clicked = () => SetProbeMode(!_probeMode);
-            _run = PillButton.Create(rt, "RUN", w - 85f, 150f, 170f, 50f, true, "arrow");
-            _run.Click.ClickSound = Sfx.Hover;
-            _run.Click.Clicked = Run;
-
-            Chrome.KeyHints(rt, w, 222f, true, "SPACE", "RUN", "P", "PROBE", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
+            BuildProbes(rt);
+            _undo = PillButton.Create(rt, "UNDO", Right - 75f - 166f, ToolsY, 150f, 46f, false, "undo");
+            _undo.Click.ClickSound = Sfx.Hover;
+            _undo.Click.Clicked = Undo;
+            _reset = PillButton.Create(rt, "RESET", Right - 75f, ToolsY, 150f, 46f, false, "reset");
+            _reset.Click.ClickSound = Sfx.Hover;
+            _reset.Click.Clicked = AskReset;
+            Chrome.KeyHints(rt, Right, HintsY, true, "TAB", "SELECT", "LEFT RIGHT", "CHANGE", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
         }
 
         void BuildSolvedPanel()
         {
-            var rt = UIKit.Rect(Root, "Solved").At(Right - 215f, FooterTop + 128f, 430f, 280f);
+            var rt = UIKit.Rect(Root, "Solved").Stretch();
             _solved = rt.Group();
             _solved.alpha = 0f;
             _solved.blocksRaycasts = false;
-            const float w = 430f;
 
             var label = UIKit.Text(rt, "CIRCUIT COMPLETE", TextStyle.Label.WithSize(15).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleRight, "Solved");
             label.SignalFill = true;
-            label.rectTransform.At(w - 160f, 22f, 320f, 24f);
-            _solvedStats = UIKit.Text(rt, "", TextStyle.Label.WithSize(13).WithColor(Palette.Dim), TextAnchor.MiddleRight, "Stats");
-            _solvedStats.rectTransform.At(w - 200f, 54f, 400f, 20f);
-            _unlockLine = UIKit.Text(rt, "", TextStyle.Label.WithSize(13).WithColor(Palette.Cyan), TextAnchor.MiddleRight, "Unlock");
-            _unlockLine.rectTransform.At(w - 200f, 84f, 400f, 20f);
+            label.rectTransform.At(Right - 420f - 160f, ToolsY - 12f, 320f, 24f);
+            _solvedStats = UIKit.Text(rt, "", TextStyle.Label.WithSize(12).WithColor(Palette.Dim), TextAnchor.MiddleRight, "Stats");
+            _solvedStats.rectTransform.At(Right - 420f - 160f, ToolsY + 16f, 320f, 18f);
 
-            _circuits = PillButton.Create(rt, "CIRCUITS", w - 230f - 16f - 75f, 150f, 150f, 50f, false);
+            _circuits = PillButton.Create(rt, "CIRCUITS", Right - 230f - 16f - 75f, ToolsY, 150f, 46f, false);
             _circuits.Click.Clicked = () => Game.GoChapters(Puzzle.Chapter);
-            _next = PillButton.Create(rt, "NEXT", w - 115f, 150f, 230f, 50f, true, "arrow");
+            _next = PillButton.Create(rt, "NEXT", Right - 115f, ToolsY, 230f, 46f, true, "arrow");
             _next.Click.Clicked = GoNext;
-
-            Chrome.KeyHints(rt, w, 222f, true, "ENTER", "NEXT", "ESC", "MENU");
+            Chrome.KeyHints(rt, Right, HintsY, true, "ENTER", "NEXT", "Z", "UNDO", "ESC", "MENU");
         }
 
         // ------------------------------------------------------------------ showing state
 
-        /// <summary>Draws the selected case and moment on the board, from the last run if there is one.</summary>
-        void ShowCurrent(bool animate)
+        void RefreshCounters()
         {
-            var run = _session.LastRun;
-            if (run == null) _board.ShowInputsOnly(Puzzle.Cases[_case], _tick);
-            else _board.Show(run.Cases[_case], _tick, animate, !_session.RunIsCurrent);
+            _moves.text = _session.Moves.ToString("00");
+            int matched = _session.MatchedTargets, total = Puzzle.Targets.Count;
+            _matchedValue.text = $"{matched}/{total}";
+            bool all = matched == total;
+            _matchedValue.SignalFill = all;
+            _matchedValue.color = all ? Color.white : Palette.Text;
+            _matchedLabel.color = all ? Palette.Dim : Palette.Faint;
+            _undo.Enabled = _session.CanUndo;
+            _reset.Enabled = !_session.AtStart;
         }
 
-        void RefreshState()
+        void RefreshTools()
         {
-            var run = _session.LastRun;
-            bool current = _session.RunIsCurrent;
-            bool stale = run != null && !current;
-            _board.SetStale(stale);
-            _table?.SetStale(stale);
-            _timeline?.SetStale(stale);
-            _run.Attention = current ? 0f : 1f;
-
-            if (run == null)
+            _pen.Active = _ink.Tool == InkTool.Pen;
+            _eraser.Active = _ink.Tool == InkTool.Eraser;
+            for (int i = 0; i < _swatches.Count; i++)
             {
-                _matchedValue.text = "–";
-                _matchedValue.color = Palette.Faint;
+                bool chosen = i == _ink.Colour;
+                var c = InkLayer.Inks[i];
+                _swatches[i].Style(Paint.Solid, chosen ? c : c.WithAlpha(0.45f), chosen ? Paint.Solid : Paint.None, Palette.Text, 1.4f);
+                _swatches[i].Inset = chosen ? -2f : 2f;
             }
-            else
+            int used = _session.Probes.Count;
+            for (int i = 0; i < _probeDots.Count; i++)
             {
-                Matched(run, out int ok, out int total);
-                _matchedValue.text = $"{ok}/{total}";
-                _matchedValue.color = stale ? Palette.Faint : run.AllMatched ? Palette.Cyan : Palette.Text;
-            }
-            _matchedLabel.color = stale ? Palette.Faint : Palette.Dim;
-            SetSolvedShown(_session.SolvedNow && !_playing);
-        }
-
-        void Matched(RunResult run, out int ok, out int total)
-        {
-            ok = 0;
-            total = 0;
-            if (IsTable)
-            {
-                ok = run.MatchedCases;
-                total = run.Cases.Length;
-                return;
-            }
-            foreach (var cr in run.Cases)
-            {
-                for (int t = 0; t < cr.Ticks; t++)
-                {
-                    total++;
-                    if (cr.TickOk(t)) ok++;
-                }
+                bool placed = i < used;
+                _probeDots[i].Style(placed ? Paint.Signal : Paint.Solid, placed ? Color.white : Color.black, placed ? Paint.None : Paint.Solid, Palette.Dim, 1.4f);
+                _probeDots[i].Glow = placed ? 0.4f : 0f;
+                _probeDots[i].GlowPaint = Paint.Signal;
+                _probeDots[i].GlowRadius = 10f;
             }
         }
 
-        void SetSolvedShown(bool on)
+        void SetSolvedShown(bool on, bool quiet = false)
         {
             if (_solvedShown == on) return;
             _solvedShown = on;
@@ -232,13 +263,13 @@ namespace Blackbox.UI.Screens
             _title.SignalFill = on;
             _solved.blocksRaycasts = on;
             _controls.blocksRaycasts = !on;
+            if (on && quiet) FillSolvedPanel(false, null);
             float fromA = _solved.alpha, fromB = _controls.alpha;
-            Tweener.Run(this, "solved panel", 0.35f, t =>
+            Tweener.Run(this, "solved panel", quiet ? 0.01f : 0.35f, t =>
             {
                 _solved.alpha = Mathf.Lerp(fromA, on ? 1f : 0f, t);
                 _controls.alpha = Mathf.Lerp(fromB, on ? 0f : 1f, t);
-            }, Ease.OutCubic, on ? 0.25f : 0f);
-            if (on) SetProbeMode(false, quiet: true);
+            }, Ease.OutCubic, on && !quiet ? 0.3f : 0f);
         }
 
         void Say(string message, float seconds = 4.5f)
@@ -252,107 +283,50 @@ namespace Blackbox.UI.Screens
             });
         }
 
-        // ------------------------------------------------------------------ running
+        // ------------------------------------------------------------------ session events
 
-        void Run()
+        void OnChanged(ChangeKind kind, int index)
         {
-            if (_playing) { FinishPlayback(); return; }
-            if (_naming.IsOpen) return;
+            int node = kind == ChangeKind.Input ? index : _session.Circuit.BlockNode(index);
+            if (kind == ChangeKind.Input) _board.Inputs[index].SetValue(_session.InputValue(index), true);
+            else _board.Blocks[index].SetState(_session.State(index), true);
+            int newlyMatched = _board.Refresh(true);
+            _board.Pulse(node);
+            if (Medium == Medium.Wave && kind == ChangeKind.Input) PlayValue(_session.InputValue(index));
 
-            var result = _session.Run();
-            _testsValue.text = _session.Tests.ToString("00");
-            App.Sound(Sfx.Run);
-            Record(result);
-            _playing = true;
-            _board.SetStale(false);
-            _table?.SetStale(false);
-            _timeline?.SetStale(false);
-            _run.Attention = 0f;
-            bool fast = Game.Save.Prefs.FastRuns;
+            Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
+            Game.MarkDirty();
+            RefreshCounters();
 
-            if (IsTable)
+            if (_session.Solved)
             {
-                _table.ShowRun(result, fast ? 0f : 0.07f);
-                _board.Show(result.Cases[_case], 0, !fast, false);
-                float duration = fast ? 0f : Mathf.Max(_board.PropagationTime, 0.07f * result.Cases.Length) + 0.15f;
-                if (duration <= 0f) FinishPlayback();
-                else Tweener.After(this, "play", duration, FinishPlayback);
+                if (!_solvedShown) OnSolved();
             }
             else
             {
-                var cr = result.Cases[_case];
-                int ticks = cr.Ticks;
-                if (fast) { FinishPlayback(); return; }
-                int shown = -1;
-                Tweener.Run(this, "play", 0.2f * ticks, t =>
-                {
-                    int k = Mathf.Min(ticks - 1, Mathf.FloorToInt(t * ticks));
-                    if (k == shown) return;
-                    shown = k;
-                    _tick = k;
-                    _timeline.ShowRun(cr, k + 1, false);
-                    _timeline.SetTick(k);
-                    _board.Show(cr, k, false, false);
-                    App.Sound(Sfx.Tick, cr.TickOk(k) ? 1.25f : 0.8f, 0.7f);
-                    RefreshProbe();
-                }, Ease.Linear, 0f, FinishPlayback);
-            }
-            RefreshProbe();
-        }
-
-        /// <summary>Ends the run animation, or skips to its end.</summary>
-        void FinishPlayback()
-        {
-            if (!_playing) return;
-            Tweener.Kill(this, "play");
-            _playing = false;
-            var run = _session.LastRun;
-            if (run == null) return;
-
-            if (IsTable)
-            {
-                _table.ShowRun(run, 0f);
-                _board.Show(run.Cases[_case], 0, false, false);
-            }
-            else
-            {
-                var cr = run.Cases[_case];
-                // Stop where it first went wrong, or at the end when it all matched.
-                _tick = cr.Ticks - 1;
-                for (int t = 0; t < cr.Ticks; t++)
-                    if (!cr.TickOk(t)) { _tick = t; break; }
-                _timeline.ShowRun(cr, int.MaxValue, false);
-                _timeline.SetTick(_tick);
-                _board.Show(cr, _tick, false, false);
-            }
-
-            RefreshState();
-            RefreshProbe();
-            if (run.AllMatched) OnSolved();
-            else
-            {
-                App.Sound(Sfx.Miss, 1f, 0.55f);
-                if (!IsTable && _session.Tests <= 2) Say("The cursor stops at the first moment that doesn't match.", 3.5f);
+                if (_solvedShown) SetSolvedShown(false);
+                if (newlyMatched > 0) App.Sound(Sfx.Match, 1f, 0.7f);
             }
         }
 
-        /// <summary>Remembers what each box did, so the probe can show it.</summary>
-        void Record(RunResult run)
+        void OnSessionReset()
         {
-            if (!IsTable) return;
-            for (int b = 0; b < Puzzle.Boxes.Count; b++)
-            {
-                string key = SaveData.NameKey(Puzzle.Boxes[b].Kind.Id, run.Settings[b]);
-                if (!_seen.TryGetValue(key, out var seen)) _seen[key] = seen = new Dictionary<int, bool>();
-                foreach (var cr in run.Cases) seen[Combo(cr.BoxInputs(b, 0))] = cr.BoxOutput(b, 0);
-            }
+            _board.Refresh(false);
+            for (int i = 0; i < _board.Inputs.Count; i++) _board.Pulse(i);
+            Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
+            Game.MarkDirty();
+            RefreshCounters();
+            if (_solvedShown && !_session.Solved) SetSolvedShown(false);
+            Say("Every input and block is back where it started. Probes stay where they are.", 3.5f);
         }
 
-        static int Combo(bool[] inputs)
+        void OnProbesChanged()
         {
-            int c = 0;
-            foreach (bool v in inputs) c = (c << 1) | (v ? 1 : 0);
-            return c;
+            _board.RebuildProbes();
+            _board.Refresh(false);
+            Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
+            Game.MarkDirty();
+            RefreshTools();
         }
 
         void OnSolved()
@@ -363,31 +337,38 @@ namespace Blackbox.UI.Screens
             var unlockedBefore = new List<bool>();
             foreach (var c in library.Chapters) unlockedBefore.Add(Game.Progress.IsUnlocked(c));
 
-            Game.Save.BestTests.TryGetValue(p.Id, out int previousBest);
-            Game.Save.RecordSolve(p.Id, _session.Tests);
-            Game.Save.Settings[p.Id] = _session.CopySettings();
+            Game.Save.BestMoves.TryGetValue(p.Id, out int previousBest);
+            Game.Save.RecordSolve(p.Id, _session.Moves);
+            Game.Save.Circuits[p.Id] = _session.Snapshot();
             Game.SaveNow();
 
             ChapterDef opened = null;
             for (int i = 0; i < library.Chapters.Count; i++)
                 if (!unlockedBefore[i] && Game.Progress.IsUnlocked(library.Chapters[i])) opened = library.Chapters[i];
 
-            int tests = _session.Tests;
-            string stats = tests == 1 ? "1 TEST" : $"{tests} TESTS";
-            if (!first && previousBest > 0) stats += tests < previousBest ? "  ·  NEW BEST" : $"  ·  BEST {previousBest}";
-            int named = Game.Save.Names.Count;
-            if (named > 0) stats += named == 1 ? "  ·  1 BEHAVIOUR NAMED" : $"  ·  {named} BEHAVIOURS NAMED";
-            _solvedStats.text = stats;
-            _unlockLine.text = opened != null ? $"CHAPTER {opened.Numeral} OPEN  ·  {opened.Title}" : "";
+            FillSolvedPanel(first, previousBest > 0 ? previousBest : (int?)null);
             _record.text = "";
+            SetSolvedShown(true);
 
-            _nextPuzzle = Game.Progress.NextAfter(p);
-            _next.SetText(_nextPuzzle == null ? "CIRCUITS" : _nextPuzzle.Chapter != p.Chapter ? "NEXT CHAPTER" : "NEXT CIRCUIT");
+            Tweener.After(this, "solved sound", 0.3f, () => App.Sound(Sfx.Solved));
+            if (opened != null)
+            {
+                Tweener.After(this, "unlock", 1.6f, () => App.Sound(Sfx.Unlock));
+                Say($"Solved. Chapter {opened.Numeral} is open: {opened.Title}.", 6f);
+            }
+            else Say(first ? "Solved. Every target is met." : "Solved again.", 3.5f);
+        }
+
+        void FillSolvedPanel(bool first, int? previousBest)
+        {
+            int moves = _session.Moves;
+            string stats = moves == 1 ? "1 MOVE" : $"{moves} MOVES";
+            if (!first && previousBest.HasValue && moves > 0) stats += moves < previousBest.Value ? "  ·  NEW BEST" : $"  ·  BEST {previousBest.Value}";
+            if (moves == 0) stats = "SOLVED";
+            _solvedStats.text = stats;
+            _nextPuzzle = Game.Progress.NextAfter(Puzzle);
+            _next.SetText(_nextPuzzle == null ? "CIRCUITS" : _nextPuzzle.Chapter != Puzzle.Chapter ? "NEXT CHAPTER" : "NEXT CIRCUIT");
             _circuits.gameObject.SetActive(_nextPuzzle != null);
-
-            App.Sound(Sfx.Solved);
-            if (opened != null) Tweener.After(this, "unlock", 1.4f, () => App.Sound(Sfx.Unlock));
-            Say(first ? "Solved." : "Solved again.", 3f);
         }
 
         void GoNext()
@@ -396,35 +377,7 @@ namespace Blackbox.UI.Screens
             else Game.GoChapters(Puzzle.Chapter);
         }
 
-        // ------------------------------------------------------------------ settings
-
-        void OnSettingChanged(int box)
-        {
-            if (_playing) FinishPlayback();
-            _board.Boxes[box].SetSetting(_session.SettingOf(box), true);
-            Game.Save.Settings[Puzzle.Id] = _session.CopySettings();
-            Game.MarkDirty();
-            ShowCurrent(false);
-            RefreshState();
-            RefreshProbe();
-        }
-
-        void OnSessionReset()
-        {
-            Tweener.Kill(this, "play");
-            _playing = false;
-            for (int b = 0; b < Puzzle.Boxes.Count; b++) _board.Boxes[b].SetSetting(_session.SettingOf(b), false);
-            Game.Save.Settings.Remove(Puzzle.Id);
-            Game.MarkDirty();
-            _table?.Clear();
-            _timeline?.ShowRun(null, 0, false);
-            ShowCurrent(false);
-            RefreshState();
-            RefreshProbe();
-            Say("Every box is back where it started.", 3f);
-        }
-
-        public void ResetCircuit() => _session.ResetToStart();
+        // ------------------------------------------------------------------ actions
 
         void Undo()
         {
@@ -432,201 +385,151 @@ namespace Blackbox.UI.Screens
             else App.Sound(Sfx.Miss, 1.5f, 0.3f);
         }
 
-        // ------------------------------------------------------------------ cases and moments
-
-        void SelectCase(int index, bool fromClick)
+        void AskReset()
         {
-            index = Mathf.Clamp(index, 0, Puzzle.Cases.Count - 1);
-            if (_playing) FinishPlayback();
-            if (index == _case) return;
-            _case = index;
-            if (!fromClick) App.Sound(Sfx.Tick);
-            if (_table != null) _table.Selected = index;
-            if (_timeline != null)
-            {
-                _timeline.ShowCase(index);
-                var run = _session.LastRun;
-                _timeline.ShowRun(run?.Cases[index], int.MaxValue, run != null && !_session.RunIsCurrent);
-            }
-            ShowCurrent(IsTable && _session.RunIsCurrent && !Game.Save.Prefs.FastRuns);
-            RefreshProbe();
+            if (_session.AtStart) return;
+            Game.Confirm("Put every input and block back where it started? Probes and notes stay.", "RESET", false, ResetCircuit);
         }
 
-        void SelectTick(int tick)
+        public void ResetCircuit() => _session.ResetToStart();
+
+        void SetTool(InkTool tool)
         {
-            if (_timeline == null) return;
-            if (_playing) FinishPlayback();
-            _tick = Mathf.Clamp(tick, 0, _timeline.Ticks - 1);
-            _timeline.SetTick(_tick);
-            ShowCurrent(false);
-            RefreshProbe();
+            if (_ink.Tool == tool) return;
+            _ink.SetTool(tool);
+            RefreshTools();
+            App.Sound(tool == InkTool.Off ? Sfx.Close : Sfx.Open, 1.5f, 0.5f);
+            if (tool == InkTool.Pen) Say("Pen: draw and write anywhere on the circuit. Right-drag rubs out. Press D or Esc to put it down.", 4.5f);
+            else if (tool == InkTool.Eraser) Say("Eraser: drag over a note to rub it out. Press E or Esc to put it down.", 4f);
         }
 
-        // ------------------------------------------------------------------ probe and names
-
-        void SetProbeMode(bool on, bool quiet = false)
-        {
-            if (_probeMode == on) return;
-            _probeMode = on;
-            _probeButton.Active = on;
-            if (!on) _pinned = -1;
-            if (!quiet)
-            {
-                App.Sound(on ? Sfx.Open : Sfx.Close, 1.5f, 0.6f);
-                if (on) Say(_session.LastRun == null ? "Probe: point at a box. Run the circuit first to see what it does." : "Probe: point at a box to see what it did. Click to keep it open.", 4f);
-            }
-            RefreshProbe();
-        }
-
-        int ProbeTarget()
-        {
-            if (_namingBox >= 0) return -1;
-            if (!_probeMode && !_shift) return -1;
-            if (_hover >= 0) return _hover;
-            return _probeMode ? _pinned : -1;
-        }
-
-        void RefreshProbe()
-        {
-            if (_board == null) return;
-            int target = ProbeTarget();
-            for (int b = 0; b < _board.Boxes.Count; b++)
-                _board.Boxes[b].Highlight = b == target ? BoxHighlight.Probe : b == _hover || b == _namingBox ? BoxHighlight.Hover : BoxHighlight.None;
-
-            if (target < 0)
-            {
-                _probeSignature = null;
-                _probe.Hide();
-                return;
-            }
-
-            var view = _board.Boxes[target];
-            var def = view.Def;
-            int setting = _session.SettingOf(target);
-            var run = _session.LastRun;
-            var name = NameOf(def, setting);
-            string signature = $"{target}/{setting}/{_session.Tests}/{_case}/{_tick}/{name.Encode()}/{_session.RunIsCurrent}";
-            if (signature == _probeSignature && _probe.Visible) return;
-            _probeSignature = signature;
-
-            if (IsTable)
-            {
-                _seen.TryGetValue(SaveData.NameKey(def.Kind.Id, setting), out var seen);
-                int current = run != null && _session.RunIsCurrent ? Combo(run.Cases[_case].BoxInputs(target, 0)) : -1;
-                _probe.ShowTable(view, setting, name, seen, current);
-            }
-            else
-            {
-                var cr = run != null && run.Settings[target] == setting ? run.Cases[_case] : null;
-                _probe.ShowTrace(view, setting, name, cr, target, _tick);
-            }
-        }
-
-        void OpenNaming(int box)
-        {
-            if (box < 0) return;
-            if (_playing) FinishPlayback();
-            _namingBox = box;
-            var view = _board.Boxes[box];
-            _probe.Hide();
-            _probeSignature = null;
-            _naming.Open(view, NameOf(view.Def, _session.SettingOf(box)));
-            RefreshProbe();
-        }
-
-        void OnNamed(RuleName name)
-        {
-            if (_namingBox < 0) return;
-            var def = Puzzle.Boxes[_namingBox];
-            int setting = _session.SettingOf(_namingBox);
-            bool hadNames = Game.Save.Names.Count > 0;
-            Game.Save.SetName(def.Kind.Id, setting, name);
-            Game.MarkDirty();
-            _board.RefreshNames();
-            App.Sound(name.IsEmpty ? Sfx.Close : Sfx.Name);
-            if (name.IsEmpty) Say("Name cleared.", 2.5f);
-            else if (!hadNames) Say("Named. Every box that behaves this way will show it, in every circuit.", 5f);
-        }
+        string NameOfInput(int i) => Puzzle.Inputs[i].Id;
+        string NameOfBlock(int b) => Puzzle.Blocks[b].Id;
 
         // ------------------------------------------------------------------ IBoardHost
 
-        public void BoxClicked(int box)
+        public void InputStep(int input, int direction)
         {
-            if (_naming.IsOpen) return;
-            if (_probeMode || _shift)
-            {
-                if (!_probeMode) SetProbeMode(true, quiet: true);
-                _pinned = box;
-                App.Sound(Sfx.Tick, 1.2f);
-                _probeSignature = null;
-                RefreshProbe();
-                return;
-            }
-            if (!_session.CanChange(box))
+            if (!_session.CanChangeInput(input))
             {
                 App.Sound(Sfx.Miss, 1.6f, 0.35f);
-                Say("This box is locked. Probe it to see what it does.", 3.5f);
+                if (Medium == Medium.Wave) PlayValue(_session.InputValue(input));
+                Say($"Input {NameOfInput(input)} is fixed. Only inputs with arrows can be changed.", 3.5f);
                 return;
             }
-            _session.Cycle(box, 1);
+            _session.CycleInput(input, direction);
         }
 
-        public void BoxRightClicked(int box) => OpenNaming(box);
-
-        public void BoxScrolled(int box, int direction)
+        public void BlockStep(int block, int direction)
         {
-            if (_naming.IsOpen || !_session.CanChange(box)) return;
-            if (_session.Cycle(box, direction)) App.Sound(Sfx.Dial, direction > 0 ? 1.05f : 0.95f);
+            var def = Puzzle.Blocks[block];
+            if (def.Locked)
+            {
+                App.Sound(Sfx.Miss, 1.6f, 0.35f);
+                Say($"Block {NameOfBlock(block)} is locked: its state can't be changed. Probe around it to see what it does.", 4f);
+                return;
+            }
+            if (!_session.CanChangeBlock(block)) return;
+            _session.CycleState(block, direction);
         }
 
-        public void PipClicked(int box, int setting)
+        public void BlockPip(int block, int state)
         {
-            if (_naming.IsOpen) return;
-            _session.SetSetting(box, setting);
+            if (_session.CanChangeBlock(block)) _session.SetState(block, state);
         }
 
-        public void BoxHover(int box, bool hovering)
+        public bool CanPlaceProbe => _session.ProbesLeft > 0 && _ink.Tool == InkTool.Off;
+
+        public void WireClicked(int wire, float at)
         {
-            if (hovering) _hover = box;
-            else if (_hover == box) _hover = -1;
-            RefreshProbe();
+            if (Puzzle.Probes == 0)
+            {
+                Say("This circuit has no probes. Work it out from the inputs and outputs.", 3.5f);
+                return;
+            }
+            if (_session.ProbesLeft <= 0)
+            {
+                App.Sound(Sfx.Miss, 1.5f, 0.35f);
+                Say(Puzzle.Probes == 1 ? "Your probe is in use. Click it to take it off, then place it again." : "Every probe is in use. Click one to take it off, then place it again.", 4f);
+                return;
+            }
+            _session.AddProbe(wire, at);
+            App.Sound(Sfx.Open, 1.6f, 0.6f);
+            if (_session.Probes.Count == 1 && !Game.Progress.IsSolved(Puzzle) && Puzzle.Number < 4)
+                Say("The probe reads the signal on that wire. Click it to take it off.", 3.5f);
         }
 
-        public RuleName NameOf(BoxDef box, int setting) => Game.Save.GetName(box.Kind.Id, setting);
+        public void ProbeClicked(int probe)
+        {
+            if (_session.RemoveProbe(probe)) App.Sound(Sfx.Close, 1.4f, 0.6f);
+        }
+
+        public void PlayValue(int value)
+        {
+            if (Medium == Medium.Wave && Media.IsValid(Medium, value)) Game.Audio.PlayWave(value);
+        }
+
+        public void Hover(BoardItem item, int index, bool on)
+        {
+            if (on)
+            {
+                _hoverItem = item;
+                _hoverIndex = index;
+            }
+            else if (_hoverItem == item && _hoverIndex == index) _hoverIndex = -1;
+        }
 
         // ------------------------------------------------------------------ keys
 
-        int KeyboardBox() => _hover >= 0 ? _hover : _pinned;
-
-        void FocusNextBox(int direction)
+        /// <summary>The adjustable inputs and unlocked blocks, in the order Tab visits them.</summary>
+        List<(BoardItem item, int index)> Changeables()
         {
-            int n = Puzzle.Boxes.Count;
-            if (n == 0) return;
-            int start = KeyboardBox();
-            _hover = start < 0 ? (direction > 0 ? 0 : n - 1) : ((start + direction) % n + n) % n;
-            if (_probeMode) _pinned = _hover;
+            var list = new List<(BoardItem, int)>();
+            for (int i = 0; i < Puzzle.Inputs.Count; i++) if (_session.CanChangeInput(i)) list.Add((BoardItem.Input, i));
+            for (int b = 0; b < Puzzle.Blocks.Count; b++) if (_session.CanChangeBlock(b)) list.Add((BoardItem.Block, b));
+            return list;
+        }
+
+        void SetFocus(BoardItem item, int index)
+        {
+            foreach (var v in _board.Inputs) v.Focused = false;
+            foreach (var v in _board.Blocks) v.Focused = false;
+            _focusItem = item;
+            _focusIndex = index;
+            if (index < 0) return;
+            if (item == BoardItem.Input) _board.Inputs[index].Focused = true;
+            else if (item == BoardItem.Block) _board.Blocks[index].Focused = true;
+        }
+
+        void FocusNext(int direction)
+        {
+            var list = Changeables();
+            if (list.Count == 0) { Say("Nothing in this circuit can be changed by keyboard.", 3f); return; }
+            int at = list.FindIndex(x => x.item == _focusItem && x.index == _focusIndex);
+            at = at < 0 ? (direction > 0 ? 0 : list.Count - 1) : ((at + direction) % list.Count + list.Count) % list.Count;
+            SetFocus(list[at].item, list[at].index);
             App.Sound(Sfx.Hover);
-            RefreshProbe();
+        }
+
+        void StepKeyboardTarget(int direction)
+        {
+            BoardItem item;
+            int index;
+            if (_hoverIndex >= 0 && (_hoverItem == BoardItem.Input || _hoverItem == BoardItem.Block)) { item = _hoverItem; index = _hoverIndex; }
+            else if (_focusIndex >= 0) { item = _focusItem; index = _focusIndex; }
+            else { Say("Press Tab to choose an input or block, then Left and Right to change it.", 3.5f); return; }
+            bool changeable = item == BoardItem.Input ? _session.CanChangeInput(index) : _session.CanChangeBlock(index);
+            if (item == BoardItem.Input) InputStep(index, direction);
+            else BlockStep(index, direction);
+            if (changeable) App.Sound(Sfx.Dial, direction > 0 ? 1.05f : 0.95f);
         }
 
         public override void HandleInput()
         {
-            if (_naming.IsOpen)
-            {
-                _naming.HandleInput();
-                return;
-            }
-
-            bool shift = GameInput.Held(Key.Shift);
-            if (shift != _shift)
-            {
-                _shift = shift;
-                RefreshProbe();
-            }
-
             if (GameInput.Down(Key.Escape))
             {
-                if (_probeMode) SetProbeMode(false);
+                if (_ink.Tool != InkTool.Off) SetTool(InkTool.Off);
+                else if (_focusIndex >= 0) SetFocus(_focusItem, -1);
                 else OpenPause();
                 return;
             }
@@ -636,48 +539,24 @@ namespace Blackbox.UI.Screens
                 GoNext();
                 return;
             }
-            if (GameInput.Confirm) { Run(); return; }
-            if (GameInput.Down(Key.P)) SetProbeMode(!_probeMode);
-            if (GameInput.Down(Key.Backspace) || GameInput.Down(Key.Z)) Undo();
-            if (GameInput.Down(Key.Tab)) FocusNextBox(shift ? -1 : 1);
+            if (GameInput.Down(Key.D)) SetTool(_ink.Tool == InkTool.Pen ? InkTool.Off : InkTool.Pen);
+            if (GameInput.Down(Key.E)) SetTool(_ink.Tool == InkTool.Eraser ? InkTool.Off : InkTool.Eraser);
+            if (GameInput.Down(Key.Backspace) || GameInput.Down(Key.Z))
+            {
+                if (_ink.Tool != InkTool.Off)
+                {
+                    if (_ink.UndoStroke()) App.Sound(Sfx.Close, 1.6f, 0.4f);
+                }
+                else Undo();
+            }
+            if (GameInput.Down(Key.Tab)) FocusNext(GameInput.Held(Key.Shift) ? -1 : 1);
+            if (GameInput.Down(Key.Right) || GameInput.Down(Key.Up) || GameInput.Down(Key.R)) StepKeyboardTarget(+1);
+            else if (GameInput.Down(Key.Left) || GameInput.Down(Key.Down)) StepKeyboardTarget(-1);
             if (GameInput.Down(Key.H)) OpenHelp();
-            if (GameInput.Down(Key.R))
-            {
-                int b = KeyboardBox();
-                if (b < 0) Say("Point at a box, or press Tab to choose one, then R to turn it.", 3.5f);
-                else BoxClickedFromKey(b, shift ? -1 : 1);
-            }
-            if (GameInput.Down(Key.N))
-            {
-                int b = KeyboardBox();
-                if (b < 0) Say("Point at a box, then press N to name what it does.", 3.5f);
-                else OpenNaming(b);
-            }
-
-            if (GameInput.Down(Key.Up)) SelectCase(_case - 1, false);
-            else if (GameInput.Down(Key.Down)) SelectCase(_case + 1, false);
-            if (!IsTable)
-            {
-                if (GameInput.Down(Key.Left)) { App.Sound(Sfx.Tick); SelectTick(_tick - 1); }
-                else if (GameInput.Down(Key.Right)) { App.Sound(Sfx.Tick); SelectTick(_tick + 1); }
-            }
-        }
-
-        void BoxClickedFromKey(int box, int direction)
-        {
-            if (!_session.CanChange(box))
-            {
-                App.Sound(Sfx.Miss, 1.6f, 0.35f);
-                Say("This box is locked. Probe it to see what it does.", 3.5f);
-                return;
-            }
-            if (_session.Cycle(box, direction)) App.Sound(Sfx.Dial);
         }
 
         void OpenPause()
         {
-            if (_playing) FinishPlayback();
-            _naming.Close();
             var pause = Game.Screens.Create<PauseOverlay>();
             pause.Owner = this;
             Game.Screens.Push(pause);
@@ -686,22 +565,25 @@ namespace Blackbox.UI.Screens
         void OpenHelp()
         {
             var help = Game.Screens.Create<HelpOverlay>();
-            help.Trace = !IsTable;
+            help.Chapter = Puzzle.Chapter;
             Game.Screens.Push(help);
         }
 
         public override void OnUncovered()
         {
-            _shift = false;
-            _board.RefreshNames();
-            _probeSignature = null;
-            RefreshProbe();
+            _hoverIndex = -1;
+            RefreshCounters();
         }
 
         public override void OnClosing()
         {
             Tweener.Kill(this);
-            if (_session != null) Game.MarkDirty();
+            if (_ink != null) _ink.SetTool(InkTool.Off);
+            if (_session != null)
+            {
+                Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
+                Game.MarkDirty();
+            }
         }
     }
 }

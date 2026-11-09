@@ -4,12 +4,13 @@ using UnityEngine.UI;
 
 namespace Blackbox.UI
 {
-    public enum ShapeKind { RoundedRect, Circle, Pill }
+    public enum ShapeKind { RoundedRect, Circle, Pill, Triangle, Square, Hexagon }
 
     /// <summary>
-    /// A rounded rectangle, circle or pill that fills its RectTransform: optional
-    /// fill, outline (solid, dashed or signal gradient) and glow. Boxes, ports,
-    /// buttons and the circuit-select tiles are all one of these.
+    /// A rounded rectangle, circle, pill or regular polygon that fills its
+    /// RectTransform: optional fill, outline (solid, dashed or signal gradient) and
+    /// glow. Blocks, ports, buttons, the circuit-select tiles and the shape signals
+    /// are all one of these.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public class ShapeGraphic : VoidGraphic
@@ -79,9 +80,32 @@ namespace Blackbox.UI
                 case ShapeKind.Pill:
                     MeshKit.RoundedRect(_path, r, Mathf.Min(r.width, r.height) * 0.5f, 16);
                     break;
+                case ShapeKind.Triangle:
+                {
+                    // Point up, centred on its bounding box rather than its centroid.
+                    float d = Mathf.Min(r.width, r.height);
+                    float R = d * 0.58f;
+                    Polygon(_path, r.center + new Vector2(0f, -R * 0.25f), R, 3, 90f);
+                    break;
+                }
+                case ShapeKind.Square:
+                    Polygon(_path, r.center, Mathf.Min(r.width, r.height) * 0.56f, 4, 45f);
+                    break;
+                case ShapeKind.Hexagon:
+                    Polygon(_path, r.center, Mathf.Min(r.width, r.height) * 0.52f, 6, 0f);
+                    break;
                 default:
                     MeshKit.RoundedRect(_path, r, _radius);
                     break;
+            }
+        }
+
+        static void Polygon(List<Vector2> into, Vector2 centre, float radius, int sides, float startDegrees)
+        {
+            for (int i = 0; i < sides; i++)
+            {
+                float a = (startDegrees + i * 360f / sides) * Mathf.Deg2Rad;
+                into.Add(centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius);
             }
         }
 
