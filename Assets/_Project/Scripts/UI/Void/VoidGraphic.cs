@@ -74,9 +74,37 @@ namespace Blackbox.UI
         }
     }
 
-    /// <summary>An invisible graphic that only catches pointer events.</summary>
+    /// <summary>
+    /// An invisible graphic that only catches pointer events. The raycaster skips
+    /// any graphic the canvas didn't draw, so this one draws a fully transparent
+    /// quad instead of nothing, and turns off the canvas culling of transparent
+    /// meshes. An empty or culled hit area would never be clicked.
+    /// </summary>
     public sealed class HitArea : Graphic
     {
-        protected override void OnPopulateMesh(VertexHelper vh) => vh.Clear();
+        protected override void Awake()
+        {
+            base.Awake();
+            canvasRenderer.cullTransparentMesh = false;
+        }
+
+        protected override void OnEnable()
+        {
+            canvasRenderer.cullTransparentMesh = false;
+            base.OnEnable();
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            var r = rectTransform.rect;
+            var c = new Color32(0, 0, 0, 0);
+            vh.AddVert(new Vector3(r.xMin, r.yMin), c, Vector2.zero);
+            vh.AddVert(new Vector3(r.xMin, r.yMax), c, Vector2.zero);
+            vh.AddVert(new Vector3(r.xMax, r.yMax), c, Vector2.zero);
+            vh.AddVert(new Vector3(r.xMax, r.yMin), c, Vector2.zero);
+            vh.AddTriangle(0, 1, 2);
+            vh.AddTriangle(2, 3, 0);
+        }
     }
 }
