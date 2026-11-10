@@ -94,14 +94,14 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>"Wire the circuit so light X and display Y do what their targets show. ..."</summary>
+        /// <summary>"Wire the circuit so light X and display Y do what their targets show. Use every block."</summary>
         static string ForWiring(PuzzleDef p)
         {
             var names = new List<string>();
             foreach (var o in p.Outputs) names.Add($"{Devices.Noun(o.Device)} {o.Id}");
             string who = p.Outputs.Count > MaxListed ? $"all {p.Outputs.Count} outputs" : JoinAnd(names);
             string verb = p.Outputs.Count == 1 ? "does what its target shows" : "do what their targets show";
-            return $"Wire the circuit so {who} {verb}. You don't have to use every block, but a block only works with all its inputs wired.";
+            return $"Wire the circuit so {who} {verb}. Use every block, with every block input connected.";
         }
 
         static string Count(int n, string noun) => n == 1 ? $"1 {noun}" : $"{n} {noun}s";

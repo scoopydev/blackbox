@@ -6,7 +6,7 @@ A 2D puzzle game about signals and circuits, built in Unity.
 
 Every puzzle gives you some inputs, some blocks and some outputs, and you **wire them up** so the outputs do what their targets show. Only the outputs count. **You don't know what any of the blocks do**: each keeps a hidden rule, and the only way to learn it is to wire it into something and run it.
 
-One rule holds everywhere: **a block only works when every one of its inputs has a wire**; with an empty input it sends nothing. You don't have to use every block: spare blocks are fine, and some circuits have blocks you don't need.
+Two rules hold everywhere: **every block must be used** (it must lead to an output), and **every input of a block needs a wire**, or the block sends nothing.
 
 The core loop is experimentation:
 

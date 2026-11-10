@@ -342,10 +342,7 @@ namespace Blackbox.UI.Board
         public void ShowBlock(int block, WiringReport report)
         {
             _shown = true;
-            int node = Session.BlockNode(block);
-            bool touched = false;
-            for (int k = 0; k < Session.PortCount(node); k++) touched |= Session.DriverOf(node, k) >= 0;
-            Blocks[block].Show(report.Values[node], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block), report.RefusingBlocks.Contains(block), touched);
+            Blocks[block].Show(report.Values[Session.BlockNode(block)], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block), report.RefusingBlocks.Contains(block));
         }
 
         public void ShowOutput(int output, WiringReport report)
@@ -744,19 +741,13 @@ namespace Blackbox.UI.Board
             Restyle();
         }
 
-        /// <summary>
-        /// What the block sent on the run, or null if nothing. A spare block (one
-        /// that leads to no output) is fine, and one with no wires in just says it
-        /// isn't used. A block on the way to an output with an empty input is what
-        /// breaks a run, so it's marked.
-        /// </summary>
-        public void Show(Trace sent, bool emptyInput, bool spare, bool refusing = false, bool touched = true)
+        /// <summary>What the block sent on the run, or null if nothing; and whether a rule is broken here.</summary>
+        public void Show(Trace sent, bool emptyInput, bool unused, bool refusing = false)
         {
-            bool idle = spare && !touched;
-            _readout.gameObject.SetActive(!idle);
+            _readout.gameObject.SetActive(true);
             _readout.Set(sent, ValueLook.Live);
-            _note.text = idle ? "NOT USED" : emptyInput ? "AN INPUT IS EMPTY" : refusing ? "CAN'T READ THAT SIGNAL" : sent == null ? "GETS NOTHING" : "";
-            _broken = emptyInput && !spare;
+            _note.text = emptyInput ? "AN INPUT IS EMPTY" : refusing ? "CAN'T READ THAT SIGNAL" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
+            _broken = emptyInput || unused;
             Restyle();
         }
 

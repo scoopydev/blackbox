@@ -10,9 +10,7 @@ Every circuit gives the player **inputs** on the left, **blocks** in the middle 
 1. **Read the goal.** The goal is one sentence above the board, with a count of the outputs met. Every output shows its target device beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
 2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires.
 3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs work their devices top to bottom, each playing its sound. Any change hides the results again, so each run shows one wiring.
-4. **Keep the rule.** A block only works when every one of its inputs has a wire: a block with an empty input sends nothing, so nothing after it gets a signal. Not every block has to be used, and inputs may go unused too. A spare block that leads to no output doesn't count, whatever is wired into it. The verdict after a run names a block on the way to an output that has an empty input, such as "block g has an input with no wire, so it sends nothing".
-
-   Because blocks can be left spare, a block whose signal is always one of its inputs (the larger or smaller, taller or shorter, more or fewer corners, and any block fixed in a "pass" setting) can always be wired past, so it can never be required. The digit and shape pickers can still be required on a pattern, where they pick a different input at different moments. The sampled-wave picker (Q4) picks a whole wave, so it's always optional: useful to learn and as a decoy, never needed (V-04 Measure can be solved without it). A few finales can also be solved with one block fewer than the intended wiring (I-06, III-06, V-06, IX-06); the design tool reports this as "uses only n of m blocks".
+4. **Keep the rules.** Every block must be used: it must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused. The verdict after a run names the first broken rule, such as "block g has an input with no wire" or "block h isn't used".
 5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
 7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered.
@@ -107,7 +105,7 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 | 03 | Under the Lid | Wiring it all, a chain, and B3 | 27 | 2 |
 | 04 | Fork | One input feeding two blocks, and B4 | 27 | 2 |
 | 05 | Top and Bottom | Which input is on top | 256 | 2 |
-| 06 | Tangle | Four blocks, two lights | 279,936 | 232 |
+| 06 | Tangle | Four blocks, two lights | 279,936 | 224 |
 
 ### Chapter II: Tally
 
@@ -118,8 +116,8 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 | 01 | Count | Pre-wired, and D1 | 2 | 1 |
 | 02 | Balance | Half wired, and D2 | 4 | 2 |
 | 03 | Reflection | D3, order matters, a fan | 9 | 1 |
-| 04 | Retrace | A pattern of digits | 9 | 1 |
-| 05 | Larger | D4 on a pattern, a servo | 3,125 | 4 |
+| 04 | Larger | D4, a servo | 3,125 | 26 |
+| 05 | Retrace | A pattern of digits | 9 | 1 |
 | 06 | Ledger | Four blocks, two outputs | 279,936 | 12 |
 
 ### Chapter III: Forms
@@ -132,8 +130,8 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 | 02 | Graft | Half wired, and S3 | 4 | 1 |
 | 03 | Corners | S4, and a light showing a shape's colour | 4 | 2 |
 | 04 | Turn | S2, and a digit display counting corners | 9 | 1 |
-| 05 | Homecoming | Colour stays with the form | 625 | 7 |
-| 06 | Lattice | Four blocks, three outputs | 46,656 | 78 |
+| 05 | Homecoming | Colour stays with the form | 625 | 63 |
+| 06 | Lattice | Four blocks, three outputs | 46,656 | 76 |
 
 ### Chapter IV: Resonance
 
@@ -157,9 +155,9 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 | 01 | Stairs | Pre-wired, and Q1 | 2 | 1 |
 | 02 | Graft | Half wired, and Q3 | 4 | 1 |
 | 03 | Level | Q2, a servo in steps | 9 | 2 |
-| 04 | Measure | Q4, by ear | 64 | 6 |
+| 04 | Measure | Q4, by ear | 64 | 5 |
 | 05 | Replay | One input feeding two chains | 256 | 3 |
-| 06 | Mosaic | Four blocks, a servo and a speaker | 46,656 | 116 |
+| 06 | Mosaic | Four blocks, a servo and a speaker | 46,656 | 113 |
 
 Every circuit is checked by trying every way to wire it, in the tests and from **BLACKBOX → Validate Puzzles**. Each one's solution must work, it must not be solved as it starts, and no input wired straight to an output may already meet that output's target.
 
@@ -201,7 +199,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 03 | Sweep | A servo following a wave, delayed after speeding up | 9 | 1 |
 | 04 | Strobe | Two outputs from one chain | 64 | 6 |
 | 05 | Countdown | A count, mirrored | 9 | 1 |
-| 06 | Colours | Shapes on a light and a digit display | 27 | 4 |
+| 06 | Colours | Shapes on a light and a digit display | 27 | 2 |
 
 ### Chapter IX: Blackbox
 
@@ -214,7 +212,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 03 | Stepper | A servo in steps, beside a digit chain | 125 | 2 |
 | 04 | Signal Box | Shapes, bits and digits at once, three outputs | 279,936 | 16 |
 | 05 | Pulse Width | A threshold from a difference, three readers of one pulse | 46,656 | 1 |
-| 06 | Black Box | Three separate machines in one circuit, five blocks | 2,097,152 | 6 |
+| 06 | Black Box | Three separate machines in one circuit, five blocks | 2,097,152 | 2 |
 
 ## Look and sound
 

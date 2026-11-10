@@ -21,9 +21,6 @@ namespace Blackbox.Puzzles
         public long Solutions;
         /// <summary>A few of them, as wire lists.</summary>
         public readonly List<string> Examples = new List<string>();
-        /// <summary>The fewest blocks any solving wiring uses, and one wiring that uses that few.</summary>
-        public int FewestBlocks = -1;
-        public string FewestExample;
 
         public override string ToString()
         {
@@ -31,8 +28,6 @@ namespace Blackbox.Puzzles
             sb.Append($"{Puzzle.Id} {Puzzle.Name}: solution {(SolutionWorks ? "works" : "FAILS")}");
             if (!Searched) sb.Append($", {Space} block wirings: too many to search");
             else sb.Append($", {Solutions} solving wiring(s) out of {Space} block wirings");
-            if (Searched && FewestBlocks >= 0 && FewestBlocks < Puzzle.Blocks.Count)
-                sb.Append($"; one uses only {FewestBlocks} of {Puzzle.Blocks.Count} blocks: {FewestExample}");
             foreach (var e in Examples) sb.Append("\n    ").Append(e);
             return sb.ToString();
         }
@@ -42,8 +37,7 @@ namespace Blackbox.Puzzles
     /// Searches every way to wire a wired circuit and counts those that solve it.
     /// Each block input takes any input or other block, without loops; then each
     /// output takes any signal its device reads the way its target wants, and the
-    /// wiring counts once whatever the spare blocks (those that lead to no
-    /// output) are wired to, since they make no difference.
+    /// wiring counts if every block ends up leading to an output.
     /// </summary>
     public static class WiringSolver
     {
@@ -139,13 +133,21 @@ namespace Blackbox.Puzzles
                 return m;
             }
 
-            var seen = new HashSet<string>();
+            var consumed = new bool[blocks];
             var candidates = new List<int>[outputs];
             for (int o = 0; o < outputs; o++) candidates[o] = new List<int>();
             var choice = new int[outputs];
 
             void Leaf()
             {
+                Array.Clear(consumed, 0, blocks);
+                for (int b = 0; b < blocks; b++)
+                    foreach (int d in driver[inputs + b])
+                        if (d >= inputs) consumed[d - inputs] = true;
+                int dangling = 0;
+                for (int b = 0; b < blocks; b++) if (!consumed[b]) dangling++;
+                if (dangling > outputs) return;
+
                 var done = new bool[sources];
                 for (int n = inputs; n < sources; n++) Value(n, done);
                 for (int o = 0; o < outputs; o++)
@@ -166,18 +168,10 @@ namespace Blackbox.Puzzles
                 if (o == outputs)
                 {
                     for (int k = 0; k < outputs; k++) driver[sources + k][0] = choice[k];
-                    var spare = WiringSession.UnusedBlocks(p, driver);
-                    string wiring = Describe(session, driver, spare, inputs);
-                    if (seen.Add(wiring))
+                    if (WiringSession.UnusedBlocks(p, driver).Count == 0)
                     {
                         result.Solutions++;
-                        if (result.Examples.Count < keep) result.Examples.Add(wiring);
-                        int used = blocks - spare.Count;
-                        if (result.FewestBlocks < 0 || used < result.FewestBlocks)
-                        {
-                            result.FewestBlocks = used;
-                            result.FewestExample = wiring;
-                        }
+                        if (result.Examples.Count < keep) result.Examples.Add(Describe(session, driver));
                     }
                     for (int k = 0; k < outputs; k++) driver[sources + k][0] = -1;
                     return;
@@ -212,15 +206,12 @@ namespace Blackbox.Puzzles
             return result;
         }
 
-        static string Describe(WiringSession s, int[][] driver, List<int> spare = null, int inputs = 0)
+        static string Describe(WiringSession s, int[][] driver)
         {
             var parts = new List<string>();
             for (int n = 0; n < driver.Length; n++)
-            {
-                if (spare != null && spare.Contains(n - inputs)) continue;
                 for (int k = 0; k < driver[n].Length; k++)
                     if (driver[n][k] >= 0) parts.Add(s.LinkText(driver[n][k], n, k));
-            }
             return string.Join(", ", parts);
         }
 

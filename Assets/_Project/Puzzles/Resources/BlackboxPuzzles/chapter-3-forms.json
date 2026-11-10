@@ -107,7 +107,7 @@
           "signal": "shape solid triangle"
         },
         "B": {
-          "signal": "shape hollow pink circle"
+          "signal": "shape hollow pink hexagon"
         }
       },
       "blocks": {
@@ -146,7 +146,7 @@
           "signal": "shape solid green triangle"
         },
         "C": {
-          "signal": "shape hollow pink circle"
+          "signal": "shape solid pink triangle"
         }
       },
       "blocks": {
@@ -166,15 +166,15 @@
           "device": "display"
         },
         "Y": {
-          "device": "display"
+          "device": "digits"
         }
       },
       "solution": [
-        "B -> h",
-        "h -> X",
         "A -> g.0",
-        "C -> g.1",
-        "g -> k",
+        "B -> g.1",
+        "g -> h",
+        "h -> X",
+        "C -> k",
         "k -> Y"
       ]
     },

@@ -20,7 +20,7 @@ namespace Blackbox.Puzzles
         public readonly List<int> StarvedBlocks = new List<int>();
         /// <summary>Blocks given signals they can't read, so they send nothing: a wave block fed anything but a plain wave of its type.</summary>
         public readonly List<int> RefusingBlocks = new List<int>();
-        /// <summary>Spare blocks: their signal doesn't lead to any output. That's allowed; they just don't count.</summary>
+        /// <summary>Blocks whose signal doesn't lead to any output.</summary>
         public readonly List<int> UnusedBlocks = new List<int>();
         /// <summary>Outputs with no wire into them.</summary>
         public readonly List<int> UnwiredOutputs = new List<int>();
@@ -36,25 +36,11 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>
-        /// The first block on the way to an output that has an input with no wire,
-        /// so it sends nothing, or -1. Spare blocks don't count.
-        /// </summary>
-        public int FirstEmptyUsedBlock
-        {
-            get
-            {
-                foreach (int b in EmptyBlocks) if (!UnusedBlocks.Contains(b)) return b;
-                return -1;
-            }
-        }
+        /// <summary>Every block is used, and every block input is connected.</summary>
+        public bool RulesKept => EmptyBlocks.Count == 0 && UnusedBlocks.Count == 0;
 
-        /// <summary>
-        /// Every output gets what it wants. Blocks may be left spare, but a block
-        /// on the way to an output needs all its inputs wired or it sends nothing,
-        /// so that output can't get what it wants.
-        /// </summary>
-        public bool Solved => Met == OutputMet.Length;
+        /// <summary>Every output gets what it wants, and the rules are kept.</summary>
+        public bool Solved => RulesKept && Met == OutputMet.Length;
     }
 
     /// <summary>
@@ -68,8 +54,7 @@ namespace Blackbox.Puzzles
     /// its inputs is connected to something that sends a signal.
     ///
     /// The circuit is solved by a run in which every output gets the signal it
-    /// wants. Not every block has to be used, but a block only works with every
-    /// one of its inputs wired.
+    /// wants, every block leads to an output, and no block input is empty.
     /// </summary>
     public sealed class WiringSession
     {
@@ -432,7 +417,7 @@ namespace Blackbox.Puzzles
         /// <summary>Evaluates a list of wires, such as a circuit's solution.</summary>
         public static Trace[] Evaluate(PuzzleDef p, IEnumerable<WireDef> wires) => Evaluate(p, DriversOf(p, wires));
 
-        /// <summary>Spare blocks: those whose signal reaches no output, through these wires.</summary>
+        /// <summary>Blocks whose signal reaches no output, through these wires.</summary>
         public static List<int> UnusedBlocks(PuzzleDef p, IEnumerable<WireDef> wires) => UnusedBlocks(p, DriversOf(p, wires));
 
         public static List<int> UnusedBlocks(PuzzleDef p, int[][] driver)

@@ -112,9 +112,8 @@ namespace Blackbox.Puzzles
 
         /// <summary>
         /// The player wires this circuit: it starts with inputs, blocks and outputs
-        /// and no wires, and is solved when every output gets its wanted signal.
-        /// Blocks may be left spare, but a block only works with every one of its
-        /// inputs connected. Inputs carry
+        /// and no wires, and is solved when every output gets its wanted signal,
+        /// every block is used and every block input is connected. Inputs carry
         /// signals of any type, and blocks keep the state the file gives them.
         /// </summary>
         public bool Wiring;

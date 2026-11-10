@@ -170,9 +170,11 @@ One source can feed any number of wires. Signals flow one way, from inputs to ou
 
 A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inputs, the blocks and the outputs, with no wires, and wires them so every output does what its target shows. A wired circuit is solved when, in one run:
 
-* every output's device does the same as its target does (see [Devices](#devices)).
+* every output's device does the same as its target does (see [Devices](#devices)),
+* every input port of every block has a wire, and
+* every block leads to an output, through other blocks or straight there.
 
-A block only works when every one of its input ports has a wire: with an empty port it sends nothing, so an output it leads to gets nothing. Blocks may be left spare (leading to no output), and so may inputs. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it. A named block shows a dot for each state of its kind, with its own filled.
+Inputs may go unused. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it. A named block shows a dot for each state of its kind, with its own filled.
 
 ```json
 {
@@ -199,7 +201,7 @@ A block only works when every one of its input ports has a wire: with an empty p
 | `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. |
 | `blocks` | Each block is `{ "kind": "B2", "state": 0, "at": [col, row] }`. Any kind can be wired. The wave kinds (W and Q) change a wave's settings, so they only read a plain wave of their own kind (straight from an input or another W or Q block) and send nothing otherwise. |
 | `outputs` | Each output is a device name, or `{ "device": "fan", "at": [col, row] }`. The default device is `display`. |
-| `solution` | The intended wiring, as wires. Every output needs a wire, and every block it uses needs a wire into each of its ports; it may leave blocks spare. The targets come from it: each output wants what the solution sends it. |
+| `solution` | The intended wiring, as wires. It must keep the rules above. The targets come from it: each output wants what the solution sends it. |
 | `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts fully wired with one wire wrong, the second half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |
 | `goal` | Optional. The default goal names every output and its device, and states the rules. |
 
