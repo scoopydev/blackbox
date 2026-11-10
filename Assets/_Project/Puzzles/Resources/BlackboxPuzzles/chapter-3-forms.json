@@ -7,7 +7,6 @@
   "medium": "shape",
   "tagline": "Every shape is a message.",
   "signals": "Signals here are shapes: a circle, triangle, square or hexagon, each hollow or solid. You hear a click for each corner, low when solid and high when hollow.",
-  "unlock": {"after": "tally", "solved": 4},
   "circuits": [
     {
       // Introduces S1. Solution: f = flip fill, g = pass.

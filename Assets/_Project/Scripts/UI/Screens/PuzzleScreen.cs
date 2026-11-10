@@ -11,10 +11,12 @@ namespace Blackbox.UI.Screens
 {
     /// <summary>
     /// One circuit. The goal is written above the board and every target sits
-    /// beside the thing it belongs to with a live tick or cross. The player
-    /// changes adjustable inputs and unlocked blocks, places probes on wires to
-    /// read the signals inside, and keeps notes with the pen. The circuit is
-    /// solved the moment every target matches.
+    /// beside the thing it belongs to. The player changes adjustable inputs and
+    /// unlocked blocks, places probes on wires, and keeps notes with the pen and
+    /// the text tool. Nothing that comes out shows until they press RUN: the
+    /// signal flows through the circuit for a few seconds, each output shows and
+    /// plays what arrived, probes read their wires, and every target gets its tick
+    /// or cross. A run in which every target matches solves the circuit.
     /// </summary>
     public sealed class PuzzleScreen : GameScreen, IBoardHost
     {
@@ -38,12 +40,11 @@ namespace Blackbox.UI.Screens
         string _hint;
         PuzzleDef _nextPuzzle;
 
-        // Listening: every signal has a sound. These say what is sounding now.
-        enum Listening { None, Goal, Now, Change }
-        Listening _listening;
-        PillButton _hearGoal, _hearNow;
-        /// <summary>What each output showed before the latest change, to tell which ones it reached.</summary>
-        int[] _lastOutputs;
+        // Running: a timed plan of what lights and sounds when, played in Update.
+        PillButton _run;
+        readonly List<(float at, Action act)> _runPlan = new List<(float, Action)>();
+        float _runClock;
+        bool _running;
 
         // Keyboard: the item the arrows change. Hover wins over Tab focus.
         BoardItem _hoverItem;
@@ -72,10 +73,12 @@ namespace Blackbox.UI.Screens
             _session.Reset += OnSessionReset;
             _session.ProbesChanged += OnProbesChanged;
 
+            // A circuit solved before, and left as it was, opens already run, so it shows as solved.
+            if (_session.Solved && Game.Progress.IsSolved(p)) _session.Run();
+
             BuildHeader();
             BuildGoal();
-            _board = BoardView.Create(Root, _session, this);
-            _lastOutputs = CurrentOutputs();
+            _board = BoardView.Create(Root, _session, this, hideUntilRun: true);
 
             _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
@@ -97,7 +100,7 @@ namespace Blackbox.UI.Screens
 
             RefreshCounters();
             RefreshTools();
-            if (_session.Solved) SetSolvedShown(true, quiet: true);
+            if (_session.RunSolved) SetSolvedShown(true, quiet: true);
         }
 
         // ------------------------------------------------------------------ layout
@@ -136,13 +139,10 @@ namespace Blackbox.UI.Screens
             _goal.LineHeight = 1.3f;
             _goal.rectTransform.At(Left + 110f + 485f, GoalY, 970f, 64f);
 
-            // Hear the goal, and hear what the outputs give now, to compare by ear.
-            _hearGoal = PillButton.Create(Root, "HEAR GOAL", 1294f, GoalY, 196f, 40f, false, "sound");
-            _hearGoal.Click.ClickSound = Sfx.Hover;
-            _hearGoal.Click.Clicked = HearGoal;
-            _hearNow = PillButton.Create(Root, "HEAR NOW", 1497f, GoalY, 186f, 40f, false, "sound");
-            _hearNow.Click.ClickSound = Sfx.Hover;
-            _hearNow.Click.Clicked = HearNow;
+            // RUN sends the signals through. Only a run shows what comes out.
+            _run = PillButton.Create(Root, "RUN", 1466f, GoalY, 184f, 46f, true, "play");
+            _run.Click.ClickSound = Sfx.Hover;
+            _run.Click.Clicked = StartRun;
 
             _matchedValue = UIKit.Text(Root, "", TextStyle.Value.WithSize(34).WithWeight(200), TextAnchor.MiddleRight, "Matched");
             _matchedValue.rectTransform.At(Right - 100f, GoalY - 8f, 200f, 44f);
@@ -224,7 +224,7 @@ namespace Blackbox.UI.Screens
             _reset = PillButton.Create(rt, "RESET", Right - 75f, ToolsY, 150f, 46f, false, "reset");
             _reset.Click.ClickSound = Sfx.Hover;
             _reset.Click.Clicked = AskReset;
-            Chrome.KeyHints(rt, Right, HintsY, true, "G", "HEAR GOAL", "TAB", "SELECT", "LEFT RIGHT", "CHANGE", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
+            Chrome.KeyHints(rt, Right, HintsY, true, "SPACE", "RUN", "TAB", "SELECT", "LEFT RIGHT", "CHANGE", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
         }
 
         void BuildSolvedPanel()
@@ -252,12 +252,26 @@ namespace Blackbox.UI.Screens
         void RefreshCounters()
         {
             _moves.text = _session.Moves.ToString("00");
-            int matched = _session.MatchedTargets, total = Puzzle.Targets.Count;
-            _matchedValue.text = $"{matched}/{total}";
-            bool all = matched == total;
-            _matchedValue.SignalFill = all;
-            _matchedValue.color = all ? Color.white : Palette.Text;
-            _matchedLabel.color = all ? Palette.Dim : Palette.Faint;
+            int total = Puzzle.Targets.Count;
+            if (_session.HasRun && !_running)
+            {
+                int matched = _session.MatchedTargets;
+                bool all = matched == total;
+                _matchedValue.text = $"{matched}/{total}";
+                _matchedValue.SignalFill = all;
+                _matchedValue.color = all ? Color.white : Palette.Text;
+                _matchedLabel.text = "TARGETS MET";
+                _matchedLabel.color = all ? Palette.Dim : Palette.Faint;
+            }
+            else
+            {
+                // Targets are only checked by a run.
+                _matchedValue.text = $"?/{total}";
+                _matchedValue.SignalFill = false;
+                _matchedValue.color = Palette.Dim;
+                _matchedLabel.text = _running ? "CHECKING" : "RUN TO CHECK";
+                _matchedLabel.color = Palette.Faint;
+            }
             _undo.Enabled = _session.CanUndo;
             _reset.Enabled = !_session.AtStart;
         }
@@ -293,6 +307,7 @@ namespace Blackbox.UI.Screens
             _title.SignalFill = on;
             _solved.blocksRaycasts = on;
             _controls.blocksRaycasts = !on;
+            _run.Enabled = !on;
             if (on && quiet) FillSolvedPanel(false, null);
             float fromA = _solved.alpha, fromB = _controls.alpha;
             Tweener.Run(this, "solved panel", quiet ? 0.01f : 0.35f, t =>
@@ -325,60 +340,38 @@ namespace Blackbox.UI.Screens
 
         void OnChanged(ChangeKind kind, int index)
         {
+            // Any change stops a run, and hides what the last one showed.
+            CancelRun();
             int node = kind == ChangeKind.Input ? index : _session.Circuit.BlockNode(index);
             if (kind == ChangeKind.Input) _board.Inputs[index].SetValue(_session.InputValue(index), true);
             else _board.Blocks[index].SetState(_session.State(index), true);
-            int newlyMatched = _board.Refresh(true);
+            _board.Refresh(true);
             _board.Pulse(node);
-
-            var outputs = CurrentOutputs();
-            var reached = new List<int>();
-            for (int o = 0; o < outputs.Length; o++) if (outputs[o] != _lastOutputs[o]) reached.Add(o);
-            _lastOutputs = outputs;
 
             Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
             Game.MarkDirty();
             RefreshCounters();
-
-            if (_session.Solved)
-            {
-                if (!_solvedShown) OnSolved();
-                return;
-            }
             if (_solvedShown) SetSolvedShown(false);
-            Action chime = newlyMatched > 0 ? () => App.Sound(Sfx.Match, 1f, 0.7f) : (Action)null;
-            if (Game.Save.Prefs.SignalSounds && (kind == ChangeKind.Input || reached.Count > 0))
+
+            // The value just set can be heard; what comes out waits for a run.
+            if (kind == ChangeKind.Input && Game.Save.Prefs.SignalSounds)
             {
-                // Sound out the change: the input that was set, then every output it reached.
-                var values = new List<int>();
-                var lights = new List<Action>();
-                if (kind == ChangeKind.Input)
-                {
-                    values.Add(_session.InputValue(index));
-                    var input = _board.Inputs[index];
-                    lights.Add(input.Ping);
-                }
-                foreach (int o in reached)
-                {
-                    values.Add(outputs[o]);
-                    var view = _board.Outputs[o];
-                    lights.Add(() => view.Ping(false));
-                }
-                Listen(Listening.Change, values, i => lights[i](), chime);
+                PlayValue(_session.InputValue(index));
+                _board.Inputs[index].Ping();
             }
-            else chime?.Invoke();
+            if (_session.Runs == 0 && !Game.Progress.IsSolved(Puzzle))
+                Say("Press RUN, or Space, to send the signals through and see what comes out.", 4f);
         }
 
         void OnSessionReset()
         {
-            StopListening();
+            CancelRun();
             _board.Refresh(false);
-            _lastOutputs = CurrentOutputs();
             for (int i = 0; i < _board.Inputs.Count; i++) _board.Pulse(i);
             Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
             Game.MarkDirty();
             RefreshCounters();
-            if (_solvedShown && !_session.Solved) SetSolvedShown(false);
+            if (_solvedShown) SetSolvedShown(false);
             Say("Every input and block is back where it started. Probes stay where they are.", 3.5f);
         }
 
@@ -393,7 +386,6 @@ namespace Blackbox.UI.Screens
 
         void OnSolved()
         {
-            StopListening();
             var p = Puzzle;
             var library = Game.Library;
             bool first = !Game.Progress.IsSolved(p);
@@ -424,8 +416,8 @@ namespace Blackbox.UI.Screens
 
         void FillSolvedPanel(bool first, int? previousBest)
         {
-            int moves = _session.Moves;
-            string stats = moves == 1 ? "1 MOVE" : $"{moves} MOVES";
+            int moves = _session.Moves, runs = _session.Runs;
+            string stats = (moves == 1 ? "1 MOVE" : $"{moves} MOVES") + (runs == 1 ? "  ·  1 RUN" : $"  ·  {runs} RUNS");
             if (!first && previousBest.HasValue && moves > 0) stats += moves < previousBest.Value ? "  ·  NEW BEST" : $"  ·  BEST {previousBest.Value}";
             if (moves == 0) stats = "SOLVED";
             _solvedStats.text = stats;
@@ -470,82 +462,143 @@ namespace Blackbox.UI.Screens
         string NameOfInput(int i) => Puzzle.Inputs[i].Id;
         string NameOfBlock(int b) => Puzzle.Blocks[b].Id;
 
-        // ------------------------------------------------------------------ listening
+        // ------------------------------------------------------------------ running
 
-        int[] CurrentOutputs()
+        /// <summary>
+        /// Sends the signals through the circuit. Light leaves the inputs and flows
+        /// block by block, each probe reads its wire as the light passes, then the
+        /// outputs show what arrived, top to bottom, each playing its sound. Only then
+        /// are the targets checked. It takes a few seconds, and any change stops it.
+        /// </summary>
+        void StartRun()
         {
-            var values = new int[Puzzle.Outputs.Count];
-            for (int o = 0; o < values.Length; o++) values[o] = _session.ValueOf(Puzzle.Outputs[o]);
-            return values;
-        }
+            if (_running || _solvedShown) return;
+            _ink.FinishTyping();
+            App.Audio?.StopSignals();
+            _runPlan.Clear();
+            _runClock = 0f;
+            _running = true;
+            _run.SetText("RUNNING");
+            _run.Active = true;
+            _board.Conceal();
+            RefreshCounters();
+            Say("Running the circuit.", 30f);
 
-        /// <summary>The targets in the order the goal sentence names them: outputs, then blocks, then inputs.</summary>
-        List<TargetDef> GoalOrder()
-        {
-            var list = new List<TargetDef>();
-            foreach (var role in new[] { NodeRole.Output, NodeRole.Block, NodeRole.Input })
-                foreach (var t in Puzzle.Targets) if (t.Node.Role == role) list.Add(t);
-            return list;
-        }
+            var board = _board;
+            int depth = board.Depth;
+            float flow = Mathf.Clamp(depth * 0.45f, 1.2f, 2.8f);
+            float step = flow / depth;
+            bool sounds = Game.Save.Prefs.SignalSounds;
 
-        /// <summary>Plays every target's value in turn, lighting each one as it sounds. Again to stop.</summary>
-        void HearGoal()
-        {
-            if (_listening == Listening.Goal) { StopListening(); return; }
-            var targets = GoalOrder();
-            var values = new List<int>();
-            foreach (var t in targets) values.Add(t.Want);
-            Listen(Listening.Goal, values, i => PingTarget(targets[i]));
-        }
-
-        /// <summary>Plays what every output gives now, in order. Again to stop.</summary>
-        void HearNow()
-        {
-            if (_listening == Listening.Now) { StopListening(); return; }
-            var values = new List<int>(CurrentOutputs());
-            Listen(Listening.Now, values, i => _board.Outputs[i].Ping(false));
-        }
-
-        void PingTarget(TargetDef t)
-        {
-            switch (t.Node.Role)
+            Plan(0f, () =>
             {
-                case NodeRole.Output: _board.Outputs[t.Node.Index].Ping(true); break;
-                case NodeRole.Block: _board.Blocks[t.Node.Index].Target?.Ping(); break;
-                default: _board.Inputs[t.Node.Index].Target?.Ping(); break;
-            }
-        }
-
-        void Listen(Listening what, List<int> values, Action<int> onEach, Action done = null)
-        {
-            var audio = App.Audio;
-            if (audio == null || values.Count == 0) { done?.Invoke(); return; }
-            SetListening(what);
-            audio.PlaySignals(Medium, values, onEach, () =>
-            {
-                if (this == null) return;
-                SetListening(Listening.None);
-                done?.Invoke();
+                App.Sound(Sfx.Run, 1f, 0.7f);
+                foreach (var input in board.Inputs) input.Ping();
             });
+            foreach (var wire in board.Wires)
+            {
+                int from = board.StepOf(wire.Def.From), to = board.StepOf(wire.Def.To);
+                float length = Mathf.Max(1, to - from) * step;
+                var w = wire;
+                Plan(from * step, () => { if (!App.ReduceMotion) w.Pulse(0f, length); });
+            }
+            var levels = new HashSet<int>();
+            foreach (var block in board.Blocks)
+            {
+                int at = board.StepOf(block.Def);
+                levels.Add(at);
+                Plan(at * step, block.Flash);
+            }
+            foreach (int level in levels)
+            {
+                int d = level;
+                Plan(d * step, () => App.Sound(Sfx.Tick, 0.85f + 0.07f * d, 0.35f));
+            }
+            for (int k = 0; k < _session.Probes.Count; k++)
+            {
+                var probe = _session.Probes[k];
+                var wire = Puzzle.Wires[probe.Wire];
+                int from = board.StepOf(wire.From), to = board.StepOf(wire.To);
+                int index = k;
+                Plan((from + Mathf.Max(1, to - from) * probe.At) * step, () => board.ShowProbe(index, true, force: true));
+            }
+
+            // Then each output, top to bottom: it shows what arrived and plays it.
+            var order = new List<int>();
+            for (int o = 0; o < board.Outputs.Count; o++) order.Add(o);
+            order.Sort((a, b) => board.Outputs[b].Centre.y.CompareTo(board.Outputs[a].Centre.y));
+            float t = flow + 0.25f;
+            foreach (int o in order)
+            {
+                int index = o, value = _session.ValueOf(Puzzle.Outputs[o]);
+                Plan(t, () =>
+                {
+                    board.ShowOutput(index, true);
+                    board.Outputs[index].Ping(false);
+                    if (sounds) App.Audio?.PlaySignal(Medium, value);
+                    else App.Sound(Sfx.Arrive, 1f, 0.5f);
+                });
+                t += sounds ? SignalSound.Duration(Medium, value) + 0.16f : 0.4f;
+            }
+            Plan(t + 0.1f, FinishRun);
         }
 
-        void StopListening()
+        /// <summary>Adds a step to the run, keeping the plan in time order.</summary>
+        void Plan(float at, Action act)
         {
-            if (_listening != Listening.None) App.Audio?.StopSignals();
-            SetListening(Listening.None);
-        }
-
-        void SetListening(Listening what)
-        {
-            _listening = what;
-            if (_hearGoal != null) _hearGoal.Active = what == Listening.Goal;
-            if (_hearNow != null) _hearNow.Active = what == Listening.Now;
+            int i = _runPlan.Count;
+            while (i > 0 && _runPlan[i - 1].at > at) i--;
+            _runPlan.Insert(i, (at, act));
         }
 
         void Update()
         {
-            // A sequence that was cut short by another sound never reports that it ended.
-            if (_listening != Listening.None && (App.Audio == null || !App.Audio.PlayingSignals)) SetListening(Listening.None);
+            if (!_running) return;
+            _runClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
+            while (_running && _runPlan.Count > 0 && _runPlan[0].at <= _runClock)
+            {
+                var next = _runPlan[0];
+                _runPlan.RemoveAt(0);
+                next.act();
+            }
+        }
+
+        /// <summary>The run is over: check the targets.</summary>
+        void FinishRun()
+        {
+            _running = false;
+            _runPlan.Clear();
+            RestoreRunButton();
+            bool solved = _session.Run();
+            _board.Refresh(true);
+            RefreshCounters();
+            if (solved)
+            {
+                if (!_solvedShown) OnSolved();
+                return;
+            }
+            int matched = _session.MatchedTargets, total = Puzzle.Targets.Count;
+            App.Sound(matched > 0 ? Sfx.Match : Sfx.Miss, matched > 0 ? 0.9f : 1.2f, 0.45f);
+            Say(matched == 0 ? "No targets met. Change something and run it again." : $"{matched} of {total} targets met. Change something and run it again.", 4f);
+        }
+
+        /// <summary>Stops a run part way. The board goes back to what can be shown.</summary>
+        void CancelRun()
+        {
+            if (!_running) return;
+            _running = false;
+            _runPlan.Clear();
+            App.Audio?.StopSignals();
+            RestoreRunButton();
+            _board.Refresh(false);
+            RefreshCounters();
+            Hush();
+        }
+
+        void RestoreRunButton()
+        {
+            _run.SetText("RUN");
+            _run.Active = false;
         }
 
         // ------------------------------------------------------------------ IBoardHost
@@ -581,13 +634,18 @@ namespace Blackbox.UI.Screens
             if (_session.CanChangeBlock(block)) _session.SetState(block, state);
         }
 
-        public bool CanPlaceProbe => _session.ProbesLeft > 0 && _ink.Tool == InkTool.Off;
+        public bool CanPlaceProbe => _session.ProbesLeft > 0 && _ink.Tool == InkTool.Off && !_running;
 
         public void WireClicked(int wire, float at)
         {
             if (Puzzle.Probes == 0)
             {
                 Say("This circuit has no probes. Work it out from the inputs and outputs.", 3.5f);
+                return;
+            }
+            if (_running)
+            {
+                Say("Let the run finish, then place the probe.", 2.5f);
                 return;
             }
             if (_session.ProbesLeft <= 0)
@@ -599,18 +657,22 @@ namespace Blackbox.UI.Screens
             _session.AddProbe(wire, at);
             App.Sound(Sfx.Open, 1.6f, 0.6f);
             if (_session.Probes.Count == 1 && !Game.Progress.IsSolved(Puzzle) && Puzzle.Number < 4)
-                Say("The probe reads the signal on that wire. Click its value to hear it, or the dot to take it off.", 4f);
+                Say("The probe reads the signal on that wire each time you run. Click its value to hear it, or the dot to take it off.", 4.5f);
         }
 
         public void ProbeClicked(int probe)
         {
+            if (_running)
+            {
+                Say("Let the run finish, then move the probe.", 2.5f);
+                return;
+            }
             if (_session.RemoveProbe(probe)) App.Sound(Sfx.Close, 1.4f, 0.6f);
         }
 
         public void PlayValue(int value)
         {
             if (!Media.IsValid(Medium, value)) return;
-            SetListening(Listening.None);
             App.Audio?.PlaySignal(Medium, value);
         }
 
@@ -707,13 +769,12 @@ namespace Blackbox.UI.Screens
             if (GameInput.Down(Key.Right) || GameInput.Down(Key.Up) || GameInput.Down(Key.R)) StepKeyboardTarget(+1);
             else if (GameInput.Down(Key.Left) || GameInput.Down(Key.Down)) StepKeyboardTarget(-1);
             if (GameInput.Down(Key.H)) OpenHelp();
-            if (GameInput.Down(Key.G)) HearGoal();
-            if (GameInput.Down(Key.N)) HearNow();
+            if (GameInput.Down(Key.Space) || GameInput.Down(Key.Enter)) StartRun();
         }
 
         void OpenPause()
         {
-            StopListening();
+            CancelRun();
             _ink.FinishTyping();
             var pause = Game.Screens.Create<PauseOverlay>();
             pause.Owner = this;
@@ -722,6 +783,7 @@ namespace Blackbox.UI.Screens
 
         void OpenHelp()
         {
+            CancelRun();
             _ink.FinishTyping();
             var help = Game.Screens.Create<HelpOverlay>();
             help.Chapter = Puzzle.Chapter;
@@ -736,7 +798,9 @@ namespace Blackbox.UI.Screens
 
         public override void OnClosing()
         {
-            StopListening();
+            _running = false;
+            _runPlan.Clear();
+            App.Audio?.StopSignals();
             Tweener.Kill(this);
             if (_ink != null) _ink.SetTool(InkTool.Off);
             if (_session != null)

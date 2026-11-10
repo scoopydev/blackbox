@@ -67,7 +67,9 @@ namespace Blackbox.UI.Board
     /// The circuit on screen: inputs, blocks, outputs, the wires between them and
     /// the probes on the wires. Wires never show their values; only probes,
     /// inputs and outputs do. A change sends a pulse of light downstream from
-    /// whatever changed, so the player can see what it reaches.
+    /// whatever changed, so the player can see what it reaches. With
+    /// <see cref="HideUntilRun"/>, outputs, probes and target marks show only what
+    /// the latest run found.
     /// </summary>
     public sealed class BoardView : MonoBehaviour
     {
@@ -91,10 +93,17 @@ namespace Blackbox.UI.Board
         /// <summary>No sounds, for the title screen's idle circuit.</summary>
         public bool Quiet;
 
-        public static BoardView Create(Transform parent, PuzzleSession session, IBoardHost host, BoardMetrics metrics = null)
+        /// <summary>
+        /// Outputs, probe readings and target marks show only after a run, as on the
+        /// circuit screen. Off for the title screen's idle circuit, which is always live.
+        /// </summary>
+        public bool HideUntilRun { get; private set; }
+
+        public static BoardView Create(Transform parent, PuzzleSession session, IBoardHost host, BoardMetrics metrics = null, bool hideUntilRun = false)
         {
             var rt = UIKit.Rect(parent, "Board").Stretch();
             var board = rt.gameObject.AddComponent<BoardView>();
+            board.HideUntilRun = hideUntilRun;
             board.Build(session, host, metrics ?? BoardMetrics.Fit(session.Puzzle));
             return board;
         }
@@ -122,10 +131,12 @@ namespace Blackbox.UI.Board
             }
 
             _targetWasMatched = new bool[p.Targets.Count];
-            for (int t = 0; t < p.Targets.Count; t++) _targetWasMatched[t] = session.TargetMatched(t);
             Refresh(false);
             RebuildProbes();
         }
+
+        /// <summary>Results can be shown: the circuit has run since its last change, or it is always live.</summary>
+        public bool Shown => !HideUntilRun || Session.HasRun;
 
         // ------------------------------------------------------------------ geometry
 
@@ -165,38 +176,83 @@ namespace Blackbox.UI.Board
         // ------------------------------------------------------------------ showing state
 
         /// <summary>
-        /// Shows the session as it is now: every input, block, output, target and
-        /// probe. Returns how many targets became matched since the last refresh.
+        /// Shows the session as it is now: every input and block, and the outputs,
+        /// target marks and probe readings when they can be shown. Returns how many
+        /// targets became matched since the last refresh.
         /// </summary>
         public int Refresh(bool animate)
         {
             var s = Session;
             var p = Puzzle;
+            bool shown = Shown;
             for (int i = 0; i < Inputs.Count; i++) Inputs[i].SetValue(s.InputValue(i), false);
             for (int b = 0; b < Blocks.Count; b++) Blocks[b].SetState(s.State(b), false);
 
             int newlyMatched = 0;
             for (int t = 0; t < p.Targets.Count; t++)
             {
-                bool now = s.TargetMatched(t);
+                bool now = shown && s.TargetMatched(t);
                 if (now && !_targetWasMatched[t]) newlyMatched++;
                 _targetWasMatched[t] = now;
+                bool? result = shown ? now : (bool?)null;
                 var node = p.Targets[t].Node;
-                if (node is InputDef inp) Inputs[inp.Index].Target?.SetMatched(now);
-                else if (node is BlockDef blk) Blocks[blk.Index].Target?.SetMatched(now);
+                if (node is InputDef inp) Inputs[inp.Index].Target?.SetResult(result);
+                else if (node is BlockDef blk) Blocks[blk.Index].Target?.SetResult(result);
             }
             for (int o = 0; o < Outputs.Count; o++)
             {
-                var def = p.Outputs[o];
-                int value = s.ValueOf(def);
-                bool matched = def.Target.HasValue && value == def.Target.Value;
-                Outputs[o].SetValue(value, matched, animate);
+                if (shown) ShowOutput(o, animate);
+                else Outputs[o].SetUnknown();
             }
-            for (int k = 0; k < Probes.Count; k++) Probes[k].SetValue(s.ProbeValue(k), animate);
+            for (int k = 0; k < Probes.Count; k++) ShowProbe(k, animate);
             foreach (var w in Wires) w.Probed = false;
             foreach (var probe in s.Probes) Wires[probe.Wire].Probed = true;
             return newlyMatched;
         }
+
+        /// <summary>Hides every output, probe reading and target mark, for the start of a run.</summary>
+        public void Conceal()
+        {
+            foreach (var o in Outputs) o.SetUnknown();
+            foreach (var probe in Probes) probe.SetValue(-1, false);
+            for (int t = 0; t < Puzzle.Targets.Count; t++)
+            {
+                _targetWasMatched[t] = false;
+                var node = Puzzle.Targets[t].Node;
+                if (node is InputDef inp) Inputs[inp.Index].Target?.SetResult(null);
+                else if (node is BlockDef blk) Blocks[blk.Index].Target?.SetResult(null);
+            }
+        }
+
+        /// <summary>Shows what an output receives now, whether or not the circuit has run: for revealing it during a run.</summary>
+        public void ShowOutput(int o, bool flash)
+        {
+            var def = Puzzle.Outputs[o];
+            int value = Session.ValueOf(def);
+            Outputs[o].SetValue(value, def.Target.HasValue && value == def.Target.Value, flash);
+        }
+
+        /// <summary>Shows a probe's reading if it has one, or a ?.</summary>
+        public void ShowProbe(int k, bool flash, bool force = false)
+        {
+            if (k < 0 || k >= Probes.Count || k >= Session.Probes.Count) return;
+            bool known = !HideUntilRun || force || Session.ProbeShown(k);
+            Probes[k].SetValue(known ? Session.ProbeValue(k) : -1, flash && known);
+        }
+
+        /// <summary>The circuit's depth: how many steps the signal takes to reach the furthest output.</summary>
+        public int Depth
+        {
+            get
+            {
+                int depth = 1;
+                foreach (var o in Puzzle.Outputs) depth = Mathf.Max(depth, Circuit.Depth[Circuit.NodeOf(o)]);
+                return depth;
+            }
+        }
+
+        /// <summary>When the signal reaches a node on a run, in steps from the start.</summary>
+        public int StepOf(NodeDef n) => Circuit.Depth[Circuit.NodeOf(n)];
 
         /// <summary>Lights the wires downstream of a node, one column after another.</summary>
         public void Pulse(int node)
@@ -223,7 +279,7 @@ namespace Blackbox.UI.Board
                 var pr = s.Probes[k];
                 var view = ProbeView.Create(_probeLayer, k, Wires[pr.Wire], pr.At, Puzzle.Medium, this);
                 Probes.Add(view);
-                view.SetValue(s.ProbeValue(k), false);
+                ShowProbe(k, false);
             }
             foreach (var w in Wires) w.Probed = false;
             foreach (var probe in s.Probes) Wires[probe.Wire].Probed = true;

@@ -11,16 +11,21 @@ namespace Blackbox.Puzzles
     {
         public int Wire;
         public float At;
-        public Probe(int wire, float at) { Wire = wire; At = at; }
+        /// <summary>The probe was on the circuit for the latest run, so it has a reading to show.</summary>
+        public bool Read;
+        public Probe(int wire, float at) { Wire = wire; At = at; Read = false; }
     }
 
     public enum ChangeKind { Input, Block }
 
     /// <summary>
     /// One attempt at one circuit: input values, block states, probes and an undo
-    /// history. The circuit is live: every change settles it at once, and it is
-    /// solved the moment every target matches. Has no Unity dependencies, so the whole
-    /// play loop can be tested without the engine. The screen listens to its events.
+    /// history. Every change settles the circuit at once, but the player only sees
+    /// what comes out when they run it: outputs, probe readings and target marks
+    /// belong to the latest <see cref="Run"/>, and any change clears them. The
+    /// circuit is solved by a run in which every target matches. Has no Unity
+    /// dependencies, so the whole play loop can be tested without the engine. The
+    /// screen listens to its events.
     /// </summary>
     public sealed class PuzzleSession
     {
@@ -37,7 +42,16 @@ namespace Blackbox.Puzzles
         /// <summary>Changes made on this visit, undos included.</summary>
         public int Moves { get; private set; }
 
-        /// <summary>True once the circuit has been solved on this visit.</summary>
+        /// <summary>Runs on this visit.</summary>
+        public int Runs { get; private set; }
+
+        /// <summary>
+        /// The circuit has been run and nothing has changed since, so its outputs,
+        /// probe readings and target marks can be shown.
+        /// </summary>
+        public bool HasRun { get; private set; }
+
+        /// <summary>True once a run has solved the circuit on this visit.</summary>
         public bool EverSolved { get; private set; }
 
         /// <summary>An input or block changed: (what, its index). The circuit has already settled.</summary>
@@ -46,6 +60,8 @@ namespace Blackbox.Puzzles
         public event Action Reset;
         /// <summary>A probe was placed or removed.</summary>
         public event Action ProbesChanged;
+        /// <summary>The circuit was run: its results can be shown.</summary>
+        public event Action Ran;
 
         public PuzzleSession(PuzzleDef puzzle, CircuitState resume = null)
         {
@@ -73,8 +89,30 @@ namespace Blackbox.Puzzles
         void Settle()
         {
             Circuit.Evaluate(_inputs, _states, _values);
-            if (Solved) EverSolved = true;
+            HasRun = false;
         }
+
+        /// <summary>
+        /// Runs the circuit: its outputs, every probe's reading and every target's
+        /// mark can now be shown. Returns true when the run solves it.
+        /// </summary>
+        public bool Run()
+        {
+            Runs++;
+            HasRun = true;
+            for (int k = 0; k < _probes.Count; k++)
+            {
+                var probe = _probes[k];
+                probe.Read = true;
+                _probes[k] = probe;
+            }
+            if (Solved) EverSolved = true;
+            Ran?.Invoke();
+            return Solved;
+        }
+
+        /// <summary>The latest run solved the circuit, and nothing has changed since.</summary>
+        public bool RunSolved => HasRun && Solved;
 
         // ------------------------------------------------------------------ reading
 
@@ -102,7 +140,7 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>Every target matches. A circuit with no targets is never solved.</summary>
+        /// <summary>Every target matches as the circuit stands, run or not. A circuit with no targets is never solved.</summary>
         public bool Solved => Puzzle.Targets.Count > 0 && MatchedTargets == Puzzle.Targets.Count;
 
         public bool AtStart
@@ -185,6 +223,9 @@ namespace Blackbox.Puzzles
 
         /// <summary>The value a probe reads: the signal its wire carries.</summary>
         public int ProbeValue(int probe) => _values[Circuit.NodeOf(Puzzle.Wires[_probes[probe].Wire].From)];
+
+        /// <summary>The probe has a reading to show: it was there for a run, and nothing has changed since.</summary>
+        public bool ProbeShown(int probe) => HasRun && probe >= 0 && probe < _probes.Count && _probes[probe].Read;
 
         public bool AddProbe(int wire, float at)
         {

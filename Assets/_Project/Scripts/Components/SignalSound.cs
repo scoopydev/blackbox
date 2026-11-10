@@ -8,7 +8,7 @@ namespace Blackbox.Components
     /// turns the samples into clips.
     /// <list type="bullet">
     /// <item>Bits: a 1 beeps. A 0 is only a soft, dull tap, so the player knows it played.</item>
-    /// <item>Digits: one held tone that lasts that many beats, gently re-struck on each beat so it can be counted. 0 is the dull tap.</item>
+    /// <item>Digits: one steady tone, longer the bigger the digit. 0 is the dull tap.</item>
     /// <item>Shapes: one click per corner (a circle is one smooth note), low and warm when solid, high and thin when hollow.</item>
     /// <item>Waves: the wave itself, a sine, square or saw at A3, E4 or A4.</item>
     /// </list>
@@ -17,8 +17,8 @@ namespace Blackbox.Components
     {
         public const int SampleRate = 44100;
 
-        /// <summary>One beat of a digit's tone, in seconds.</summary>
-        public const float Beat = 0.12f;
+        /// <summary>How much longer a digit's tone gets for each step up, in seconds: 1 is this long, 9 nine times as long.</summary>
+        public const float DigitStep = 0.15f;
         /// <summary>The time between a shape's corner clicks, in seconds.</summary>
         public const float CornerSpacing = 0.11f;
 
@@ -37,7 +37,7 @@ namespace Blackbox.Components
                 case Medium.Binary:
                     return 0.26f;
                 case Medium.Decimal:
-                    return v <= 0 ? 0.26f : v * Beat + 0.1f;
+                    return v <= 0 ? 0.26f : v * DigitStep + 0.1f;
                 case Medium.Shape:
                 {
                     int corners = Shapes.Corners[Shapes.Form(Clamp(v, 0, 7))];
@@ -90,18 +90,11 @@ namespace Blackbox.Components
             return tone * Gate(t, 0.005f, 0.17f, 0.025f) * 0.2f;
         }
 
-        static float Digit(int beats, float t)
+        /// <summary>One unbroken tone, held for as long as the digit is big.</summary>
+        static float Digit(int v, float t)
         {
             float tone = Sin(DigitHz, t) + 0.2f * Sin(DigitHz * 2f, t) + 0.05f * Sin(DigitHz * 3f, t);
-            float end = beats * Beat;
-            // Each beat after the first is re-struck: the tone dips and swells back in.
-            float strike = 1f;
-            if (t >= Beat && t < end)
-            {
-                float into = t % Beat;
-                strike = 0.35f + 0.65f * Math.Min(1f, into / 0.022f);
-            }
-            return tone * strike * Gate(t, 0.006f, end, 0.02f) * 0.17f;
+            return tone * Gate(t, 0.006f, v * DigitStep, 0.02f) * 0.17f;
         }
 
         static float ShapeSound(int form, bool solid, float t)

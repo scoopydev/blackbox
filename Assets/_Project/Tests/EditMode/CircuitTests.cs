@@ -81,6 +81,8 @@ namespace Blackbox.Tests
             Assert.That(s.CycleState(0, 1), Is.True);
             Assert.That(s.Solved, Is.True, "g on or: g sends 1, X shows 0");
             Assert.That(s.Moves, Is.EqualTo(1));
+            Assert.That(s.EverSolved, Is.False, "solving takes a run");
+            Assert.That(s.Run(), Is.True);
             Assert.That(s.EverSolved, Is.True);
 
             Assert.That(s.Undo(), Is.True);
@@ -89,6 +91,39 @@ namespace Blackbox.Tests
 
             Assert.That(s.SetInput(0, 1), Is.True);
             Assert.That(s.Solved, Is.True, "A at 1: 1 and 1");
+        }
+
+        [Test]
+        public void OnlyARunShowsWhatComesOut()
+        {
+            var s = new PuzzleSession(Load());
+            s.AddProbe(2, 0.5f);
+            Assert.That(s.HasRun, Is.False, "nothing is shown before the first run");
+            Assert.That(s.ProbeShown(0), Is.False);
+
+            int ran = 0;
+            s.Ran += () => ran++;
+            Assert.That(s.Run(), Is.False, "the start is never solved");
+            Assert.That(ran, Is.EqualTo(1));
+            Assert.That(s.Runs, Is.EqualTo(1));
+            Assert.That(s.HasRun, Is.True);
+            Assert.That(s.ProbeShown(0), Is.True);
+
+            s.AddProbe(3, 0.5f);
+            Assert.That(s.ProbeShown(1), Is.False, "a probe placed after the run has no reading yet");
+            Assert.That(s.HasRun, Is.True, "placing a probe changes nothing in the circuit");
+
+            s.CycleState(0, 1);
+            Assert.That(s.HasRun, Is.False, "a change hides the results again");
+            Assert.That(s.ProbeShown(0), Is.False);
+            Assert.That(s.RunSolved, Is.False, "solved as it stands, but not run");
+            Assert.That(s.Run(), Is.True);
+            Assert.That(s.RunSolved, Is.True);
+            Assert.That(s.ProbeShown(1), Is.True);
+
+            s.ResetToStart();
+            Assert.That(s.HasRun, Is.False);
+            Assert.That(s.EverSolved, Is.True, "it stays solved for this visit");
         }
 
         [Test]

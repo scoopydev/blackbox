@@ -12,7 +12,7 @@
       // One block, two states. Solution: b on its second state.
       "id": "first-light-01",
       "name": "First Light",
-      "hint": "Click the block to change what it does.",
+      "hint": "Click the block to change what it does, then press RUN to send the signal through.",
       "probes": 0,
       "inputs": {
         "A": {"at": [0, 0], "value": 1}
@@ -51,7 +51,7 @@
       // Solutions: g sends 1 (and with A = B = 1, or or with either), k on invert or always 0.
       "id": "first-light-03",
       "name": "Under the Lid",
-      "hint": "You can't see what a wire carries. Click a wire to put a probe on it. A target on a block is about the signal it sends.",
+      "hint": "Click a wire to put a probe on it: it reads the signal there on every run. A target on a block is about the signal it sends.",
       "probes": 1,
       "inputs": {
         "A": {"at": [0, 0], "value": 0, "adjustable": true},

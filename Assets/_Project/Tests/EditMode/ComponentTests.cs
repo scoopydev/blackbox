@@ -197,11 +197,28 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void DigitsLastAsManyBeatsAsTheyCount()
+        public void DigitsAreOneToneThatGrowsWithTheDigit()
         {
             for (int v = 2; v <= 9; v++)
-                Assert.That(SignalSound.Duration(Medium.Decimal, v) - SignalSound.Duration(Medium.Decimal, v - 1), Is.EqualTo(SignalSound.Beat).Within(0.0001f), v.ToString());
+                Assert.That(SignalSound.Duration(Medium.Decimal, v) - SignalSound.Duration(Medium.Decimal, v - 1), Is.EqualTo(SignalSound.DigitStep).Within(0.0001f), v.ToString());
             Assert.That(Rms(SignalSound.Render(Medium.Decimal, 0)), Is.LessThan(Rms(SignalSound.Render(Medium.Decimal, 1)) * 0.3f), "0 is only a tap");
+
+            // The tone never dips while it is held: a length to judge, not beats to count.
+            for (int v = 1; v <= 9; v++)
+            {
+                var samples = SignalSound.Render(Medium.Decimal, v);
+                int window = SignalSound.SampleRate / 100;
+                int from = (int)(0.02f * SignalSound.SampleRate), to = (int)((v * SignalSound.DigitStep - 0.01f) * SignalSound.SampleRate);
+                float loudest = 0f, quietest = float.MaxValue;
+                for (int start = from; start + window <= to; start += window)
+                {
+                    float level = 0f;
+                    for (int i = start; i < start + window; i++) level = System.Math.Max(level, System.Math.Abs(samples[i]));
+                    loudest = System.Math.Max(loudest, level);
+                    quietest = System.Math.Min(quietest, level);
+                }
+                Assert.That(quietest, Is.GreaterThan(loudest * 0.9f), $"{v} dips while held");
+            }
         }
 
         [Test]

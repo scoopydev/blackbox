@@ -7,22 +7,23 @@ The block rules are listed near the end, under a spoiler heading.
 
 Every circuit has **inputs** on the left, **outputs** on the right, and **blocks** in between, joined by wires. Each block hides a rule. The player never reads the rule; they work it out.
 
-1. **Read the goal.** The goal is written in one or two sentences above the board, with a count of the targets met. Every target also sits beside the thing it belongs to, with a tick or a cross, so the player always knows what finished looks like.
+1. **Read the goal.** The goal is written in one or two sentences above the board, with a count of the targets met. Every target also sits beside the thing it belongs to, so the player always knows what finished looks like.
 2. **Change things.** Clicking a block steps it to its next state, clicking one of its dots jumps to that state, and right-clicking or scrolling goes the other way. Inputs with arrows can be changed the same way. Fixed inputs are drawn dashed, and a locked block has a padlock and a dashed outline: neither can be changed.
-3. **Probe.** Wires hide their signals. Clicking a wire puts a probe on it, which reads the signal there and keeps reading it live as things change. Each circuit allows a set number of probes, from none to two. Clicking a probe takes it off.
-4. **Listen.** Every signal has a sound as well as a look (see below). Clicking any value on the board plays it. **HEAR GOAL** (G) plays every target in the order the goal names them, lighting each one as it sounds, and **HEAR NOW** (N) plays what the outputs give now, so the two can be compared by ear. While playing, each change sounds out the input that was set and every output it reached.
-5. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike, and undo takes away the newest. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
-6. **Solve.** The moment every target is met, the whole circuit lights up and the next circuit is offered.
+3. **Probe.** Wires hide their signals. Clicking a wire puts a probe on it, which reads the signal there on every run. Each circuit allows a set number of probes, from none to two. Clicking a probe takes it off.
+4. **Run.** Nothing that comes out shows until the player presses **RUN** (Space). For a few seconds the signal flows from the inputs, block by block, and each probe reads its wire as the light passes. Then the outputs show what arrived, top to bottom, each playing its sound, and every target gets its tick or cross. Any change stops a run and hides its results again, so each run shows one setting of the circuit.
+5. **Listen.** Every signal has a sound as well as a look (see below). A run plays each output, setting an input plays its new value, and clicking any value on the board plays it again.
+6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike, and undo takes away the newest. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
+7. **Solve.** When a run meets every target, the whole circuit lights up and the next circuit is offered.
 
-Every change sends a pulse of light along the wires downstream of what changed, so the player can see what it reaches, though not what it carries.
+Every change sends a quick pulse of light along the wires downstream of what changed, so the player can see what it reaches, though not what it carries.
 
 ### Kinds of target
 
 | Target on | Shown as | Why |
 |---|---|---|
-| An output | A card with the output's value now, `=` or `≠`, and the target value | The usual goal. |
-| A block | A **SENDS** chip above the block with the wanted value and a tick or cross. The block's actual value isn't shown. | Pins down an intermediate signal, so there is only one fair route through the circuit. |
-| An input | An **END AT** chip below the input | **Return** circuits: an adjustable input starts on its target. The player has to change it to learn what the blocks do, then put it back. |
+| An output | A card with what arrived on the latest run (a `?` before one), `=` or `≠`, and the target value | The usual goal. |
+| A block | A **SENDS** chip above the block with the wanted value, and a tick or cross after a run. The block's actual value isn't shown. | Pins down an intermediate signal, so there is only one fair route through the circuit. |
+| An input | An **END AT** chip below the input, ticked after a run | **Return** circuits: an adjustable input starts on its target. The player has to change it to learn what the blocks do, then put it back. |
 
 ### Signal media
 
@@ -42,17 +43,18 @@ Each medium is heard in its own way, so a player can follow a circuit by ear as 
 | Medium | Sounds like |
 |---|---|
 | binary | A 1 is a clear beep. A 0 is only a soft, dull tap, so the player knows it played. |
-| decimal | One held tone that lasts as many beats as the digit, gently re-struck on each beat so it can be counted. 0 is the tap. |
+| decimal | One steady tone whose length is the digit: 1 is a short blip and 9 lasts nine times as long. 0 is the tap. |
 | shape | One click per corner: a circle is a single smooth note, a triangle three clicks, a square four and a hexagon six. Solid shapes are low and warm, hollow ones high and thin. |
 | wave | The wave itself: a sine, square or saw at A3, E4 or A4. |
 
-Signal sounds can be turned off for changes in Settings (**SIGNAL SOUNDS**); clicking a value or the HEAR buttons always plays. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
+Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead, and setting an input stays quiet. Clicking a value always plays it. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
 
 ## Progression
 
 * Four chapters, one per medium, with six circuits each.
-* Inside a chapter, the first circuit is open. Solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
-* A chapter opens once 4 circuits of the chapter before are solved.
+* Every chapter is open from the start, with its first circuit open, so a player can begin with any medium.
+* Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
+* **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
 * The first time a player enters a chapter, its title card plays, with a line about its signals.
 * Every chapter follows the same arc, so the media are the thing that changes:
   1. The new medium and one kind of block.
@@ -130,7 +132,7 @@ The look is called **Void**. The background is pure black, and nothing glows exc
 * Everything is drawn as procedural meshes with anti-aliased edges and vertex-alpha glow, so it is crisp at any resolution and needs no sprites or post-processing.
 * Reduce Motion (in Settings) stops pulses, bumps and drifting light.
 
-All sound is synthesised when the game starts: soft sine blips for clicks and changes, a chord when a circuit is solved, filtered noise for menus, a slow, quiet drone, and the signal sounds above.
+All sound is synthesised when the game starts: soft sine blips for clicks and changes, a rising sweep and a tick for each column as a run flows, a chord when a circuit is solved, filtered noise for menus, a slow, quiet drone, and the signal sounds above.
 
 ## Architecture
 
@@ -164,7 +166,7 @@ Values are small whole numbers, one range per medium: 2 for bits, 10 for digits,
 
 1. Write `chapter-5-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to `chapters.json`.
-3. Give it `"unlock": { "after": "<previous chapter id>", "solved": N }`.
+3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.
 
 New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTests.cs`. Each kind belongs to one medium. A new medium needs a value range in `Media.cs`, a way to draw it in `UI/Board/ValueView.cs`, and words for goal sentences in `GoalText.cs`.

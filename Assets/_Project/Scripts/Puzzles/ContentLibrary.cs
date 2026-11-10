@@ -51,9 +51,11 @@ namespace Blackbox.Puzzles
     }
 
     /// <summary>
-    /// Unlock rules. Circuits open one at a time, but once the first circuit of a
-    /// chapter is solved there is always one spare open, so a player who is stuck
-    /// can try the next one. A chapter opens after enough circuits of the one before.
+    /// Unlock rules. Every chapter's first circuit is open, and circuits open one at
+    /// a time after it, but once the first circuit of a chapter is solved there is
+    /// always one spare open, so a player who is stuck can try the next one. A
+    /// chapter can also be made to wait for enough circuits of an earlier one
+    /// (<c>unlock</c> in its file); the shipped chapters are all open from the start.
     /// </summary>
     public sealed class Progress
     {
@@ -135,7 +137,9 @@ namespace Blackbox.Puzzles
                 var next = NextAfter(last);
                 if (next != null) return next;
             }
-            for (int c = _library.Chapters.Count - 1; c >= 0; c--)
+            // A new player, or one who has finished where they were: the earliest
+            // chapter with an open circuit still to solve.
+            for (int c = 0; c < _library.Chapters.Count; c++)
             {
                 var chapter = _library.Chapters[c];
                 if (!IsUnlocked(chapter)) continue;

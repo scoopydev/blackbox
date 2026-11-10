@@ -8,8 +8,8 @@ namespace Blackbox.UI.Board
 {
     /// <summary>
     /// A target the player must meet, shown next to the thing it belongs to: a
-    /// short label, the value wanted, and a tick or a cross. Block targets say
-    /// SENDS, input targets say END AT.
+    /// short label, the value wanted, and a tick or a cross from the latest run
+    /// (no mark before one). Block targets say SENDS, input targets say END AT.
     /// </summary>
     public sealed class TargetChip : MonoBehaviour
     {
@@ -17,7 +17,7 @@ namespace Blackbox.UI.Board
         VoidText _label;
         ValueView _value;
         GlyphGraphic _mark;
-        bool _matched;
+        bool? _matched;
         bool _solved;
         bool _initialised;
 
@@ -54,6 +54,7 @@ namespace Blackbox.UI.Board
             chip._mark = UIKit.Glyph(rt, "cross", Palette.Dim, 1.6f, "Mark");
             chip._mark.rectTransform.Centered(x + markW * 0.5f, 0f, markW, markW);
             if (host != null) chip._value.MakePlayable(host.PlayValue);
+            chip._matched = null;
             chip.Restyle();
             chip._initialised = true;
             return chip;
@@ -62,7 +63,8 @@ namespace Blackbox.UI.Board
         /// <summary>Lights the wanted value while it sounds.</summary>
         public void Ping() => _value.Ping();
 
-        public void SetMatched(bool matched)
+        /// <summary>Met (true), missed (false), or not checked yet because the circuit hasn't run (null).</summary>
+        public void SetResult(bool? matched)
         {
             if (_initialised && matched == _matched) return;
             _matched = matched;
@@ -77,13 +79,14 @@ namespace Blackbox.UI.Board
 
         void Restyle()
         {
-            bool lit = _matched || _solved;
+            bool lit = _matched == true || _solved;
             _pill.Style(Paint.Solid, Color.black, lit ? Paint.Signal : Paint.Solid, lit ? Color.white : Palette.Outline, lit ? 1.4f : 1.2f);
             _pill.Glow = lit ? 0.18f : 0f;
             _pill.GlowPaint = Paint.Signal;
             _pill.GlowRadius = 14f;
             _label.color = lit ? Palette.Dim : Palette.Faint;
             _value.Look = lit ? ValueLook.Met : ValueLook.Target;
+            _mark.enabled = lit || _matched.HasValue;
             _mark.Glyph = lit ? "check" : "cross";
             _mark.Paint = lit ? Paint.Signal : Paint.Solid;
             _mark.Tint = lit ? Color.white : Palette.Faint;
@@ -237,7 +240,7 @@ namespace Blackbox.UI.Board
         readonly List<ShapeGraphic> _ports = new List<ShapeGraphic>();
         int _state;
         bool _hover, _focused, _solved;
-        float _bump;
+        float _bump, _flash;
 
         public Vector2 InPort(int port) => _inPorts[Mathf.Clamp(port, 0, _inPorts.Count - 1)];
         public bool Changeable => !Def.Locked && Def.Kind.StateCount > 1;
@@ -345,6 +348,13 @@ namespace Blackbox.UI.Board
                 Tweener.Run(this, "bump", 0.28f, t => { _bump = 1f - t; Restyle(); }, Ease.OutQuad);
         }
 
+        /// <summary>The signal passing through on a run: the outline lights and fades.</summary>
+        public void Flash()
+        {
+            if (App.ReduceMotion) return;
+            Tweener.Run(this, "flash", 0.55f, t => { _flash = 1f - t; Restyle(); }, Ease.OutQuad);
+        }
+
         public bool Focused { get => _focused; set { if (_focused != value) { _focused = value; Restyle(); } } }
         public bool Solved { get => _solved; set { _solved = value; Restyle(); if (Target != null) Target.Solved = value; } }
 
@@ -358,6 +368,13 @@ namespace Blackbox.UI.Board
             else if (_focused) { edge = Palette.Text; width = 1.6f; glow = 0.25f; }
             else if (_hover) edge = locked ? Palette.Faint : Palette.Dim;
             if (_bump > 0f) edge = Color.Lerp(edge, Palette.Text, _bump * 0.7f);
+            if (_flash > 0.02f && !_solved)
+            {
+                edgePaint = Paint.Signal;
+                edge = new Color(1f, 1f, 1f, Mathf.Lerp(0.3f, 1f, _flash));
+                width = 1.7f;
+                glow = Mathf.Max(glow, 0.4f * _flash);
+            }
 
             _outline.Style(Paint.Solid, Color.black, edgePaint, edge, width);
             _outline.Dashed = locked;
@@ -393,8 +410,9 @@ namespace Blackbox.UI.Board
     }
 
     /// <summary>
-    /// An output: what arrives now, and beside it the target it must match, joined
-    /// by = or ≠. A met target lights the card. Outputs without a target only show
+    /// An output: what arrived on the latest run, and beside it the target it must
+    /// match, joined by = or ≠. A met target lights the card. Before a run, and
+    /// after any change, it shows a ? instead. Outputs without a target only show
     /// their value.
     /// </summary>
     public sealed class OutputView : MonoBehaviour
@@ -408,7 +426,7 @@ namespace Blackbox.UI.Board
         ValueView _now, _want;
         GlyphGraphic _relation;
         VoidText _label, _wantLabel;
-        bool _matched, _solved, _hasTarget;
+        bool _matched, _solved, _hasTarget, _known;
         float _flash;
         int _shown = -1;
 
@@ -471,11 +489,22 @@ namespace Blackbox.UI.Board
         {
             bool changed = value != _shown;
             _shown = value;
+            _known = true;
             _now.Set(value, ValueLook.Live);
             _matched = matched;
             Restyle();
             if (flash && changed && !App.ReduceMotion)
                 Tweener.Run(this, "flash", 0.6f, t => { _flash = 1f - t; Restyle(); }, Ease.OutQuad);
+        }
+
+        /// <summary>Not run yet, or changed since: shows a ? and no = or ≠.</summary>
+        public void SetUnknown()
+        {
+            _shown = -1;
+            _known = false;
+            _now.Set(-1, ValueLook.Live);
+            _matched = false;
+            Restyle();
         }
 
         public bool Matched => _matched;
@@ -501,6 +530,7 @@ namespace Blackbox.UI.Board
             _frame.GlowPaint = Paint.Signal;
             if (_relation != null)
             {
+                _relation.enabled = _known || _solved;
                 _relation.Glyph = lit ? "equals" : "notequal";
                 _relation.Paint = lit ? Paint.Signal : Paint.Solid;
                 _relation.Tint = lit ? Color.white : Palette.Dim;

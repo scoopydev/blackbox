@@ -58,6 +58,7 @@ namespace Blackbox.UI
             Add("pen", Poly(-0.52f, -0.26f, -0.82f, -0.84f, -0.24f, -0.54f), Line(0.3f, 0.56f, 0.58f, 0.28f));
             AddClosed("eraser", new[] { V(-0.78f, -0.12f), V(0.02f, 0.68f), V(0.72f, -0.02f), V(-0.08f, -0.82f) });
             Add("eraser", Line(-0.38f, 0.28f, 0.32f, -0.42f), Line(-0.9f, -0.92f, 0.9f, -0.92f));
+            AddClosed("play", new[] { V(-0.48f, 0.74f), V(0.74f, 0f), V(-0.48f, -0.74f) });
             Add("text", Line(-0.66f, 0.72f, 0.66f, 0.72f), Line(0f, 0.72f, 0f, -0.78f), Line(-0.3f, -0.78f, 0.3f, -0.78f));
             Add("undo", Arc(0.08f, -0.18f, 0.62f, 180f, 0f), Poly(-0.82f, 0.08f, -0.54f, -0.2f, -0.24f, 0.08f));
             Add("reset", Arc(0f, 0f, 0.66f, 70f, 380f), Poly(0.04f, 0.92f, 0.24f, 0.62f, -0.08f, 0.44f));

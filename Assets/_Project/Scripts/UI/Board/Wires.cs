@@ -123,12 +123,12 @@ namespace Blackbox.UI.Board
             _ghost.rectTransform.anchoredPosition = p;
         }
 
-        /// <summary>A short burst of light travelling the length of the wire.</summary>
-        public void Pulse(float delay)
+        /// <summary>A burst of light travelling the length of the wire.</summary>
+        public void Pulse(float delay, float duration = 0.32f)
         {
             if (_celebrate) return;
             _pulsing = true;
-            Tweener.Run(this, "pulse", 0.32f, t =>
+            Tweener.Run(this, "pulse", duration, t =>
             {
                 _path.LitAlpha = 1f;
                 _path.SetLit(Mathf.Max(0f, t - 0.35f), t);
@@ -220,8 +220,9 @@ namespace Blackbox.UI.Board
 
     /// <summary>
     /// A probe: a ring on a wire and a small card above it reading the signal the
-    /// wire carries. Clicking the card plays the signal; clicking the ring, or
-    /// right-clicking either, takes the probe off.
+    /// wire carried on the latest run (a ? before one, or after a change). Clicking
+    /// the card plays the signal; clicking the ring, or right-clicking either,
+    /// takes the probe off.
     /// </summary>
     public sealed class ProbeView : MonoBehaviour
     {
@@ -263,6 +264,7 @@ namespace Blackbox.UI.Board
             // The card plays what the probe reads; the dot on the wire takes the probe off.
             cardClick.Clicked = () =>
             {
+                if (!view._value.Known) return;
                 host?.PlayValue(view._value.Value);
                 view._value.Ping();
             };
@@ -292,6 +294,7 @@ namespace Blackbox.UI.Board
         /// <summary>Lights the probe's value while it sounds.</summary>
         public void Ping() => _value.Ping();
 
+        /// <summary>Shows the probe's reading, or -1 for a ? when there isn't one yet.</summary>
         public void SetValue(int value, bool flash)
         {
             bool changed = value != _value.Value;

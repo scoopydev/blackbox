@@ -28,9 +28,8 @@ namespace Blackbox.Tests
                 Assert.That(chapter.Puzzles.All(p => p.Medium == chapter.Medium), Is.True, chapter.Title);
             }
             Assert.That(library.Chapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(4), "one chapter for each medium");
-            Assert.That(library.Chapters[0].UnlockAfter, Is.Null.Or.Empty);
-            for (int i = 1; i < library.Chapters.Count; i++)
-                Assert.That(library.Chapters[i].UnlockAfter, Is.EqualTo(library.Chapters[i - 1].Id));
+            foreach (var chapter in library.Chapters)
+                Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter is open from the start");
         }
 
         [TestCaseSource(nameof(AllPuzzles))]
@@ -113,26 +112,46 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void ProgressUnlocksInOrder()
+        public void EveryChapterStartsWithItsFirstCircuitOpen()
         {
             var library = TestContent.Library;
             var save = new SaveData();
             var progress = new Progress(library, save);
+            foreach (var chapter in library.Chapters)
+            {
+                Assert.That(progress.IsUnlocked(chapter), Is.True, chapter.Title);
+                Assert.That(progress.IsUnlocked(chapter.Puzzles[0]), Is.True, chapter.Title);
+                Assert.That(progress.IsUnlocked(chapter.Puzzles[1]), Is.False, $"{chapter.Title}: only the first circuit is open at the start");
+            }
+            Assert.That(progress.ContinueTarget(), Is.SameAs(library.Chapters[0].Puzzles[0]), "a new player starts at the beginning");
+
             var first = library.Chapters[0];
-            var second = library.Chapters[1];
-
-            Assert.That(progress.IsUnlocked(first.Puzzles[0]), Is.True);
-            Assert.That(progress.IsUnlocked(first.Puzzles[1]), Is.False, "only the first circuit is open at the start");
-            Assert.That(progress.IsUnlocked(second), Is.False);
-
             save.RecordSolve(first.Puzzles[0].Id, 3);
             Assert.That(progress.IsUnlocked(first.Puzzles[1]), Is.True);
             Assert.That(progress.IsUnlocked(first.Puzzles[2]), Is.True, "one spare");
             Assert.That(progress.IsUnlocked(first.Puzzles[3]), Is.False);
+            Assert.That(progress.IsUnlocked(library.Chapters[1].Puzzles[1]), Is.False, "solving in one chapter opens nothing in another");
+        }
 
-            for (int i = 0; i < second.UnlockSolved; i++) save.RecordSolve(first.Puzzles[i].Id, 5);
+        [Test]
+        public void AChapterCanWaitForAnEarlierOne()
+        {
+            // The shipped chapters don't use it, but a chapter file can still ask to wait.
+            var library = ContentLibrary.Load(name =>
+            {
+                string text = TestContent.Read(name);
+                return name == "chapter-2-tally" ? text.Replace("\"tagline\"", "\"unlock\": { \"after\": \"first-light\", \"solved\": 4 }, \"tagline\"") : text;
+            });
+            var save = new SaveData();
+            var progress = new Progress(library, save);
+            var first = library.Chapters[0];
+            var second = library.Chapters[1];
+            Assert.That(second.UnlockSolved, Is.EqualTo(4));
+            Assert.That(progress.IsUnlocked(second), Is.False);
+            Assert.That(progress.IsUnlocked(second.Puzzles[0]), Is.False);
+            for (int i = 0; i < 4; i++) save.RecordSolve(first.Puzzles[i].Id, 5);
             Assert.That(progress.IsUnlocked(second), Is.True);
-            Assert.That(progress.ContinueTarget(), Is.Not.Null);
+            Assert.That(progress.IsUnlocked(second.Puzzles[0]), Is.True);
         }
 
         /// <summary>
@@ -165,7 +184,7 @@ namespace Blackbox.Tests
                 for (int b = 0; b < target.Blocks.Count; b++)
                     if (session.CanChangeBlock(b)) session.SetState(b, solution.States[b]);
                     else Assert.That(solution.States[b], Is.EqualTo(target.Blocks[b].State), $"{target.Id}: the solver turned locked block {target.Blocks[b].Id}");
-                Assert.That(session.Solved, Is.True, target.Id);
+                Assert.That(session.Run(), Is.True, target.Id);
                 save.RecordSolve(target.Id, session.Moves);
                 save.Circuits[target.Id] = session.Snapshot();
             }

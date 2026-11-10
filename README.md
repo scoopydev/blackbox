@@ -10,17 +10,18 @@ The core loop is experimentation:
 
 1. **Change** – switch a block to another state, or change an input that isn't fixed.
 2. **Probe** – place one of a few probes on a wire to read the signal inside.
-3. **Deduce** – form a theory about each block's hidden rule, and write it on the circuit with the pen or the text tool.
-4. **Solve** – use what you've learned to meet every target.
+3. **Run** – send the signals through and watch them flow. Only a run shows what comes out, and each output plays its sound as it arrives.
+4. **Deduce** – form a theory about each block's hidden rule, and write it on the circuit with the pen or the text tool.
+5. **Solve** – use what you've learned to meet every target in one run.
 
-Each chapter uses a different kind of signal: bits, digits, shapes, and sounds. Every signal can be heard as well as seen, including the goal.
+Each chapter uses a different kind of signal: bits, digits, shapes, and sounds, and the first circuit of every chapter is open from the start. Every signal can be heard as well as seen.
 
 There is no tutorial text explaining the parts. Understanding *is* the puzzle.
 
 ## Design pillars
 
 - **Learn by doing.** Every rule is discoverable through play; nothing is told to the player.
-- **Readable signals.** Signal state should always be visible, so cause and effect is clear.
+- **Readable signals.** What a run shows should be easy to read and hear, so cause and effect is clear.
 - **Fair mysteries.** Each component behaves consistently, so careful observation always pays off.
 - **Rules carry over.** Knowledge from earlier puzzles builds toward later, more complex circuits.
 
@@ -32,9 +33,9 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 |---|---|
 | Click a block or an input with arrows, or scroll over it | Change it (clicking a block's dot jumps to that state) |
 | Right-click | Change it the other way |
-| Click a wire | Place a probe. Click the probe's dot to take it off |
+| Click a wire | Place a probe, which reads the wire on every run. Click the probe's dot to take it off |
+| RUN, or Space | Run the circuit: the signal flows through for a few seconds, then the outputs show and sound, and the targets are checked |
 | Click any value | Hear it: every signal has a sound |
-| G, N | Hear the goal, or hear what the outputs give now |
 | D, E | Pen and eraser. Right-drag rubs out while the pen is on |
 | T | Text tool: click anywhere and type a note. Enter finishes it, Shift+Enter starts a new line, and dragging a note moves it |
 | Z or Backspace | Undo (with a note tool on, take away the last note) |

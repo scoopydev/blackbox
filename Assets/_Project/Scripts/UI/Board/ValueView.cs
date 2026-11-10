@@ -19,7 +19,8 @@ namespace Blackbox.UI.Board
     /// <summary>
     /// One signal value in any medium, drawn to fit a square of side <c>Size</c>:
     /// a digit for binary and decimal, a filled or outlined form for shapes, and a
-    /// few cycles of the waveform (wider than tall) for waves.
+    /// few cycles of the waveform (wider than tall) for waves. A value that isn't
+    /// known yet (-1), such as an output before the circuit has run, shows a faint ?.
     /// </summary>
     public sealed class ValueView : MonoBehaviour
     {
@@ -33,7 +34,9 @@ namespace Blackbox.UI.Board
         ShapeGraphic _shape;
         WaveGraphic _wave;
         VoidText _pitch;
+        VoidText _unknown;
         GlyphGraphic _speaker;
+        bool _styled;
         float _ping;
         Vector3 _restScale = Vector3.one;
         bool _pinging;
@@ -75,6 +78,12 @@ namespace Blackbox.UI.Board
                     view._digit.rectTransform.Centered(0f, 0f, w + 20f, size * 1.2f);
                     break;
             }
+            if (medium == Medium.Shape || medium == Medium.Wave)
+            {
+                view._unknown = UIKit.Text(rt, "?", TextStyle.Value.WithSize(Mathf.RoundToInt(size * 0.8f)).WithWeight(200).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Unknown");
+                view._unknown.rectTransform.Centered(0f, 0f, w, size * 1.2f);
+                view._unknown.enabled = false;
+            }
             return view;
         }
 
@@ -94,7 +103,12 @@ namespace Blackbox.UI.Board
             var c = hit.gameObject.AddComponent<Clickable>();
             c.HoverSound = false;
             c.ClickSound = Sfx.Hover;
-            c.Clicked = () => { play(_value); Ping(); };
+            c.Clicked = () =>
+            {
+                if (!Known) return;
+                play(_value);
+                Ping();
+            };
             c.HoverChanged = on => _speaker.enabled = on;
             return c;
         }
@@ -119,9 +133,14 @@ namespace Blackbox.UI.Board
             });
         }
 
+        /// <summary>True when the value is a real signal, not the ? of one still unknown.</summary>
+        public bool Known => _value >= 0 && Media.IsValid(_medium, _value);
+
+        /// <summary>Shows a value, or -1 for one that isn't known yet.</summary>
         public void Set(int value, ValueLook look)
         {
-            if (value == _value && look == _look) return;
+            if (_styled && value == _value && look == _look) return;
+            _styled = true;
             _value = value;
             _look = look;
             Restyle();
@@ -137,7 +156,8 @@ namespace Blackbox.UI.Board
         {
             bool live = _look == ValueLook.Live;
             Color quiet = Color.Lerp(_look == ValueLook.Met ? Palette.Text : Palette.Dim, Color.white, _ping);
-            bool has = _value >= 0 && Media.IsValid(_medium, _value);
+            bool has = Known;
+            if (_unknown != null) _unknown.enabled = !has;
 
             switch (_medium)
             {
@@ -184,9 +204,9 @@ namespace Blackbox.UI.Board
                     break;
                 }
                 default:
-                    _digit.text = has ? _value.ToString() : "·";
+                    _digit.text = has ? _value.ToString() : "?";
                     _digit.SignalFill = live && has;
-                    _digit.color = live ? Color.white : has ? quiet : Palette.Faint;
+                    _digit.color = !has ? Palette.Faint : live ? Color.white : quiet;
                     break;
             }
         }

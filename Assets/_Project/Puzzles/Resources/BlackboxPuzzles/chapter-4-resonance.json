@@ -7,7 +7,6 @@
   "medium": "wave",
   "tagline": "Listen closely.",
   "signals": "Signals here are sounds: a sine, square or saw wave at a low, middle or high pitch.",
-  "unlock": {"after": "forms", "solved": 4},
   "circuits": [
     {
       // Introduces W1. Solution: u = raise pitch, v = lower pitch.

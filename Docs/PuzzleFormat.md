@@ -23,7 +23,6 @@ The chapters, in play order, by file name without `.json`:
   "medium": "decimal",
   "tagline": "Count what changes.",
   "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0.",
-  "unlock": { "after": "first-light", "solved": 4 },
   "circuits": [ ... ]
 }
 ```
@@ -36,7 +35,7 @@ The chapters, in play order, by file name without `.json`:
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
 | `signals` | no | One line about the medium, shown on the title card and in the help. |
-| `unlock` | no | The chapter opens once `solved` circuits of chapter `after` are solved. Leave it out for a chapter that is open from the start. |
+| `unlock` | no | `{ "after": "first-light", "solved": 4 }` makes the chapter wait until `solved` circuits of chapter `after` are solved. Leave it out for a chapter that is open from the start, as all the shipped chapters are. |
 | `circuits` | yes | The circuits, easiest first. |
 
 ## A circuit

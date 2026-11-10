@@ -96,7 +96,7 @@ namespace Blackbox.UI.Screens
             AddToggle("FULLSCREEN", y += step, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); });
             AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); });
             AddToggle("SIGNAL SOUNDS", y += step, prefs.SignalSounds, v => { prefs.SignalSounds = v; Game.MarkDirty(); });
-            var note = UIKit.Text(Root, "PLAYS EVERY OUTPUT A CHANGE REACHES", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            var note = UIKit.Text(Root, "PLAYS SIGNALS AS YOU SET INPUTS AND RUN", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
             note.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
             y += 40f;
             UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, y + 30f, Palette.Rule);
@@ -297,11 +297,11 @@ namespace Blackbox.UI.Screens
 
             var ideas = new List<string>
             {
-                "The goal is written above the circuit. Every target shows a tick once it's met. Meet them all to finish.",
+                "The goal is written above the circuit. Press RUN to send the signals through: only then do the outputs show, and each target gets a tick or a cross.",
                 "Each block keeps a hidden rule. Click it, or one of its dots, to change what it does. A padlock means it can't be changed.",
                 "Inputs with arrows can be changed; the rest are fixed. Sometimes an input has to end at a target of its own.",
-                "Wires hide their signals. Click a wire to put a probe on it and read what it carries. Each circuit has only so many.",
-                "Every signal has a sound. Click any value to hear it. HEAR GOAL plays the targets and HEAR NOW plays the outputs, so you can compare them by ear.",
+                "Wires hide their signals. Click a wire to put a probe on it: it reads what the wire carries on every run. Each circuit has only so many.",
+                "Every signal has a sound. A run plays each output as it arrives, and clicking any value you can see plays it again.",
                 "Draw with the pen, or type with the text tool, to label blocks and note down what you learn. Notes stay with the circuit.",
             };
             if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
@@ -319,11 +319,11 @@ namespace Blackbox.UI.Screens
 
             string[] keys =
             {
+                "SPACE", "run the circuit",
                 "CLICK  ·  SCROLL", "change a block or input",
                 "RIGHT-CLICK", "change it the other way",
                 "CLICK A WIRE", "place a probe",
                 "CLICK A VALUE", "hear it",
-                "G  ·  N", "hear the goal, or the outputs now",
                 "CLICK A PROBE'S DOT", "take it off",
                 "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
                 "RIGHT-DRAG", "rub out a note",
