@@ -5,7 +5,7 @@ Circuits are plain JSON files in `Assets/_Project/Puzzles/Resources/BlackboxPuzz
 
 After editing, run **BLACKBOX → Validate Puzzles** in Unity, or the EditMode tests. Both solve every circuit by brute force: settings circuits by trying every input and block state, wired circuits by trying every way to wire them.
 
-There are two kinds of circuit. In a **settings** circuit (Part One) the wires are drawn already and the player changes inputs and block states. In a **wired** circuit (Parts Two and Three) every block is fixed and the player draws the wires. Wired circuits are described [further down](#wired-circuits).
+Every shipped chapter is a **wired** chapter (`"mode": "wiring"`): every block is fixed and the player draws the wires. They are described [further down](#wired-circuits). The loader still reads the older **settings** circuits, where the wires are drawn already and the player changes inputs and block states; only the title screen's moving picture uses one now.
 
 ## chapters.json
 
@@ -50,7 +50,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 |---|---|---|
 | `id` | yes | Stable id. Saves refer to it, so don't rename it once players have it. |
 | `title` | yes | Shown on the chapter map and the title card. |
-| `medium` | yes, for settings chapters | The kind of signal: `binary`, `decimal`, `shape`, `wave` (analog) or `sampled`. Every circuit in the chapter uses it. Wired chapters mix signals and leave it out. |
+| `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal`, `shape`, `wave` (analog) or `sampled`. A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
 | `marked` | no | `false` hides the kind code on every block, as in Part Three. Wired chapters only. |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
@@ -174,7 +174,7 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 * every input port of every block has a wire, and
 * every block leads to an output, through other blocks or straight there.
 
-Inputs may go unused. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it.
+Inputs may go unused. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it. A named block shows a dot for each state of its kind, with its own filled.
 
 ```json
 {
@@ -199,9 +199,10 @@ Inputs may go unused. Blocks are fixed: the player never changes a state, so eve
 | Key | Meaning |
 |---|---|
 | `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. |
-| `blocks` | Each block is `{ "kind": "B2", "state": 0, "at": [col, row] }`. Any bit, digit, shape or M kind can be wired. The wave-setting kinds (W and Q) can't, because they change a wave's settings rather than its signal. |
+| `blocks` | Each block is `{ "kind": "B2", "state": 0, "at": [col, row] }`. Any kind can be wired. The wave kinds (W and Q) change a wave's settings, so they only read a plain wave of their own kind (straight from an input or another W or Q block) and send nothing otherwise. |
 | `outputs` | Each output is a device name, or `{ "device": "fan", "at": [col, row] }`. The default device is `display`. |
 | `solution` | The intended wiring, as wires. It must keep the rules above. The targets come from it: each output wants what the solution sends it. |
+| `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts fully wired with one wire wrong, the second half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |
 | `goal` | Optional. The default goal names every output and its device, and states the rules. |
 
 There are no probes in a wired circuit: to see what a block sends, the player wires it to an output. Leave out `at` and the loader lays the board out: inputs on the left, blocks in one column (up to 3 blocks), two (up to 8) or three, in file order, and outputs on the right. Keep a circuit to 8 blocks or fewer.
@@ -214,7 +215,8 @@ A signal is its type and its value, or a pattern of values played in turn throug
 "binary 1"                          a steady 1
 "binary 0110"                       0 for a quarter of the loop, then 1, 1, 0
 "decimal 3141"                      digits; a run of digits is one per step
-"shape solid triangle, hollow circle"
+"shape solid triangle, hollow circle"   cyan unless a colour is named
+"shape solid pink triangle"         colours: cyan, pink, amber, green
 "wave sine f2 a7"                   an analog wave: form, frequency f1 to f7, height a1 to a7
 "wave sine f2 a7 p2"                the same wave half a cycle later (p1 to p3 are quarter cycles)
 "sampled saw f1 a7 s6"              a sampled wave, read 3, 6 or 12 times a cycle
@@ -227,7 +229,7 @@ A pattern must divide the loop evenly: 1, 2, 3, 4, 6, 8, 9, 12 or 16 values (and
 | Device | `device` | Does | Matches its target when |
 |---|---|---|---|
 | Display | `display` | Shows the signal itself, as a value, a strip of values or a graph | it is the same signal |
-| Light | `light` | Lit on a 1. Brighter for a bigger digit (9 is full). Follows a wave above its middle and is dark below it. A shape lights it in that form's colour, full for solid and half for hollow | it is as bright, in the same colour, at every moment |
+| Light | `light` | Lit on a 1. Brighter for a bigger digit (9 is full). Follows a wave above its middle and is dark below it. A shape lights it fully in the shape's colour, whatever its form or fill | it is as bright, in the same colour, at every moment |
 | Speaker | `speaker` | Plays the signal | it is the same signal |
 | Digit display | `digits` | Shows a number: a digit, a bit, a shape's corners, a wave's height rounded | it shows the same numbers |
 | Fan | `fan` (or `motor`) | Spins faster for more signal; a wave below its middle spins it backwards | it spins the same way at the same speed |

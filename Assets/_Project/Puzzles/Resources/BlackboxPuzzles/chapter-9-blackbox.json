@@ -146,7 +146,7 @@
       "hint": "A shape read as a digit is its number of corners.",
       "inputs": {
         "A": {
-          "signal": "shape solid square"
+          "signal": "shape solid pink square"
         },
         "B": {
           "signal": "binary 0110"
@@ -172,7 +172,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
           "device": "digits"
@@ -259,7 +259,7 @@
           "signal": "wave sine f1 a7 p2"
         },
         "C": {
-          "signal": "shape hollow triangle"
+          "signal": "shape hollow pink triangle"
         },
         "D": {
           "signal": "binary 01"

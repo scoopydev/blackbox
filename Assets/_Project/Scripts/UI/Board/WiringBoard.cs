@@ -342,7 +342,7 @@ namespace Blackbox.UI.Board
         public void ShowBlock(int block, WiringReport report)
         {
             _shown = true;
-            Blocks[block].Show(report.Values[Session.BlockNode(block)], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block));
+            Blocks[block].Show(report.Values[Session.BlockNode(block)], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block), report.RefusingBlocks.Contains(block));
         }
 
         public void ShowOutput(int output, WiringReport report)
@@ -690,7 +690,21 @@ namespace Blackbox.UI.Board
 
             bool marked = board.Puzzle.Marked;
             view._code = UIKit.Text(rt, marked ? def.Kind.Id : "", TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Kind");
-            view._code.rectTransform.Centered(0f, -3f * s, w, h * 0.6f);
+            view._code.rectTransform.Centered(0f, (marked && def.Kind.StateCount > 1 ? 4f : -3f) * s, w, h * 0.55f);
+
+            // A named block shows which of its kind's states it is fixed in, so two
+            // blocks of one kind that behave differently never look the same.
+            int states = marked ? def.Kind.StateCount : 0;
+            for (int i = 0; i < states && states > 1; i++)
+            {
+                bool active = i == def.State;
+                var pip = UIKit.Shape(rt, "State " + (i + 1), ShapeKind.Circle);
+                pip.raycastTarget = false;
+                float size = active ? 7f : 4.5f;
+                pip.rectTransform.Centered((i - (states - 1) * 0.5f) * 15f * s, -h * 0.5f + 13f * s, size, size);
+                if (active) pip.Style(Paint.Solid, Palette.Dim, Paint.None, Color.clear);
+                else pip.Style(Paint.None, Color.clear, Paint.Solid, Palette.Faint, 1f);
+            }
 
             int node = board.NodeOf(def);
             int n = def.Kind.InputCount;
@@ -728,11 +742,11 @@ namespace Blackbox.UI.Board
         }
 
         /// <summary>What the block sent on the run, or null if nothing; and whether a rule is broken here.</summary>
-        public void Show(Trace sent, bool emptyInput, bool unused)
+        public void Show(Trace sent, bool emptyInput, bool unused, bool refusing = false)
         {
             _readout.gameObject.SetActive(true);
             _readout.Set(sent, ValueLook.Live);
-            _note.text = emptyInput ? "AN INPUT IS EMPTY" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
+            _note.text = emptyInput ? "AN INPUT IS EMPTY" : refusing ? "CAN'T READ THAT SIGNAL" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
             _broken = emptyInput || unused;
             Restyle();
         }

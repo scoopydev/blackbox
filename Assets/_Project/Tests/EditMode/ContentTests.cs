@@ -9,14 +9,11 @@ using NUnit.Framework;
 namespace Blackbox.Tests
 {
     /// <summary>
-    /// Checks every shipped circuit: it loads, it can be solved, it doesn't start
-    /// solved, and its goal can be put into words. Also the save file.
+    /// Checks the shipped chapters and parts, how they open, a full playthrough,
+    /// and the save file. Each wired circuit's own checks are in WiringTests.
     /// </summary>
     public class ContentTests
     {
-        /// <summary>The circuits of Part One, where the player changes inputs and blocks.</summary>
-        static IEnumerable<PuzzleDef> AllPuzzles() => TestContent.Library.AllPuzzles.Where(p => !p.Wiring);
-
         /// <summary>The chapters of Part One.</summary>
         static IEnumerable<ChapterDef> LearnChapters => TestContent.Library.Parts[0].Chapters;
 
@@ -29,148 +26,93 @@ namespace Blackbox.Tests
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
             Assert.That(library.Chapters.Count, Is.EqualTo(9));
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
+            Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
             foreach (var part in library.Parts)
             {
                 Assert.That(part.Title, Is.Not.Empty);
                 Assert.That(part.Tagline, Is.Not.Empty);
                 foreach (var chapter in part.Chapters) Assert.That(chapter.Part, Is.SameAs(part), chapter.Title);
             }
-            foreach (var chapter in library.Parts[1].Chapters.Concat(library.Parts[2].Chapters))
+            foreach (var chapter in library.Chapters)
             {
                 Assert.That(chapter.Wiring, Is.True, chapter.Title);
-                Assert.That(chapter.Puzzles.All(p => p.Wiring), Is.True, chapter.Title);
-                Assert.That(chapter.Puzzles.All(p => p.Marked == (chapter.Part.Id == "combine")), Is.True, $"{chapter.Title}: blocks are named in Combine, unnamed in Build");
                 Assert.That(chapter.Tagline, Is.Not.Empty, chapter.Title);
                 Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
+                Assert.That(chapter.Puzzles.All(p => p.Marked == (chapter.Part.Id != "build")), Is.True, $"{chapter.Title}: blocks are named until Build");
+                Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter of an open part is open");
             }
             foreach (var chapter in LearnChapters)
             {
-                Assert.That(chapter.Wiring, Is.False, chapter.Title);
+                Assert.That(chapter.Mixed, Is.False, $"{chapter.Title} is about one kind of signal");
                 Assert.That(chapter.Puzzles.Count, Is.EqualTo(6), chapter.Title);
-                Assert.That(chapter.Tagline, Is.Not.Empty, chapter.Title);
-                Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
-                Assert.That(chapter.Puzzles.All(p => p.Medium == chapter.Medium), Is.True, chapter.Title);
             }
+            foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
+                Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");
             Assert.That(LearnChapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(5), "one chapter for each medium");
-            foreach (var chapter in library.Chapters)
-                Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter is open from the start");
         }
 
         [Test]
         public void TheStartupCheckPasses()
         {
             // What BlackboxApp runs when the game starts. Wired circuits start with
-            // no wires, so it must not ask them to have every block input wired.
+            // few or no wires, so it must not ask them to have every block input wired.
             Assert.DoesNotThrow(() => TestContent.Library.CheckCircuits());
-            Assert.That(TestContent.Library.AllPuzzles.Any(p => p.Wiring), Is.True, "the check meets wired circuits");
-        }
-
-        [TestCaseSource(nameof(AllPuzzles))]
-        public void CircuitIsSolvable(PuzzleDef puzzle)
-        {
-            var report = PuzzleSolver.Analyse(puzzle);
-            Assert.That(report.Errors, Is.Empty, report.ToString());
-            Assert.That(report.SolutionCount, Is.GreaterThan(0), report.ToString());
-            Assert.That(puzzle.Targets.Count, Is.GreaterThan(0));
-            Assert.That(report.StartMatched, Is.LessThan(puzzle.Targets.Count), "starts solved");
-            Assert.That(report.FewestChanges, Is.GreaterThan(0));
-        }
-
-        [TestCaseSource(nameof(AllPuzzles))]
-        public void GoalCanBeRead(PuzzleDef puzzle)
-        {
-            var goal = GoalText.For(puzzle);
-            Assert.That(goal, Is.Not.Empty);
-            Assert.That(goal, Does.Not.Contain("?"), "every target is a value of the medium");
-            if (puzzle.Targets.Count <= GoalText.MaxListed)
-                foreach (var t in puzzle.Targets) Assert.That(goal, Does.Contain(t.Node.Id), $"the goal names {t.Node.Id}");
-        }
-
-        [TestCaseSource(nameof(AllPuzzles))]
-        public void TargetsAreWrittenAsTheSolutionMakesThem(PuzzleDef puzzle)
-        {
-            // Two sampled waves can trace the same line and both meet a target. The
-            // file should still name the one the solution makes, so the target's
-            // caption reads the same as the output's.
-            var report = PuzzleSolver.Analyse(puzzle, 1);
-            Assume.That(report.Solutions, Is.Not.Empty);
-            var solution = report.Solutions[0];
-            var circuit = new CompiledCircuit(puzzle);
-            var values = circuit.Evaluate(solution.Inputs, solution.States);
-            foreach (var t in puzzle.Targets)
-                Assert.That(Media.Describe(puzzle.Medium, values[circuit.NodeOf(t.Node)]), Is.EqualTo(Media.Describe(puzzle.Medium, t.Want)), $"{puzzle.Id}: target on {t.Node.Id}");
-        }
-
-        [TestCaseSource(nameof(AllPuzzles))]
-        public void AdjustableWavesListTheirOptions(PuzzleDef puzzle)
-        {
-            foreach (var input in puzzle.Inputs)
-            {
-                if (!input.Adjustable || !Media.IsWave(puzzle.Medium)) continue;
-                Assert.That(input.Options, Is.Not.Null, $"{puzzle.Id}: {input.Id}");
-                Assert.That(input.Options.Length, Is.InRange(2, 5), $"{puzzle.Id}: {input.Id} has a short list to step through");
-                for (int a = 0; a < input.Options.Length; a++)
-                    for (int b = a + 1; b < input.Options.Length; b++)
-                        Assert.That(Media.Same(puzzle.Medium, input.Options[a], input.Options[b]), Is.False, $"{puzzle.Id}: {input.Id} offers two options that are the same signal");
-            }
         }
 
         [Test]
-        public void EveryChapterEndsOnAUniqueSolution()
+        public void EachLearnChapterSticksToItsSignal()
         {
+            // Part One teaches one kind of signal per chapter, with that kind's four
+            // blocks, before Part Two mixes them.
             foreach (var chapter in LearnChapters)
             {
-                var report = PuzzleSolver.Analyse(chapter.Puzzles.Last());
-                Assert.That(report.SolutionCount, Is.EqualTo(1), report.ToString());
-            }
-        }
-
-        [Test]
-        public void CircuitsGetHarder()
-        {
-            // Within a chapter the number of combinations should broadly grow, so the
-            // last circuit can't be brute forced as easily as the first.
-            foreach (var chapter in LearnChapters)
-            {
-                var spaces = chapter.Puzzles.Select(p => PuzzleSolver.Analyse(p).SearchSpace).ToList();
-                Assert.That(spaces.Last(), Is.GreaterThan(spaces.First() * 8), $"{chapter.Title}: {string.Join(", ", spaces)}");
-            }
-        }
-
-        [Test]
-        public void LockedBlocksCanBeLearned()
-        {
-            // A locked block can't be changed, so the player must be able to learn it
-            // some other way: by having changed one of its kind before, or by changing
-            // an input that reaches it and watching what comes out.
-            var seenFree = new HashSet<string>();
-            foreach (var p in AllPuzzles())
-            {
-                var circuit = new Blackbox.Circuits.CompiledCircuit(p);
-                foreach (var block in p.Blocks.Where(b => b.Locked))
+                var kinds = new HashSet<string>();
+                foreach (var p in chapter.Puzzles)
                 {
-                    if (seenFree.Contains(block.Kind.Id)) continue;
-                    int node = circuit.BlockNode(block.Index);
-                    bool reachable = Enumerable.Range(0, p.Inputs.Count).Any(i => p.InputChangeable(i) && circuit.Downstream(i)[node]);
-                    Assert.That(reachable, Is.True, $"{p.Id}: locked {block.Kind.Id} {block.Id} is new and no adjustable input reaches it");
+                    foreach (var i in p.Inputs) Assert.That(i.Signal.Medium, Is.EqualTo(chapter.Medium), $"{p.Id}: input {i.Id}");
+                    foreach (var b in p.Blocks)
+                    {
+                        Assert.That(b.Kind.Mixing, Is.False, $"{p.Id}: {b.Kind.Id} belongs in Part Two");
+                        Assert.That(b.Kind.Medium, Is.EqualTo(chapter.Medium), $"{p.Id}: {b.Kind.Id}");
+                        kinds.Add(b.Kind.Id);
+                    }
                 }
-                foreach (var block in p.Blocks.Where(b => !b.Locked)) seenFree.Add(block.Kind.Id);
+                Assert.That(kinds.Count, Is.EqualTo(4), $"{chapter.Title} uses all four of its kinds: {string.Join(", ", kinds)}");
             }
         }
 
         [Test]
-        public void EveryChapterOpensGently()
+        public void EachLearnChapterTeachesWiringStepByStep()
         {
-            // The first circuit of a chapter shows the new signals with one kind of
-            // block, nothing locked and no probes to think about.
+            // The first circuit comes wired and needs one wire moved; the second is
+            // half wired; from the third on, the player draws every wire.
             foreach (var chapter in LearnChapters)
             {
                 var first = chapter.Puzzles[0];
-                Assert.That(first.Blocks.Select(b => b.Kind.Id).Distinct().Count(), Is.EqualTo(1), chapter.Title);
-                Assert.That(first.Blocks.Any(b => b.Locked), Is.False, chapter.Title);
-                Assert.That(first.Blocks.Count, Is.LessThanOrEqualTo(2), chapter.Title);
-                Assert.That(first.Probes, Is.EqualTo(0), chapter.Title);
+                var second = chapter.Puzzles[1];
+                Assert.That(first.Blocks.Count, Is.EqualTo(1), first.Id);
+                var whole = new WiringSession(first);
+                var report = whole.Check();
+                Assert.That(report.EmptyBlocks, Is.Empty, $"{first.Id} starts with every block input wired");
+                Assert.That(report.UnwiredOutputs, Is.Empty, $"{first.Id} starts with every output wired");
+                Assert.That(report.Solved, Is.False, $"{first.Id} needs a wire moved");
+
+                var half = new WiringSession(second);
+                Assert.That(half.WireCount, Is.GreaterThan(0), $"{second.Id} starts half wired");
+                Assert.That(half.Check().EmptyBlocks, Is.Not.Empty, $"{second.Id} leaves a block input for the player");
+
+                foreach (var p in chapter.Puzzles.Skip(2))
+                    Assert.That(p.Start, Is.Empty, $"{p.Id}: from the third circuit on, the player draws every wire");
             }
+            foreach (var p in TestContent.Library.Parts.Skip(1).SelectMany(part => part.Chapters).SelectMany(c => c.Puzzles))
+                Assert.That(p.Start, Is.Empty, $"{p.Id} starts with no wires");
+        }
+
+        [Test]
+        public void DevicesTurnUpInPartOne()
+        {
+            var used = new HashSet<Device>(LearnChapters.SelectMany(c => c.Puzzles).SelectMany(p => p.Outputs).Select(o => o.Device));
+            foreach (var d in Devices.All) Assert.That(used, Does.Contain(d), $"Part One has a {Devices.Noun(d)}");
         }
 
         [Test]
@@ -283,31 +225,19 @@ namespace Blackbox.Tests
                 Assert.That(progress.IsSolved(target), Is.False, $"Continue chose {target.Id}, which is already solved");
                 save.LastPuzzle = target.Id;
 
-                if (target.Wiring)
+                Assert.That(target.Wiring, Is.True, target.Id);
+                var wiring = new WiringSession(target, save.Circuits.TryGetValue(target.Id, out var saved) ? saved.Wires : null);
+                foreach (var w in target.Solution)
                 {
-                    var wiring = new WiringSession(target, save.Circuits.TryGetValue(target.Id, out var saved) ? saved.Wires : null);
-                    foreach (var w in target.Solution)
-                        Assert.That(wiring.Connect(wiring.NodeOf(w.From), wiring.NodeOf(w.To), w.ToPort), Is.True, $"{target.Id}: {w.From.Id} -> {w.To.Id}");
-                    Assert.That(wiring.Run(), Is.True, target.Id);
-                    save.RecordSolve(target.Id, wiring.Moves);
-                    var state = new CircuitState();
-                    state.Wires.AddRange(wiring.Snapshot());
-                    save.Circuits[target.Id] = state;
-                    continue;
+                    int from = wiring.NodeOf(w.From), to = wiring.NodeOf(w.To);
+                    if (wiring.DriverOf(to, w.ToPort) == from) continue; // one of the wires it started with
+                    Assert.That(wiring.Connect(from, to, w.ToPort), Is.True, $"{target.Id}: {w.From.Id} -> {w.To.Id}");
                 }
-
-                var report = PuzzleSolver.Analyse(target, 1);
-                var solution = report.Solutions[0];
-                var session = new PuzzleSession(target, save.Circuits.TryGetValue(target.Id, out var resume) ? resume : null);
-                for (int i = 0; i < target.Inputs.Count; i++)
-                    if (session.CanChangeInput(i)) session.SetInput(i, solution.Inputs[i]);
-                    else Assert.That(solution.Inputs[i], Is.EqualTo(target.Inputs[i].Value), $"{target.Id}: the solver changed fixed input {target.Inputs[i].Id}");
-                for (int b = 0; b < target.Blocks.Count; b++)
-                    if (session.CanChangeBlock(b)) session.SetState(b, solution.States[b]);
-                    else Assert.That(solution.States[b], Is.EqualTo(target.Blocks[b].State), $"{target.Id}: the solver turned locked block {target.Blocks[b].Id}");
-                Assert.That(session.Run(), Is.True, target.Id);
-                save.RecordSolve(target.Id, session.Moves);
-                save.Circuits[target.Id] = session.Snapshot();
+                Assert.That(wiring.Run(), Is.True, target.Id);
+                save.RecordSolve(target.Id, wiring.Moves);
+                var state = new CircuitState();
+                state.Wires.AddRange(wiring.Snapshot());
+                save.Circuits[target.Id] = state;
             }
 
             Assert.That(progress.TotalSolved, Is.EqualTo(total));
@@ -387,6 +317,13 @@ namespace Blackbox.Tests
             var save = SaveData.FromJson(@"{ ""solved"": [""first-light-01""], ""bestTests"": { ""first-light-01"": 2 }, ""preferences"": { ""musicVolume"": 0.3 } }");
             Assert.That(save.Solved, Is.Empty, "old circuits don't carry over");
             Assert.That(save.Prefs.MusicVolume, Is.EqualTo(0.3f).Within(0.0001f));
+
+            var settingsGame = SaveData.FromJson(@"{ ""version"": 2, ""solved"": [""first-light-01""], ""preferences"": { ""reduceMotion"": true } }");
+            Assert.That(settingsGame.Solved, Is.Empty, "progress from before the wiring game doesn't carry over");
+            Assert.That(settingsGame.Prefs.ReduceMotion, Is.True);
+            var now = new SaveData();
+            now.RecordSolve("first-light-01", 3);
+            Assert.That(SaveData.FromJson(now.ToJson()).Solved, Does.Contain("first-light-01"));
         }
 
         [Test]

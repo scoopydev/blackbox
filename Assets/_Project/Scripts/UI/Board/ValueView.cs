@@ -172,16 +172,21 @@ namespace Blackbox.UI.Board
                     bool solid = Shapes.Solid(_value);
                     float stroke = Mathf.Max(1.4f, _size * 0.05f);
                     _shape.Inset = form == 0 ? _size * 0.06f : 0f;
+                    int colour = Shapes.Colour(_value);
                     if (live)
                     {
-                        _shape.Style(solid ? Paint.Signal : Paint.None, Color.white, Paint.Signal, Color.white, stroke);
+                        Paint paint = colour == 0 ? Paint.Signal : Paint.Solid;
+                        Color tint = colour == 0 ? Color.white : Palette.ShapeColours[colour];
+                        _shape.Style(solid ? paint : Paint.None, tint, paint, tint, stroke);
                         _shape.Glow = (solid ? 0.35f : 0.25f) + 0.4f * _ping;
-                        _shape.GlowPaint = Paint.Signal;
+                        _shape.GlowPaint = paint;
+                        _shape.GlowColor = tint;
                         _shape.GlowRadius = _size * 0.35f;
                     }
                     else
                     {
-                        _shape.Style(solid ? Paint.Solid : Paint.None, quiet, Paint.Solid, quiet, stroke);
+                        Color tint = colour == 0 ? quiet : Color.Lerp(quiet, Palette.ShapeColours[colour], 0.55f);
+                        _shape.Style(solid ? Paint.Solid : Paint.None, tint, Paint.Solid, tint, stroke);
                         _shape.Glow = 0f;
                     }
                     break;

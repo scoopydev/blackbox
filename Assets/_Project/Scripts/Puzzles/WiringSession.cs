@@ -18,6 +18,8 @@ namespace Blackbox.Puzzles
         public readonly List<int> EmptyBlocks = new List<int>();
         /// <summary>Blocks wired up fully, but fed nothing by a block upstream. They send nothing either.</summary>
         public readonly List<int> StarvedBlocks = new List<int>();
+        /// <summary>Blocks given signals they can't read, so they send nothing: a wave block fed anything but a plain wave of its type.</summary>
+        public readonly List<int> RefusingBlocks = new List<int>();
         /// <summary>Blocks whose signal doesn't lead to any output.</summary>
         public readonly List<int> UnusedBlocks = new List<int>();
         /// <summary>Outputs with no wire into them.</summary>
@@ -86,10 +88,50 @@ namespace Blackbox.Puzzles
             BlockCount = puzzle.Blocks.Count;
             OutputCount = puzzle.Outputs.Count;
             _driver = Empty(puzzle);
-            if (resume == null) return;
+            if (resume == null)
+            {
+                PlaceStart();
+                return;
+            }
             foreach (var text in resume)
                 if (TryReadLink(text, out int from, out int to, out int port) && CanConnect(from, to, port, out _))
                     _driver[to][port] = from;
+        }
+
+        void PlaceStart()
+        {
+            foreach (var w in Puzzle.Start)
+            {
+                int from = NodeOf(w.From), to = NodeOf(w.To);
+                if (CanConnect(from, to, w.ToPort, out _)) _driver[to][w.ToPort] = from;
+            }
+        }
+
+        /// <summary>True when the circuit begins with some wires in place.</summary>
+        public bool HasStart => Puzzle.Start.Count > 0;
+
+        /// <summary>True when the wiring is as the circuit began.</summary>
+        public bool AsStarted
+        {
+            get
+            {
+                var fresh = new WiringSession(Puzzle);
+                for (int n = 0; n < NodeCount; n++)
+                    for (int k = 0; k < _driver[n].Length; k++)
+                        if (_driver[n][k] != fresh._driver[n][k]) return false;
+                return true;
+            }
+        }
+
+        /// <summary>Puts the wiring back as the circuit began, as one change. False if it already is.</summary>
+        public bool Restart()
+        {
+            if (AsStarted) return false;
+            Remember();
+            foreach (var ports in _driver) for (int k = 0; k < ports.Length; k++) ports[k] = -1;
+            PlaceStart();
+            Touched();
+            return true;
         }
 
         static int[][] Empty(PuzzleDef p)
@@ -304,7 +346,12 @@ namespace Blackbox.Puzzles
                 var ports = driver[inputs + b];
                 bool empty = Array.IndexOf(ports, -1) >= 0;
                 if (empty) report.EmptyBlocks.Add(b);
-                else if (report.Values[inputs + b] == null) report.StarvedBlocks.Add(b);
+                else if (report.Values[inputs + b] == null)
+                {
+                    bool fed = true;
+                    foreach (int d in ports) fed &= report.Values[d] != null;
+                    (fed ? report.RefusingBlocks : report.StarvedBlocks).Add(b);
+                }
             }
             for (int o = 0; o < outputs; o++)
             {

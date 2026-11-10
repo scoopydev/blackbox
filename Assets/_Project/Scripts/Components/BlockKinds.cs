@@ -27,12 +27,27 @@ namespace Blackbox.Components
         public bool Mixing => _rule == null;
 
         /// <summary>
-        /// True when the block can sit in a circuit the player wires. Bit, digit and
-        /// shape blocks read whatever reaches them step by step, as their own type;
-        /// mixing blocks work on any signal. Wave blocks change a wave's settings,
-        /// which a mixed signal doesn't have, so they stay in their own chapters.
+        /// True when the block works on a wave's settings (frequency, form, height,
+        /// phase, steps) rather than on its level at each moment. Such a block only
+        /// reads a wave of its own type that no other block has mixed, and sends
+        /// nothing for anything else (see <see cref="Reads"/>).
         /// </summary>
-        public bool Wireable => Mixing || !Media.IsWave(Medium);
+        public bool WorksOnSettings => !Mixing && Media.IsWave(Medium);
+
+        /// <summary>Every kind can be wired. Kept for the loader and the tests.</summary>
+        public bool Wireable => true;
+
+        /// <summary>
+        /// False when this block can't make sense of these inputs and sends
+        /// nothing: a wave block fed something other than a plain wave of its type.
+        /// </summary>
+        public bool Reads(Trace[] inputs)
+        {
+            if (!WorksOnSettings) return true;
+            foreach (var t in inputs)
+                if (t == null || t.Medium != Medium || !t.Value.HasValue) return false;
+            return true;
+        }
 
         /// <summary>
         /// What each state does, for designers, tests and the editor validator.
@@ -72,14 +87,22 @@ namespace Blackbox.Components
         /// <summary>
         /// The block's output, over a whole loop, for these input signals. A bit,
         /// digit or shape block reads each input as its own type, step by step
-        /// (see <see cref="Trace.As"/>), and applies its rule at every step.
+        /// (see <see cref="Trace.As"/>), and applies its rule at every step. A wave
+        /// block changes the settings of the plain wave it is given, and returns
+        /// null (it sends nothing) when it isn't given one.
         /// </summary>
         public Trace Apply(Trace[] inputs, int state)
         {
             CheckState(state);
             if (inputs == null || inputs.Length != InputCount) throw new ArgumentException($"{Id} takes {InputCount} input(s).", nameof(inputs));
             if (_traceRule != null) return _traceRule(inputs, state);
-            if (!Wireable) throw new InvalidOperationException($"{Id} works on wave settings, so it can't take a mixed signal.");
+            if (WorksOnSettings)
+            {
+                if (!Reads(inputs)) return null;
+                var settings = new int[InputCount];
+                for (int p = 0; p < InputCount; p++) settings[p] = inputs[p].Value.Value;
+                return Trace.Of(Medium, _rule(settings, state));
+            }
 
             var read = new Trace[InputCount];
             bool flat = true;
@@ -177,12 +200,12 @@ namespace Blackbox.Components
                 (x, s) => s == 0 ? x[0] ^ 1 : x[0]);
 
             Add("S2", Medium.Shape, 1, new[] { "next form (circle, triangle, square, hexagon, circle)", "previous form" },
-                (x, s) => Shapes.Make(Shapes.Form(x[0]) + (s == 0 ? 1 : -1), Shapes.Solid(x[0])));
+                (x, s) => Shapes.Make(Shapes.Form(x[0]) + (s == 0 ? 1 : -1), Shapes.Solid(x[0]), Shapes.Colour(x[0])));
 
             Add("S3", Medium.Shape, 2, new[] { "form of top, fill of bottom", "form of bottom, fill of top" },
                 (x, s) => s == 0
-                    ? Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[1]))
-                    : Shapes.Make(Shapes.Form(x[1]), Shapes.Solid(x[0])));
+                    ? Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[1]), Shapes.Colour(x[0]))
+                    : Shapes.Make(Shapes.Form(x[1]), Shapes.Solid(x[0]), Shapes.Colour(x[1])));
 
             Add("S4", Medium.Shape, 2, new[] { "the one with more corners (top on a tie)", "the one with fewer corners (top on a tie)" },
                 (x, s) =>

@@ -239,18 +239,23 @@ namespace Blackbox.UI.Board
                 var (start, length, level) = runs[i];
                 bool current = now >= start && now < start + length;
                 bool solid = Shapes.Solid((int)level);
+                int colour = Shapes.Colour((int)level);
                 var s = _shapes[i];
                 float stroke = Mathf.Max(1.3f, _h * 0.035f);
                 if (live)
                 {
-                    s.Style(solid ? Paint.Signal : Paint.None, Color.white, Paint.Signal, Color.white, stroke);
+                    Paint paint = colour == 0 ? Paint.Signal : Paint.Solid;
+                    Color tint = colour == 0 ? Color.white : Palette.ShapeColours[colour];
+                    s.Style(solid ? paint : Paint.None, tint, paint, tint, stroke);
                     s.Glow = (current ? 0.45f : 0.15f) + 0.4f * _ping;
-                    s.GlowPaint = Paint.Signal;
+                    s.GlowPaint = paint;
+                    s.GlowColor = tint;
                     s.GlowRadius = _h * 0.25f;
                 }
                 else
                 {
-                    s.Style(solid ? Paint.Solid : Paint.None, quiet, Paint.Solid, quiet, stroke);
+                    Color tint = colour == 0 ? quiet : Color.Lerp(quiet, Palette.ShapeColours[colour], 0.55f);
+                    s.Style(solid ? Paint.Solid : Paint.None, tint, Paint.Solid, tint, stroke);
                     s.Glow = 0f;
                 }
             }
@@ -274,8 +279,6 @@ namespace Blackbox.UI.Board
     /// </summary>
     public sealed class DeviceView : MonoBehaviour
     {
-        /// <summary>The colour a light takes from each shape's form: circle, triangle, square, hexagon.</summary>
-        public static readonly Color[] FormColours = { Palette.Hex(0x36E2FF), Palette.Hex(0x4C9DFF), Palette.Hex(0x7C7CFF), Palette.Hex(0xA46BFF) };
 
         Device _device;
         Trace _trace;
@@ -488,8 +491,8 @@ namespace Blackbox.UI.Board
                 case Device.Light:
                 {
                     float bright = has ? ReadingNow() : 0f;
-                    int form = has ? Devices.LightColour(_trace.Medium, LevelNow()) : -1;
-                    Color glow = form >= 0 ? FormColours[form] : Palette.Cyan;
+                    int colour = has ? Devices.LightColour(_trace.Medium, LevelNow()) : -1;
+                    Color glow = colour >= 0 ? Palette.ShapeColours[colour] : Palette.Cyan;
                     if (!live) glow = Color.Lerp(Palette.Dim, glow, _look == ValueLook.Met ? 0.6f : 0.35f);
                     var fill = glow.WithAlpha(Mathf.Lerp(0f, live ? 0.95f : 0.6f, bright));
                     _bulb.Style(Paint.Solid, fill, Paint.Solid, bright > 0.01f ? glow.WithAlpha(0.9f) : (live ? Palette.Faint : quiet.WithAlpha(0.7f)), 1.4f);

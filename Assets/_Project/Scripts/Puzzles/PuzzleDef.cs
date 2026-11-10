@@ -123,6 +123,12 @@ namespace Blackbox.Puzzles
 
         /// <summary>A wired circuit's intended wiring, which its outputs' wanted signals come from. Never shown.</summary>
         public readonly List<WireDef> Solution = new List<WireDef>();
+        /// <summary>
+        /// Wired circuits: the wires already in place when the circuit is first
+        /// opened, for teaching. The player can move or remove them like any other.
+        /// Usually empty.
+        /// </summary>
+        public readonly List<WireDef> Start = new List<WireDef>();
 
         public readonly List<InputDef> Inputs = new List<InputDef>();
         public readonly List<BlockDef> Blocks = new List<BlockDef>();
@@ -194,8 +200,10 @@ namespace Blackbox.Puzzles
         /// <summary>Position in the game, from 0.</summary>
         public int Number;
 
-        /// <summary>The player wires this chapter's circuits, with signals of any type.</summary>
+        /// <summary>The player wires this chapter's circuits.</summary>
         public bool Wiring;
+        /// <summary>A wired chapter with no one medium: its signals are of every type.</summary>
+        public bool Mixed;
 
         /// <summary>The part of the game the chapter belongs to.</summary>
         public PartDef Part;

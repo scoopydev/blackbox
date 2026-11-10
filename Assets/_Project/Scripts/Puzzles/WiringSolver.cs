@@ -97,13 +97,21 @@ namespace Blackbox.Puzzles
                 var key = new StringBuilder().Append(b);
                 var ins = driver[node];
                 var traceIns = new Trace[ins.Length];
+                bool fed = true;
                 for (int k = 0; k < ins.Length; k++)
                 {
                     int id = Value(ins[k], done);
                     key.Append(',').Append(id);
-                    traceIns[k] = traces[id];
+                    if (id < 0) fed = false;
+                    else traceIns[k] = traces[id];
                 }
                 string memoKey = key.ToString();
+                if (!fed)
+                {
+                    value[node] = -1;
+                    done[node] = true;
+                    return -1;
+                }
                 if (!blockMemo.TryGetValue(memoKey, out int result))
                 {
                     var block = p.Blocks[b];
@@ -117,6 +125,7 @@ namespace Blackbox.Puzzles
 
             bool Matches(int output, int traceId)
             {
+                if (traceId < 0) return false;
                 if (matchMemo.TryGetValue((output, traceId), out bool m)) return m;
                 var o = p.Outputs[output];
                 m = Devices.Same(o.Device, traces[traceId], o.Want);

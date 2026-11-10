@@ -37,6 +37,13 @@ namespace Blackbox.Components
 
         public Medium Medium { get; }
 
+        /// <summary>
+        /// The value this trace was made from, for a wave or sampled wave that no
+        /// block has mixed: what wave blocks read, since they change a wave's
+        /// settings. Null for anything else.
+        /// </summary>
+        public int? Value { get; private set; }
+
         public Trace(Medium medium, float[] levels)
         {
             if (levels == null || levels.Length != Steps) throw new ArgumentException($"A trace has {Steps} levels.", nameof(levels));
@@ -63,7 +70,7 @@ namespace Blackbox.Components
                     default: levels[k] = value; break;
                 }
             }
-            return new Trace(m, levels);
+            return new Trace(m, levels) { Value = Media.IsWave(m) ? value : (int?)null };
         }
 
         /// <summary>The same level all the way through.</summary>
@@ -189,6 +196,7 @@ namespace Blackbox.Components
                 if (_key != null) return _key;
                 var sb = new StringBuilder(Steps * 3 + 4);
                 sb.Append((int)Medium).Append(':');
+                if (Value.HasValue) sb.Append('v').Append(Value.Value).Append(':');
                 // Waves to the nearest tenth: close enough to tell traces apart, and
                 // coarse enough that rounding noise doesn't split the same trace.
                 float scale = Medium == Medium.Wave ? 10f : 1f;

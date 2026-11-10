@@ -45,7 +45,10 @@ namespace Blackbox.Tests
                 Assert.Throws<System.InvalidOperationException>(() => kind.Apply(new int[kind.InputCount], 0), kind.Id);
             }
             foreach (var kind in KindCatalog.All.Where(k => !k.Mixing))
-                Assert.That(kind.Wireable, Is.EqualTo(!Media.IsWave(kind.Medium)), kind.Id);
+            {
+                Assert.That(kind.Wireable, Is.True, kind.Id);
+                Assert.That(kind.WorksOnSettings, Is.EqualTo(Media.IsWave(kind.Medium)), kind.Id);
+            }
         }
 
         [TestCaseSource(nameof(AllKinds))]

@@ -384,6 +384,15 @@ namespace Blackbox.UI.Screens
             Game.Confirm("Take every wire off this circuit? Notes stay.", "CLEAR", false, ClearWires);
         }
 
+        public void RestartWires()
+        {
+            if (_session.Restart())
+            {
+                App.Sound(Sfx.Close);
+                Say("The wires are back as the circuit began. Undo puts yours back.", 3f);
+            }
+        }
+
         public void ClearWires()
         {
             if (_session.Clear())
@@ -625,8 +634,16 @@ namespace Blackbox.UI.Screens
             _ink.FinishTyping();
             var pause = Game.Screens.Create<PauseOverlay>();
             pause.Puzzle = Puzzle;
-            pause.Reset = ClearWires;
-            pause.ResetQuestion = "Take every wire off this circuit? Notes stay.";
+            if (_session.HasStart)
+            {
+                pause.Reset = RestartWires;
+                pause.ResetQuestion = "Put the wires back as this circuit began? Notes stay.";
+            }
+            else
+            {
+                pause.Reset = ClearWires;
+                pause.ResetQuestion = "Take every wire off this circuit? Notes stay.";
+            }
             Game.Screens.Push(pause);
         }
 

@@ -81,7 +81,7 @@ namespace Blackbox.Components
             switch (d)
             {
                 case Device.Light:
-                    if (m == Medium.Shape) return Shapes.Solid((int)level) ? 1f : 0.5f;
+                    if (m == Medium.Shape) return 1f; // lit in the shape's colour, whatever its form or fill
                     return Clamp01(Amount(m, level));
                 case Device.Digits:
                     if (m == Medium.Shape) return Shapes.Corners[Shapes.Form((int)level)];
@@ -105,10 +105,11 @@ namespace Blackbox.Components
         }
 
         /// <summary>
-        /// The colour a light shows at one level: a shape's form (0 circle to 3
-        /// hexagon), or -1 for the plain signal colour of everything else.
+        /// The colour a light shows at one level: a shape's colour (1 pink, 2 amber,
+        /// 3 green), or -1 for the plain signal colour, which is also what a cyan
+        /// shape and every other signal show.
         /// </summary>
-        public static int LightColour(Medium m, float level) => m == Medium.Shape ? Shapes.Form((int)level) : -1;
+        public static int LightColour(Medium m, float level) => m == Medium.Shape && Shapes.Colour((int)level) > 0 ? Shapes.Colour((int)level) : -1;
 
         /// <summary>True when the device does the same thing with both signals at every step.</summary>
         public static bool Same(Device d, Trace a, Trace b)

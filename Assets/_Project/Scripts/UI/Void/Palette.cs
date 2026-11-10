@@ -18,6 +18,12 @@ namespace Blackbox.UI
         public static readonly Color Cyan = Hex(0x36E2FF);
         public static readonly Color Violet = Hex(0xA46BFF);
 
+        /// <summary>
+        /// The colours a shape can be, by <c>Shapes.Colour</c>. Cyan (0) is drawn
+        /// in the signal gradient like every other signal; the rest are flat.
+        /// </summary>
+        public static readonly Color[] ShapeColours = { Hex(0x36E2FF), Hex(0xFF5FD2), Hex(0xFFB23F), Hex(0x6BFF8E) };
+
         /// <summary>Where the signal gradient starts and ends, in frame x (0..1920).</summary>
         public const float GradientStartX = 160f;
         public const float GradientEndX = 1760f;

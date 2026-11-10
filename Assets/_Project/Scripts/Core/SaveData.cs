@@ -89,8 +89,11 @@ namespace Blackbox.Core
     /// </summary>
     public sealed class SaveData
     {
-        /// <summary>Version 2 is the redesign with probes, the pen and signal media. Older circuits don't carry over.</summary>
-        public const int CurrentVersion = 2;
+        /// <summary>
+        /// Version 3 is the wiring game, where the player draws every circuit's
+        /// wires. Progress from older versions doesn't carry over, only preferences.
+        /// </summary>
+        public const int CurrentVersion = 3;
 
         public readonly HashSet<string> Solved = new HashSet<string>();
         /// <summary>Fewest changes used to solve each circuit.</summary>
@@ -234,7 +237,7 @@ namespace Blackbox.Core
             var root = JsonValue.Parse(json);
             int version = root["version"].AsInt(1);
 
-            if (version >= 2)
+            if (version >= CurrentVersion)
             {
                 foreach (var v in root["solved"].Items) if (v.IsString) data.Solved.Add(v.AsString());
                 foreach (var m in root["bestMoves"].Members) if (m.Value.IsNumber) data.BestMoves[m.Key] = m.Value.AsInt();

@@ -97,6 +97,7 @@ namespace Blackbox.Puzzles
                 Signals = root["signals"].AsString(string.Empty),
                 Number = chapterNumber,
                 Wiring = wiring,
+                Mixed = wiring && !root.Has("medium"),
             };
 
             var unlock = root["unlock"];
@@ -480,7 +481,7 @@ namespace Blackbox.Puzzles
                 if (!seen.Add(n.Id)) throw new PuzzleFormatException($"{where}: the id '{n.Id}' is used twice.");
 
             if (c.Has("wires") && c["wires"].Count > 0)
-                throw new PuzzleFormatException($"{where}: a wired circuit starts with no wires. Put the intended wiring in \"solution\".");
+                throw new PuzzleFormatException($"{where}: a wired circuit's \"wires\" would be fixed. Put the wires the player starts with in \"start\", and the intended wiring in \"solution\".");
             if (!c["solution"].IsArray || c["solution"].Count == 0)
                 throw new PuzzleFormatException($"{where}: a wired circuit needs a \"solution\": the wiring its targets come from.");
             foreach (var w in c["solution"].Items)
@@ -491,6 +492,21 @@ namespace Blackbox.Puzzles
             }
             CheckDrivers(p.Solution, p, $"{where} solution");
             CheckLoops(p.Solution, p, $"{where} solution");
+
+            if (c.Has("start"))
+            {
+                if (!c["start"].IsArray) throw new PuzzleFormatException($"{where}: \"start\" is a list of wires, like [\"A -> g.0\"].");
+                var taken = new HashSet<(NodeDef, int)>();
+                foreach (var w in c["start"].Items)
+                {
+                    var wire = ReadWire(w, p, where + " start");
+                    if (!taken.Add((wire.To, wire.ToPort)))
+                        throw new PuzzleFormatException($"{where} start: {wire.To.Id} port {wire.ToPort} has two wires running into it.");
+                    wire.Index = p.Start.Count;
+                    p.Start.Add(wire);
+                }
+                CheckLoops(p.Start, p, $"{where} start");
+            }
 
             var values = WiringSession.Evaluate(p, p.Solution);
             foreach (var o in p.Outputs)

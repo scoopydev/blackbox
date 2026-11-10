@@ -313,7 +313,7 @@ namespace Blackbox.UI.Screens
             {
                 "Wire the circuit so every output does what its target shows. Drag from a dot to a dot to run a wire; click a wire to take it off.",
                 "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
-                "Blocks keep hidden rules. Wire one between an input and an output, run it, and watch what it sends.",
+                "Blocks keep hidden rules. The dots under a named block show which setting it is fixed in. Wire a block between an input and an output, run it, and watch what it sends.",
                 "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
                 "Outputs are devices: lights glow, fans spin, servos swing, digit displays count, speakers play. A target is met when the device does the same thing.",
                 "Signals can change through the loop. Each one plays across its card, and clicking any signal plays it.",
@@ -456,7 +456,7 @@ namespace Blackbox.UI.Screens
         /// <summary>A few of the chapter's signals, played in turn so the player hears what they sound like.</summary>
         void BuildSamples(float cx)
         {
-            if (Chapter.Wiring)
+            if (Chapter.Mixed)
             {
                 BuildMixedSamples(cx);
                 return;
@@ -467,7 +467,7 @@ namespace Blackbox.UI.Screens
             {
                 case Medium.Binary: values = new[] { 1, 0, 1, 1 }; break;
                 case Medium.Decimal: values = new[] { 1, 3, 5 }; break;
-                case Medium.Shape: values = new[] { Shapes.Make(0, true), Shapes.Make(1, false), Shapes.Make(2, true), Shapes.Make(3, false) }; break;
+                case Medium.Shape: values = new[] { Shapes.Make(0, true), Shapes.Make(1, false, 1), Shapes.Make(2, true, 2), Shapes.Make(3, false, 3) }; break;
                 case Medium.Wave: values = new[] { Waves.Make(Waves.Sine, 0, 6), Waves.Make(Waves.SquareWave, 2, 3), Waves.Make(Waves.Saw, 4, 5), Waves.Make(Waves.Sine, 3, 6, 1) }; break;
                 default: values = new[] { Sampled.Make(Waves.Sine, 0, 6, 2), Sampled.Make(Waves.Sine, 2, 4, 1), Sampled.Make(Waves.Saw, 3, 6, 2), Sampled.Make(Waves.Sine, 4, 2, 0) }; break;
             }

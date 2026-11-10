@@ -1,61 +1,65 @@
 # BLACKBOX design notes
 
 How the game plays, what each chapter teaches, and how the code is put together.
-The game comes in three parts. **Learn** (chapters I to V) is the loop below: the circuit is wired and the player changes inputs and blocks. **Combine** and **Build** (chapters VI to IX) turn it round: the player draws the wires. See [Wiring](#wiring).
 The block rules are listed near the end, under a spoiler heading.
 
 ## The loop
 
-Every circuit has **inputs** on the left, **outputs** on the right, and **blocks** in between, joined by wires. Each block hides a rule. The player never reads the rule; they work it out.
+Every circuit gives the player **inputs** on the left, **blocks** in the middle and **outputs** on the right. The player **draws the wires** so every output does what its target shows. Only the outputs count. Each block hides a rule; the player never reads it, they work it out by wiring the block into something and running it.
 
-1. **Read the goal.** The goal is written in one or two sentences above the board, with a count of the targets met. Every target also sits beside the thing it belongs to, so the player always knows what finished looks like.
-2. **Change things.** Clicking a block steps it to its next state, clicking one of its dots jumps to that state, and right-clicking or scrolling goes the other way. Inputs with arrows can be changed the same way. Fixed inputs are drawn dashed, and a locked block has a padlock and a dashed outline: neither can be changed.
-3. **Probe.** Wires hide their signals. Clicking a wire puts a probe on it, which reads the signal there on every run. Each circuit allows a set number of probes, from none to two. Clicking a probe takes it off.
-4. **Run.** Nothing that comes out shows until the player presses **RUN** (Space). For a few seconds the signal flows from the inputs, block by block, and each probe reads its wire as the light passes. Then the outputs show what arrived, top to bottom, each playing its sound, and every target gets its tick or cross. Any change stops a run and hides its results again, so each run shows one setting of the circuit.
-5. **Listen.** Every signal has a sound as well as a look (see below). A run plays each output, setting an input plays its new value, and clicking any value on the board plays it again.
-6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike, and undo takes away the newest. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
-7. **Solve.** When a run meets every target, the whole circuit lights up and the next circuit is offered.
+1. **Read the goal.** The goal is one sentence above the board, with a count of the outputs met. Every output shows its target device beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
+2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires.
+3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs work their devices top to bottom, each playing its sound. Any change hides the results again, so each run shows one wiring.
+4. **Keep the rules.** Every block must be used: it must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused. The verdict after a run names the first broken rule, such as "block g has an input with no wire" or "block h isn't used".
+5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
+6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
+7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered.
 
-Every change sends a quick pulse of light along the wires downstream of what changed, so the player can see what it reaches, though not what it carries.
+Blocks are fixed: the player never changes a block's setting. A **named** block shows its kind's code (such as "B3") and a dot for each of the kind's settings, with the one it is fixed in filled, so two blocks of one kind that behave differently never look the same. In Part Three blocks are **unmarked**: no code and no dots, only their ports.
 
-### Kinds of target
+### Devices
 
-| Target on | Shown as | Why |
+| Device | Does | Matches its target when |
 |---|---|---|
-| An output | A card with what arrived on the latest run (a `?` before one), `=` or `≠`, and the target value | The usual goal. |
-| A block | A **SENDS** chip above the block with the wanted value, and a tick or cross after a run. The block's actual value isn't shown. | Pins down an intermediate signal, so there is only one fair route through the circuit. |
-| An input | An **END AT** chip below the input, ticked after a run | **Return** circuits: an adjustable input starts on its target. The player has to change it to learn what the blocks do, then put it back. |
+| Display | Shows the signal itself, as a value, a strip of values or a graph | it is the same signal |
+| Light | Lit on a 1; brighter for a bigger digit (9 is full); follows a wave above its middle and is dark below it; lit in a shape's colour, whatever its form or fill | it is as bright, in the same colour, at every moment |
+| Speaker | Plays the signal | it is the same signal |
+| Digit display | Shows a number: a digit, a bit, a shape's corners, a wave's height rounded | it shows the same numbers |
+| Fan | Spins faster for more signal; a wave below its middle spins it backwards | it spins the same way at the same speed |
+| Servo | Swings its arm from left (nothing, or a wave's bottom) to right (full, or a wave's top) | its arm is in the same place |
+
+A device matches on what it does, not on the signal, so a digit display wanting 3 is met by the digit 3 or by a triangle.
 
 ### Signal media
-
-Each chapter uses a different kind of signal, and its blocks work on that kind only.
 
 | Chapter | Medium | Values | Drawn as |
 |---|---|---|---|
 | I First Light | binary | 0 and 1 | Digits |
 | II Tally | decimal | 0 to 9, wrapping round | Digits |
-| III Forms | shape | circle, triangle, square or hexagon, hollow or solid | The shape itself, outlined or filled |
+| III Forms | shape | circle, triangle, square or hexagon; hollow or solid; cyan, pink, amber or green | The shape itself, outlined or filled, in its colour (cyan in the signal gradient) |
 | IV Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
 | V Grain | sampled wave | an analog wave read 3, 6 or 12 times a cycle, each reading rounded to a whole level and held, at F1 to F7 and A1 to A7 | The waveform as a staircase, settings under it ("F3 A5 S6") |
 
 ### Signals over time
 
-Every signal is also a **trace**: its level at each of the 288 steps of one loop of a run (`Components/Trace.cs`). Bits, digits and shapes are flat traces. Waves rise and fall.
+Every signal is a **trace**: its level at each of the 288 steps of one loop of a run (`Components/Trace.cs`). An input can be a single value or a pattern, like `binary 0110`, held for an equal share of the loop each. Waves rise and fall.
 
 * **Frequency** F1 to F7 fits 1, 2, 3, 4, 6, 8 or 12 cycles into a loop. Those are octaves and fifths of each other, so the pitches are in tune, and every cycle, half and quarter cycle lands exactly on a step.
 * **Amplitude** A1 to A7 is the peak, 1 to 7 levels from the middle.
 * **Phase** moves an analog wave a quarter cycle at a time. A sine half a cycle late is the same sine upside down, so the two cancel when added; a sine and a cosine (a quarter apart) don't.
-* A **sampled** wave reads the analog form at the middle of each of its 3, 6 or 12 steps a cycle and rounds the reading to a whole level. Two sampled waves that trace the same staircase (a square read 6 or 12 times, say) are the same signal, so either meets a target that names the other.
+* A **sampled** wave reads the analog form at the middle of each of its 3, 6 or 12 steps a cycle and rounds the reading to a whole level. Two sampled waves that trace the same staircase (a square read 6 or 12 times, say) are the same signal.
 
-The trace also defines how one kind of signal reads as another, for the wiring puzzles to come. These rules are provisional:
+Bit, digit and shape blocks work step by step through the loop, and read any signal as their own kind:
 
 | Read as | From a bit | From a digit | From a shape | From a wave |
 |---|---|---|---|---|
 | bit | itself | 1 unless 0 | 1 when solid | 1 while above the middle |
 | digit | 0 or 1 | itself | its corners | its height, 0 (bottom) to 9 (top) |
-| shape | a circle, solid when 1 | a circle, solid unless 0 | itself | a circle, solid while above the middle |
+| shape | a cyan circle, solid when 1 | a cyan circle, solid unless 0 | itself | a cyan circle, solid while above the middle |
 | analog wave | top when 1, bottom when 0 | a flat level, 0 at the bottom and 9 at the top | top when solid, bottom when hollow | itself |
 | sampled wave | as for analog, rounded to whole levels at every step | | | |
+
+Wave and sampled-wave blocks change a wave's **settings** (frequency, form, height, phase, steps), so they only read a plain wave of their own kind: one straight from an input or from another such block. Given anything else, they send nothing, and the block says **CAN'T READ THAT SIGNAL**.
 
 ### Signal sounds
 
@@ -65,125 +69,109 @@ Each medium is heard in its own way, so a player can follow a circuit by ear as 
 |---|---|
 | binary | A 1 is a clear beep. A 0 is only a soft, dull tap, so the player knows it played. |
 | decimal | One short tone whose pitch is the digit, climbing a major scale: 0 is C4 (do), 7 is C5, 9 is E5. Every digit lasts as long. |
-| shape | One click per corner: a circle is a single smooth note, a triangle three clicks, a square four and a hexagon six. Solid shapes are low and warm, hollow ones high and thin. |
+| shape | One click per corner: a circle is a single smooth note, a triangle three clicks, a square four and a hexagon six. Solid shapes are low and warm, hollow ones high and thin. Colour lifts the pitch: pink a third, amber a fifth, green a sixth above cyan. |
 | wave | The wave itself. Its frequency is its pitch (F1 is D3, F3 is A4, F7 is A6) and its amplitude its loudness, 2.5 dB a step. Phase can't be heard. |
 | sampled wave | The same pitches, but held in steps exactly as drawn, so it buzzes; the fewer the steps the harsher. Loudness follows the levels. |
 
-Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead, and setting an input stays quiet. Clicking a value always plays it. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
-
-## Wiring
-
-In Parts Two and Three every circuit starts with no wires. The player gets fixed inputs on the left, blocks in the middle and outputs on the right, and must wire them so every output does what its target shows. The blocks can't be changed, so the only way to learn one is to wire something into it and watch what it sends.
-
-* **The rules.** All the blocks must be used: each must lead to an output, through other blocks or straight there. Every input port of a block needs a wire, and a block with an empty port sends nothing. Inputs may go unused. One source can feed many wires; each port takes one.
-* **Drawing wires.** Drag from a dot to a dot, or click one dot and then the other. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. Wires that would make a loop are refused with a reason. Undo and Clear work on wires.
-* **Running.** As before, nothing shows until RUN: the light runs along the wires, each block shows what it sends, and the outputs work top to bottom. The verdict names the first broken rule, such as "block g has an input with no wire" or "block h isn't used".
-* **Outputs are devices.** A display shows the signal; a light glows (on for a 1, brighter for a bigger digit, following a wave above its middle, in a shape's colour); a speaker plays it; a digit display shows a number (a shape shows its corners); a fan spins (backwards below a wave's middle); a servo swings its arm. Each output shows its target device beside the live one, with = or ≠ between them. A device matches on what it does, so a digit display wanting 3 is met by a 3 or by a triangle.
-* **Signals change through the loop.** Inputs can be patterns like `binary 0110`, held for a quarter of the loop each, and waves move as they always have. Every block works step by step through the loop.
-* **Kinds mix.** A bit, digit or shape block reads any signal as its own kind: a digit is 1 unless it's 0, a shape is 1 when solid, a wave is 1 above its middle, a shape is its corners as a digit, and a wave's height is a digit from 0 to 9. So a wave into an AND block blinks a bit at the wave's frequency.
-* **Mixing blocks.** Eight new kinds, M1 to M8, work on any signal: add as waves, flip, delay, sample, gate, count, speed up and compare. Their rules are in the spoiler table.
-* **Unmarked blocks.** In Part Three blocks don't show their kind code, only their ports. Every kind they use was met by name earlier.
+A signal that changes through the loop plays each of its values in turn. Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead. Clicking a signal always plays it. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
 
 ## Progression
 
-* Three parts. **Learn** has five chapters, one per medium, with six circuits each. **Combine** (Patch, Blend) teaches wiring, devices and mixing. **Build** (Unmarked, Blackbox) is the main game. Each later part opens when every circuit of the part before it is solved; the chapter map has a tab for each part, with a padlock and a count while it's locked.
+* Three parts. **Learn** has five chapters, one per medium, with six circuits each, and teaches each signal and its four blocks. **Combine** (Patch, Blend) teaches how kinds of signal read each other and the eight mixing blocks. **Build** (Unmarked, Blackbox) is the main game. Each later part opens when every circuit of the part before it is solved; the chapter map has a tab for each part, with a padlock and a count while it's locked.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
 * The first time a player enters a chapter, its title card plays, with a line about its signals.
-* Every chapter follows the same arc, so the media are the thing that changes:
-  1. The new medium and one kind of block.
-  2. A second kind, a locked block, and an input the player can change.
-  3. A probe and a two-input kind.
-  4. The fourth kind, often locked, with one block feeding two others.
-  5. A **return** circuit: the inputs start on their targets and there are no probes.
-  6. The **tangle**: eight blocks, some locked, two probes, and exactly one solution.
+* Every Learn chapter follows the same arc, so the media are the thing that changes:
+  1. **Pre-wired.** One block, every wire drawn, but one runs from the wrong input. The player moves it.
+  2. **Half wired.** A two-input block with one input empty. The player finishes it.
+  3. From here the player draws every wire: two blocks in a chain.
+  4. One source feeding two blocks, and a second output.
+  5. A two-input block where order matters, or three blocks.
+  6. The **tangle**: four blocks, three inputs and two or three outputs.
+* Saves from before the wiring game (version 2 and older) keep only their preferences.
 
-The tables give the number of combinations of input values and block states a player could try, and how many of them solve the circuit.
+The tables give the number of ways to wire the blocks' inputs, and how many complete wirings solve the circuit.
 
 ### Chapter I: First Light
 
-*Every block keeps a rule. Find it.* Signals are bits.
-
-| # | Circuit | Teaches | Combinations | Solutions |
-|---|---|---|---|---|
-| 01 | First Light | Click a block to change what it does | 2 | 1 |
-| 02 | Switch | Adjustable inputs and locked blocks | 4 | 1 |
-| 03 | Under the Lid | Probes, a target on a block, and B2 | 32 | 8 |
-| 04 | Fork | One block feeding two, and B4 | 32 | 1 |
-| 05 | Return | Inputs that start where they must end | 512 | 1 |
-| 06 | Tangle | Eight blocks, three locked | 256 | 1 |
-
-### Chapter II: Tally
-
-*Count what changes.* Signals are digits that wrap round.
-
-| # | Circuit | Teaches | Combinations | Solutions |
-|---|---|---|---|---|
-| 01 | Count | Digits wrap round, and D1 | 9 | 1 |
-| 02 | Reflection | D3, locked | 30 | 1 |
-| 03 | Balance | D2, and a target on a block | 60 | 2 |
-| 04 | Larger | D4 | 600 | 1 |
-| 05 | Retrace | A return circuit | 48,000 | 1 |
-| 06 | Ledger | The tangle | 108,000 | 1 |
-
-### Chapter III: Forms
-
-*Every shape is a message.* Signals are shapes.
-
-| # | Circuit | Teaches | Combinations | Solutions |
-|---|---|---|---|---|
-| 01 | Fill | Shapes, and S1 | 4 | 1 |
-| 02 | Turn | S2, locked | 16 | 1 |
-| 03 | Graft | S3 | 16 | 2 |
-| 04 | Corners | S4, locked | 256 | 1 |
-| 05 | Homecoming | A return circuit | 1,024 | 1 |
-| 06 | Lattice | The tangle | 16,384 | 1 |
-
-### Chapter IV: Resonance
-
-*Listen closely.* Signals are analog waves. Adjustable inputs step through a short list of waves given in the file.
-
-| # | Circuit | Teaches | Combinations | Solutions |
-|---|---|---|---|---|
-| 01 | Hum | Frequency and amplitude, and W1 | 4 | 1 |
-| 02 | Timbre | W2, locked | 12 | 1 |
-| 03 | Splice | W3 | 8 | 1 |
-| 04 | Offset | Phase, and W4, locked | 48 | 1 |
-| 05 | Echo | A return circuit | 144 | 1 |
-| 06 | Chorus | The tangle | 2,592 | 1 |
-
-### Chapter V: Grain
-
-*Up close, every curve is a staircase.* Signals are sampled waves.
-
-| # | Circuit | Teaches | Combinations | Solutions |
-|---|---|---|---|---|
-| 01 | Stairs | Steps a cycle, and Q1 | 4 | 1 |
-| 02 | Level | Q2, locked | 6 | 1 |
-| 03 | Graft | Q3 | 6 | 1 |
-| 04 | Measure | Q4, locked | 24 | 1 |
-| 05 | Replay | A return circuit | 96 | 1 |
-| 06 | Mosaic | The tangle | 288 | 1 |
-
-Every circuit is checked by brute force in the tests and from **BLACKBOX → Validate Puzzles**. Each one must have at least one solution and must not be solved at the start.
-
-For the wired chapters the tables give the number of ways to wire the blocks' inputs, and how many complete wirings solve the circuit.
-
-### Chapter VI: Patch
-
-*Nothing is wired. Draw the wires yourself.* Named bit, digit and shape blocks, and every device.
+*Every block keeps a rule. Wire it to find out.* Bits, B1 to B4; lights and a display.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Plug In | Drawing a wire, a light | 1 | 1 |
-| 02 | Top and Bottom | Which port a wire goes into | 4 | 1 |
-| 03 | In Line | Every block must be used: a chain, a digit display | 4 | 1 |
-| 04 | Branch | One source feeding two wires; a digit display counts a shape's corners | 4 | 2 |
-| 05 | Cross Talk | A bit block reads a shape; one input into both ports | 9 | 1 |
-| 06 | Blink | Signals that change through the loop | 9 | 2 |
-| 07 | Moving Parts | Fans and servos | 27 | 4 |
+| 01 | First Light | Pre-wired: move one wire, and B1 | 2 | 1 |
+| 02 | Switch | Half wired: an empty input sends nothing, and B2 | 4 | 2 |
+| 03 | Under the Lid | Wiring it all, a chain, and B3 | 27 | 2 |
+| 04 | Fork | One input feeding two blocks, and B4 | 27 | 2 |
+| 05 | Top and Bottom | Which input is on top | 256 | 2 |
+| 06 | Tangle | Four blocks, two lights | 279,936 | 224 |
+
+### Chapter II: Tally
+
+*Count what changes.* Digits, D1 to D4; digit displays, a fan and a servo.
+
+| # | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Count | Pre-wired, and D1 | 2 | 1 |
+| 02 | Balance | Half wired, and D2 | 4 | 2 |
+| 03 | Reflection | D3, order matters, a fan | 9 | 1 |
+| 04 | Larger | D4, a servo | 3,125 | 26 |
+| 05 | Retrace | A pattern of digits | 9 | 1 |
+| 06 | Ledger | Four blocks, two outputs | 279,936 | 12 |
+
+### Chapter III: Forms
+
+*Every shape is a message.* Shapes, S1 to S4; displays, a light and digit displays.
+
+| # | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Fill | Pre-wired, and S1 | 2 | 1 |
+| 02 | Graft | Half wired, and S3 | 4 | 1 |
+| 03 | Corners | S4, and a light showing a shape's colour | 4 | 2 |
+| 04 | Turn | S2, and a digit display counting corners | 9 | 1 |
+| 05 | Homecoming | Colour stays with the form | 625 | 63 |
+| 06 | Lattice | Four blocks, three outputs | 46,656 | 76 |
+
+### Chapter IV: Resonance
+
+*Listen closely.* Analog waves, W1 to W4; speakers, a display and servos.
+
+| # | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Hum | Pre-wired, and W1 | 2 | 1 |
+| 02 | Splice | Half wired, and W3 | 4 | 1 |
+| 03 | Timbre | W2 and W4 | 9 | 2 |
+| 04 | Offset | A servo following a wave | 27 | 2 |
+| 05 | Echo | Two speakers | 64 | 2 |
+| 06 | Chorus | Four blocks, a speaker and a servo | 7,776 | 4 |
+
+### Chapter V: Grain
+
+*Up close, every curve is a staircase.* Sampled waves, Q1 to Q4.
+
+| # | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Stairs | Pre-wired, and Q1 | 2 | 1 |
+| 02 | Graft | Half wired, and Q3 | 4 | 1 |
+| 03 | Level | Q2, a servo in steps | 9 | 2 |
+| 04 | Measure | Q4, by ear | 64 | 5 |
+| 05 | Replay | One input feeding two chains | 256 | 3 |
+| 06 | Mosaic | Four blocks, a servo and a speaker | 46,656 | 113 |
+
+Every circuit is checked by trying every way to wire it, in the tests and from **BLACKBOX → Validate Puzzles**. Each one's solution must work, it must not be solved as it starts, and no input wired straight to an output may already meet that output's target.
+
+### Chapter VI: Patch
+
+*Every block reads every signal.* Named blocks of one kind, fed signals of another.
+
+| # | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Cross Talk | A bit block reads a shape; one input into both ports | 9 | 1 |
+| 02 | Corner Count | A digit block reads a shape as its corners | 3 | 1 |
+| 03 | Branch | One source feeding two wires; a digit display counts corners | 4 | 2 |
+| 04 | Bit Shapes | A shape block reads a bit as a circle | 2 | 1 |
+| 05 | Moving Parts | A fan driven by a shape, a servo by bits | 9 | 1 |
 
 ### Chapter VII: Blend
 
@@ -249,29 +237,28 @@ Scripts/
                 output devices (Devices) and the block kinds.
   Circuit/      Compiles a circuit into an evaluation order and evaluates it.
   Puzzles/      Puzzle, chapter and part definitions, the loader, auto layout, the solvers,
-                goal sentences, progress rules, PuzzleSession (one attempt at a settings
-                circuit) and WiringSession (one attempt at a wired circuit).
+                goal sentences, progress rules and WiringSession (one attempt at a circuit).
+                PuzzleSession runs the older pre-wired kind of circuit, now only the
+                title screen's moving picture.
   Game/         BlackboxApp (startup, screens, saving), input, audio, tweens.
   UI/Void/      The visual kit: shapes, wires, waves, ink, glyphs, text, buttons.
-  UI/Board/     The circuit on screen: nodes, targets, wires, probes and the pen; the wiring
-                board (WiringBoard) and the device and signal views it shows.
+  UI/Board/     The wiring board (WiringBoard) with its device and signal views, the pen and
+                typed notes; BoardView draws the title screen's pre-wired picture.
   UI/Screens/   Title, chapter map, circuit, and overlays (pause, settings, help...).
   Editor/       The BLACKBOX menu.
 Tests/EditMode/ NUnit tests for everything in Core, Components, Circuit and Puzzles.
 ```
 
-* **Core, Components, Circuit and Puzzles** compile into one assembly, `Blackbox.Core`, which doesn't reference the engine. The whole play loop (changing inputs and blocks, probing, solving, unlocking) can be tested without Unity, and the tests include a full playthrough of every chapter.
+* **Core, Components, Circuit and Puzzles** compile into one assembly, `Blackbox.Core`, which doesn't reference the engine. The whole play loop (wiring, running, the rules, solving, unlocking) can be tested without Unity, and the tests include a full playthrough of every chapter.
 * **The interface is built in code.** `BlackboxApp` creates the camera, the event system and one canvas with a fixed 1920×1080 frame. The canvas scales to fit any screen. Screens are laid out in frame coordinates (x from the left, y down from the top).
 * **No scene setup is needed.** If the open scene has no `BlackboxApp`, one is created when it loads, so pressing Play in any scene starts the game. **BLACKBOX → Create Main Scene** makes a proper scene for builds.
 * **Screens** live on a stack. Opening a screen replaces the stack with a fade. Overlays (pause, settings, confirm, help, a chapter's title card) sit on top, behind a dark veil. Only the top screen gets keys.
 * **Input** works with either backend: the Input System package or the old Input Manager.
-* **Saving** writes `blackbox-save.json` to `Application.persistentDataPath`. It goes through a temporary file, so a crash can't leave half a save. It stores solved circuits and best move counts, where the player left each circuit (inputs, block states and probes, or the wires drawn), their notes (pen strokes and typed text), which chapter cards have been seen, and preferences. Saves from before the redesign keep only their preferences.
+* **Saving** writes `blackbox-save.json` to `Application.persistentDataPath`. It goes through a temporary file, so a crash can't leave half a save. It stores solved circuits and best move counts, the wires the player left on each circuit, their notes (pen strokes and typed text), which chapter cards have been seen, and preferences. Saves from before the wiring game keep only their preferences.
 
 ### Evaluation
 
-Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 8 shapes (form × 2 + fill), 588 analog waves (((form × 7 + frequency) × 7 + amplitude) × 4 + phase) and 441 sampled waves (((form × 7 + frequency) × 7 + amplitude) × 3 + steps). Targets on waves are met by any value that traces the same line (`Media.Same`). A circuit is compiled once into an order where every node comes after the nodes that feed it, and the whole circuit is evaluated again after every change. Circuits have no memory and no loops; a loop is rejected when the circuit loads.
-
-Wired circuits work on traces instead: 288 steps of one loop, each a level of the signal's medium. `WiringSession` evaluates the wires in order, and `WiringSolver` tries every way to wire a circuit's blocks (skipping loops), then every output source that matches, to count the solutions.
+Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 32 shapes ((colour × 4 + form) × 2 + fill), 588 analog waves (((form × 7 + frequency) × 7 + amplitude) × 4 + phase) and 441 sampled waves (((form × 7 + frequency) × 7 + amplitude) × 3 + steps). Inputs are traces: 288 steps of one loop, each a level of the signal's medium. A wave made straight from a value remembers it (`Trace.Value`), which is what wave blocks read. `WiringSession` evaluates the wires from the inputs on, and `WiringSolver` tries every way to wire a circuit's blocks (skipping loops), then every source each output could take, to count the solutions. Circuits have no memory and no loops; a wire that would make one is refused.
 
 ### Adding a chapter
 
@@ -280,11 +267,11 @@ Wired circuits work on traces instead: 288 steps of one loop, each a level of th
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.
 
-New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTests.cs` (and `WiringTests.cs` for M kinds). Each kind belongs to one medium. A new medium needs a value range in `Media.cs`, a way to draw it in `UI/Board/ValueView.cs`, and words for goal sentences in `GoalText.cs`.
+New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTests.cs` and `WiringTests.cs`. Each kind belongs to one medium. A new medium needs a value range in `Media.cs`, a way to draw it in `UI/Board/ValueView.cs`, and words for goal sentences in `GoalText.cs`.
 
 ## Spoilers: the rules
 
-The game shows only a block's kind code, its ports and its state dots. Port 0 is the top input. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes the current state's rule from this table under every block on the circuit screen.
+A named block shows only its kind code, its ports and its state dots; an unmarked one only its ports. Port 0 is the top input. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes each block's rule from this table under it.
 
 | Kind | Inputs | States, in order |
 |---|---|---|

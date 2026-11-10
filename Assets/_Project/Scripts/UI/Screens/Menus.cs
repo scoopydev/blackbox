@@ -348,7 +348,7 @@ namespace Blackbox.UI.Screens
             var tagline = UIKit.Text(_page, chapter.Tagline, TextStyle.Body.WithSize(22).WithColor(open ? Palette.Dim : Palette.Faint));
             tagline.rectTransform.At(cx, 356f, 1200f, 32f);
 
-            string signals = chapter.Wiring ? "WIRE IT YOURSELF  ·  EVERY KIND OF SIGNAL" : $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
+            string signals = chapter.Mixed ? "WIRE IT YOURSELF  ·  EVERY KIND OF SIGNAL" : $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
             string countText;
             if (open) countText = $"{signals}  ·  {solved} OF {chapter.Puzzles.Count} SOLVED";
             else if (!Game.Progress.IsUnlocked(chapter.Part))

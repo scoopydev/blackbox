@@ -41,7 +41,7 @@ namespace Blackbox.Components
                     return 0.36f;
                 case Medium.Shape:
                 {
-                    int corners = Shapes.Corners[Shapes.Form(Clamp(v, 0, 7))];
+                    int corners = Shapes.Corners[Shapes.Form(Clamp(v, 0, Shapes.Size - 1))];
                     return corners == 0 ? 0.5f : corners * CornerSpacing + 0.16f;
                 }
                 default:
@@ -143,7 +143,7 @@ namespace Blackbox.Components
                 case Medium.Decimal:
                     return Digit(v, t);
                 case Medium.Shape:
-                    return ShapeSound(Shapes.Form(v), Shapes.Solid(v), t);
+                    return ShapeSound(Shapes.Form(v), Shapes.Solid(v), Shapes.Colour(v), t);
                 case Medium.Wave:
                     return WaveSound(Waves.Form(v), Waves.Frequency(v), t) * HeightGain(Waves.Height(v));
                 default:
@@ -170,11 +170,16 @@ namespace Blackbox.Components
             return tone * Gate(t, 0.006f, 0.22f, 0.04f) * 0.17f;
         }
 
-        static float ShapeSound(int form, bool solid, float t)
+        /// <summary>How much each shape colour raises a shape's clicks: cyan, then a third, a fifth and a sixth above.</summary>
+        public static readonly float[] ColourPitch = { 1f, 1.26f, 1.5f, 1.68f };
+
+        static float ShapeSound(int form, bool solid, int colour, float t)
         {
+            float lift = ColourPitch[Clamp(colour, 0, ColourPitch.Length - 1)];
+            float solidHz = SolidHz * lift, hollowHz = HollowHz * lift;
             float tone = solid
-                ? Sin(SolidHz, t) + 0.5f * Sin(SolidHz * 2f, t) + 0.3f * Sin(SolidHz * 3f, t) + 0.12f * Sin(SolidHz * 4f, t)
-                : Sin(HollowHz, t) + 0.08f * Sin(HollowHz * 2f, t);
+                ? Sin(solidHz, t) + 0.5f * Sin(solidHz * 2f, t) + 0.3f * Sin(solidHz * 3f, t) + 0.12f * Sin(solidHz * 4f, t)
+                : Sin(hollowHz, t) + 0.08f * Sin(hollowHz * 2f, t);
             float gain = solid ? 0.17f : 0.15f;
             int corners = Shapes.Corners[form];
             if (corners == 0)

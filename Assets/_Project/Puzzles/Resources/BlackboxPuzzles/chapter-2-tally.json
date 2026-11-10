@@ -1,149 +1,240 @@
-// Chapter II: decimal signals. See Docs/PuzzleFormat.md for the format.
-// Block kinds: D1, D3, D2, D4. Notes above each circuit give its solution.
 {
   "id": "tally",
   "numeral": "II",
   "title": "Tally",
+  "mode": "wiring",
   "medium": "decimal",
   "tagline": "Count what changes.",
-  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0. A digit sounds as a short tone: the bigger the digit, the higher the tone.",
+  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0. A digit sounds as a short tone: the bigger the digit, the higher the tone. Digit displays show them, fans spin faster for bigger digits, and servos swing further.",
   "circuits": [
     {
-      // Introduces D1. Solution: d = add 3, e = add 2 (8 + 2 wraps to 0).
       "id": "tally-01",
       "name": "Count",
-      "hint": "Signals are digits now, and they wrap round: one more than 9 is 0.",
-      "probes": 0,
+      "hint": "These wires are drawn already. Run it, then move g's input to the other digit.",
       "inputs": {
-        "A": {"at": [0, 0], "value": 4},
-        "B": {"at": [0, 1], "value": 8}
+        "A": {
+          "signal": "decimal 4"
+        },
+        "B": {
+          "signal": "decimal 6"
+        }
       },
       "blocks": {
-        "d": {"kind": "D1", "state": 0, "at": [1, 0]},
-        "e": {"kind": "D1", "state": 0, "at": [1, 1]}
+        "g": {
+          "kind": "D1"
+        }
       },
       "outputs": {
-        "X": {"at": [2, 0], "target": 7},
-        "Y": {"at": [2, 1], "target": 0}
+        "X": {
+          "device": "digits"
+        }
       },
-      "wires": ["A -> d", "d -> X", "B -> e", "e -> Y"]
+      "start": [
+        "A -> g",
+        "g -> X"
+      ],
+      "solution": [
+        "B -> g",
+        "g -> X"
+      ]
     },
     {
-      // Introduces D3. m is locked on mirror, so A = 3. h must halve 8.
-      // Solution: A = 3, h = halve.
       "id": "tally-02",
-      "name": "Reflection",
-      "hint": "You can't change a locked block, but you can change what goes into it.",
-      "probes": 0,
-      "inputs": {
-        "A": {"at": [0, 0], "value": 2, "adjustable": true},
-        "B": {"at": [0, 1], "value": 8}
-      },
-      "blocks": {
-        "m": {"kind": "D3", "state": 2, "locked": true, "at": [1, 0]},
-        "h": {"kind": "D3", "state": 0, "at": [1, 1]}
-      },
-      "outputs": {
-        "X": {"at": [2, 0], "target": 6},
-        "Y": {"at": [2, 1], "target": 4}
-      },
-      "wires": ["A -> m", "m -> X", "B -> h", "h -> Y"]
-    },
-    {
-      // Introduces D2. s must send 2: A = 8 with sum, or A = 6 with difference. Then k = add 3.
-      "id": "tally-03",
       "name": "Balance",
-      "hint": "Probe the wire after a block to read exactly what it sends.",
-      "probes": 1,
+      "hint": "One of g's inputs is empty.",
       "inputs": {
-        "A": {"at": [0, 0], "value": 4, "adjustable": true},
-        "B": {"at": [0, 2], "value": 4}
+        "A": {
+          "signal": "decimal 2"
+        },
+        "B": {
+          "signal": "decimal 5"
+        }
       },
       "blocks": {
-        "s": {"kind": "D2", "state": 0, "at": [1, 1], "target": 2},
-        "k": {"kind": "D1", "state": 0, "at": [2, 1]}
+        "g": {
+          "kind": "D2"
+        }
       },
       "outputs": {
-        "X": {"at": [3, 1], "target": 5}
+        "X": {
+          "device": "digits"
+        }
       },
-      "wires": ["A -> s.0", "B -> s.1", "s -> k", "k -> X"]
+      "start": [
+        "A -> g.0",
+        "g -> X"
+      ],
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> X"
+      ]
     },
     {
-      // Introduces D4. Y = 7 forces g = 2 (only mirror can make 7 from a digit). X = A + 2 = 7, so A = 5.
-      // Unique solution: A = 5, B = 2, g = smaller, b = mirror. a is locked on sum.
+      "id": "tally-03",
+      "name": "Reflection",
+      "hint": "A fan spins faster the bigger its digit. The order the blocks come in matters.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 3"
+        },
+        "B": {
+          "signal": "decimal 1"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "D3",
+          "state": 2
+        },
+        "h": {
+          "kind": "D1",
+          "state": 1
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "fan"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h",
+        "h -> X"
+      ]
+    },
+    {
       "id": "tally-04",
       "name": "Larger",
-      "hint": "Right-click an input, or scroll over it, to step its digit down.",
-      "probes": 1,
+      "hint": "A servo swings its arm from left to right as its digit rises.",
       "inputs": {
-        "A": {"at": [0, 0], "value": 2, "adjustable": true},
-        "B": {"at": [0, 2], "value": 7, "adjustable": true}
+        "A": {
+          "signal": "decimal 8"
+        },
+        "B": {
+          "signal": "decimal 3"
+        },
+        "C": {
+          "signal": "decimal 6"
+        }
       },
       "blocks": {
-        "g": {"kind": "D4", "state": 0, "at": [1, 1]},
-        "a": {"kind": "D2", "state": 0, "locked": true, "at": [2, 0]},
-        "b": {"kind": "D3", "state": 1, "at": [2, 2]}
+        "g": {
+          "kind": "D4"
+        },
+        "h": {
+          "kind": "D2",
+          "state": 1
+        },
+        "k": {
+          "kind": "D1",
+          "state": 2
+        }
       },
       "outputs": {
-        "X": {"at": [3, 0], "target": 7},
-        "Y": {"at": [3, 2], "target": 7}
+        "X": {
+          "device": "digits"
+        },
+        "Y": {
+          "device": "servo"
+        }
       },
-      "wires": ["A -> g.0", "B -> g.1", "A -> a.0", "g -> a.1", "g -> b", "a -> X", "b -> Y"]
+      "solution": [
+        "B -> g.0",
+        "C -> g.1",
+        "A -> h.0",
+        "g -> h.1",
+        "h -> X",
+        "g -> k",
+        "k -> Y"
+      ]
     },
     {
-      // Unique solution: p = sum, q = difference, r = sum, s = larger, t = add 1.
       "id": "tally-05",
       "name": "Retrace",
-      "hint": "A, B and C already sit where they must end. Change them to learn what the blocks do, then put them back.",
-      "probes": 0,
+      "hint": "A signal can change as the loop plays. A digit display shows each digit in turn.",
       "inputs": {
-        "A": {"at": [0, 0], "value": 6, "adjustable": true, "target": 6},
-        "B": {"at": [0, 2], "value": 7, "adjustable": true, "target": 7},
-        "C": {"at": [0, 4], "value": 2, "adjustable": true, "target": 2}
+        "A": {
+          "signal": "decimal 1234"
+        },
+        "B": {
+          "signal": "decimal 5"
+        }
       },
       "blocks": {
-        "p": {"kind": "D2", "state": 1, "at": [1, 1]},
-        "q": {"kind": "D2", "state": 0, "at": [1, 3]},
-        "r": {"kind": "D2", "state": 1, "at": [2, 0]},
-        "s": {"kind": "D4", "state": 1, "at": [2, 2]},
-        "t": {"kind": "D1", "state": 1, "at": [2, 4]}
+        "g": {
+          "kind": "D3",
+          "state": 2
+        },
+        "h": {
+          "kind": "D1"
+        }
       },
       "outputs": {
-        "X": {"at": [3, 0], "target": 9},
-        "Y": {"at": [3, 2], "target": 5},
-        "Z": {"at": [3, 4], "target": 6}
+        "X": {
+          "device": "digits"
+        },
+        "Y": {
+          "device": "fan"
+        }
       },
-      "wires": ["A -> p.0", "B -> p.1", "B -> q.0", "C -> q.1", "A -> r.0", "p -> r.1", "p -> s.0", "q -> s.1", "q -> t", "r -> X", "s -> Y", "t -> Z"]
+      "solution": [
+        "A -> g",
+        "g -> X",
+        "g -> h",
+        "h -> Y"
+      ]
     },
     {
-      // 108,000 combinations, one solution:
-      // A = 6, B = 7, C = 0, q = add 2, r = mirror, s = difference, u = mirror, w = sum.
-      // Locked: p = difference, t = smaller, v = difference.
       "id": "tally-06",
       "name": "Ledger",
-      "hint": "Work backwards from the targets, and use the pen.",
-      "probes": 2,
+      "hint": "Work out one output at a time.",
       "inputs": {
-        "A": {"at": [0, 0], "value": 9, "adjustable": true},
-        "B": {"at": [0, 2], "value": 3, "adjustable": true},
-        "C": {"at": [0, 4], "value": 1, "adjustable": true}
+        "A": {
+          "signal": "decimal 6"
+        },
+        "B": {
+          "signal": "decimal 3"
+        },
+        "C": {
+          "signal": "decimal 2468"
+        }
       },
       "blocks": {
-        "p": {"kind": "D2", "state": 1, "locked": true, "at": [1, 0.5]},
-        "q": {"kind": "D1", "state": 2, "at": [1, 2.5]},
-        "r": {"kind": "D3", "state": 1, "at": [1, 4]},
-        "s": {"kind": "D2", "state": 0, "at": [2, 1]},
-        "t": {"kind": "D4", "state": 1, "locked": true, "at": [2, 3]},
-        "u": {"kind": "D3", "state": 0, "at": [3, 0]},
-        "v": {"kind": "D2", "state": 1, "locked": true, "at": [3, 2]},
-        "w": {"kind": "D2", "state": 1, "at": [3, 4]}
+        "g": {
+          "kind": "D2"
+        },
+        "h": {
+          "kind": "D3"
+        },
+        "k": {
+          "kind": "D4",
+          "state": 1
+        },
+        "m": {
+          "kind": "D2",
+          "state": 1
+        }
       },
       "outputs": {
-        "X": {"at": [4, 0], "target": 9},
-        "Y": {"at": [4, 2], "target": 1},
-        "Z": {"at": [4, 4], "target": 5}
+        "X": {
+          "device": "digits"
+        },
+        "Y": {
+          "device": "fan"
+        }
       },
-      "wires": ["A -> p.0", "B -> p.1", "B -> q", "C -> r", "p -> s.0", "q -> s.1", "q -> t.0", "r -> t.1", "s -> u", "s -> v.0", "t -> v.1", "t -> w.0", "A -> w.1", "u -> X", "v -> Y", "w -> Z"]
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "C -> h",
+        "g -> m.0",
+        "h -> m.1",
+        "m -> X",
+        "h -> k.0",
+        "B -> k.1",
+        "k -> Y"
+      ]
     }
   ]
 }

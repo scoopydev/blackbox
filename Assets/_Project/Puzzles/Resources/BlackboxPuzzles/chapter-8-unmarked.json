@@ -37,7 +37,7 @@
     {
       "id": "unmarked-02",
       "name": "Dim",
-      "hint": "A light glows brighter for a bigger digit. A shape lights it in the shape's own colour, at half strength when it's hollow.",
+      "hint": "A light glows brighter for a bigger digit. A digit display counts a shape's corners.",
       "inputs": {
         "A": {
           "signal": "decimal 2"
@@ -52,7 +52,8 @@
           "state": 2
         },
         "h": {
-          "kind": "S1"
+          "kind": "S2",
+          "state": 1
         }
       },
       "outputs": {
@@ -60,7 +61,7 @@
           "device": "light"
         },
         "Y": {
-          "device": "light"
+          "device": "digits"
         }
       },
       "solution": [
@@ -178,15 +179,16 @@
       "hint": "A light takes a shape's colour and its fill. A digit display counts its corners.",
       "inputs": {
         "A": {
-          "signal": "shape solid triangle"
+          "signal": "shape solid pink triangle, solid amber hexagon"
         },
         "B": {
-          "signal": "shape hollow square"
+          "signal": "shape hollow green square"
         }
       },
       "blocks": {
         "g": {
-          "kind": "S3"
+          "kind": "S4",
+          "state": 1
         },
         "h": {
           "kind": "S2",
@@ -204,8 +206,8 @@
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> h",
         "g -> X",
+        "g -> h",
         "h -> Y"
       ]
     }

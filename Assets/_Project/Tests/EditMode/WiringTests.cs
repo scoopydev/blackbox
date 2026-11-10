@@ -122,6 +122,58 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void WaveBlocksWorkOnPlainWaves()
+        {
+            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("wave sine f2 a5") }, 0).Matches(T("wave sine f3 a5")), Is.True, "one step faster");
+            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("wave sine f2 a5") }, 0).Value, Is.Not.Null, "and still a plain wave, so another wave block can read it");
+            Assert.That(KindCatalog.Get("W3").Apply(new[] { T("wave sine f3 a2"), T("wave square f1 a7") }, 0).Matches(T("wave sine f3 a7")), Is.True);
+            Assert.That(KindCatalog.Get("Q1").Apply(new[] { T("sampled sine f1 a7 s3") }, 0).Matches(T("sampled sine f1 a7 s6")), Is.True);
+            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("binary 1") }, 0), Is.Null, "a bit isn't a wave");
+            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("sampled sine f1 a7 s3") }, 0), Is.Null, "a sampled wave isn't an analog one");
+            Assert.That(KindCatalog.Get("W1").Apply(new[] { Mix("M2", T("wave sine f2 a5")) }, 0), Is.Null, "a mixed wave has no settings to change");
+            Assert.That(KindCatalog.Get("W1").Reads(new[] { T("wave saw f1 a1") }), Is.True);
+        }
+
+        [Test]
+        public void ShapesCarryAColour()
+        {
+            var pink = Signals.Parse("shape solid pink triangle").Value.Value;
+            Assert.That(Shapes.Colour(pink), Is.EqualTo(1));
+            Assert.That(Shapes.Form(pink), Is.EqualTo(Shapes.Triangle));
+            Assert.That(Shapes.Solid(pink), Is.True);
+            Assert.That(Media.Describe(Medium.Shape, pink), Is.EqualTo("solid pink triangle"));
+            Assert.That(Media.Describe(Medium.Shape, Shapes.Make(Shapes.Square, false)), Is.EqualTo("hollow square"), "cyan is the plain colour and goes unsaid");
+            Assert.That(Media.Size(Medium.Shape), Is.EqualTo(32));
+            // Shape blocks keep a shape's colour with its form.
+            Assert.That(KindCatalog.Get("S1").Apply(new[] { pink }, 0), Is.EqualTo(Shapes.Make(Shapes.Triangle, false, 1)));
+            Assert.That(KindCatalog.Get("S2").Apply(new[] { pink }, 0), Is.EqualTo(Shapes.Make(Shapes.Square, true, 1)));
+            int green = Shapes.Make(Shapes.Hexagon, false, 3);
+            Assert.That(KindCatalog.Get("S3").Apply(new[] { pink, green }, 0), Is.EqualTo(Shapes.Make(Shapes.Triangle, false, 1)), "form and colour of top, fill of bottom");
+            Assert.That(KindCatalog.Get("S4").Apply(new[] { pink, green }, 0), Is.EqualTo(green), "the one with more corners, whole");
+        }
+
+        [Test]
+        public void ACircuitCanStartHalfWired()
+        {
+            var p = TestContent.ParseWired(Small.Replace(@"""solution"":", @"""start"": [ ""A -> g.0"", ""h -> X"" ], ""solution"":"));
+            var s = new WiringSession(p);
+            Assert.That(s.WireCount, Is.EqualTo(2), "the starting wires are in place");
+            Assert.That(s.HasStart && s.AsStarted, Is.True);
+            Assert.That(s.CanUndo, Is.False, "and they aren't a move");
+            s.Disconnect(s.OutputNode(0), 0);
+            s.Connect(1, s.BlockNode(0), 1);
+            Assert.That(s.AsStarted, Is.False);
+            Assert.That(s.Restart(), Is.True);
+            Assert.That(s.AsStarted, Is.True, "restart puts the starting wires back");
+            Assert.That(s.WireCount, Is.EqualTo(2));
+            Assert.That(s.Undo(), Is.True, "and can be undone");
+            Assert.That(s.WireCount, Is.EqualTo(2));
+            Assert.That(s.DriverOf(s.BlockNode(0), 1), Is.EqualTo(1));
+            Assert.That(new WiringSession(p, new string[0]).WireCount, Is.EqualTo(0), "a saved wiring wins over the start");
+            Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(Small.Replace(@"""solution"":", @"""start"": [ ""A -> g.0"", ""B -> g.0"" ], ""solution"":")), "two wires into one port");
+        }
+
+        [Test]
         public void BlocksOfOneKindReadOtherKinds()
         {
             Assert.That(KindCatalog.Get("B1").Apply(new[] { T("decimal 0") }, 0).Matches(T("binary 1")), Is.True, "a digit is 1 unless it's 0");
@@ -170,9 +222,10 @@ namespace Blackbox.Tests
             Assert.That(Devices.Same(Device.Light, T("binary 1"), T("decimal 9")), Is.True, "both fully on");
             Assert.That(Devices.Same(Device.Light, T("binary 0"), T("wave sine f1 a7 p2")), Is.False, "the wave lights it for half the loop");
             Assert.That(Devices.Same(Device.Light, T("decimal 0"), Trace.Flat(Medium.Wave, -Trace.Peak)), Is.True, "a light is dark below a wave's middle");
-            Assert.That(Devices.Same(Device.Light, T("shape solid triangle"), T("shape solid square")), Is.False, "each form has its own colour");
-            Assert.That(Devices.Same(Device.Light, T("shape solid triangle"), T("binary 1")), Is.False, "a shape tints the light");
-            Assert.That(Devices.Same(Device.Light, T("shape hollow circle"), T("shape solid circle")), Is.False, "hollow is half as bright");
+            Assert.That(Devices.Same(Device.Light, T("shape solid pink triangle"), T("shape hollow pink square")), Is.True, "a light shows only a shape's colour");
+            Assert.That(Devices.Same(Device.Light, T("shape solid pink triangle"), T("shape solid green triangle")), Is.False, "each colour lights it differently");
+            Assert.That(Devices.Same(Device.Light, T("shape solid amber circle"), T("binary 1")), Is.False, "a coloured shape tints the light");
+            Assert.That(Devices.Same(Device.Light, T("shape hollow circle"), T("binary 1")), Is.True, "a cyan shape lights it like any signal");
             Assert.That(Devices.Same(Device.Fan, T("decimal 9"), T("binary 1")), Is.True);
             Assert.That(Devices.Same(Device.Fan, T("decimal 3"), T("decimal 4")), Is.False);
             Assert.That(Devices.Same(Device.Servo, Trace.Flat(Medium.Wave, Trace.Peak), T("binary 1")), Is.True, "all the way right");
@@ -301,7 +354,7 @@ namespace Blackbox.Tests
                 var ex = Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(json), reason);
                 Assert.That(ex.Message, Does.Contain(expect), reason);
             }
-            Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""W1"""), "wave-setting blocks can't be wired", "wave settings");
+            Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""W1"""), "a wave block fed a bit sends nothing", "sends nothing");
             Refused(Small.Replace(@"""g -> h"", ", ""), "the solution must use every block", "nothing wired into it");
             Refused(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""B -> g.1"", ""A -> h"", ""g -> X"" ]"), "a block that leads nowhere", "doesn't use block 'h'");
             Refused(Small.Replace(@"""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"""hint"": ""none"""), "no solution", "solution");

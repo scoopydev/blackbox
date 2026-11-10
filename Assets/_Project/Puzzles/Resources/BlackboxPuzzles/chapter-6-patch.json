@@ -2,21 +2,27 @@
   "id": "patch",
   "title": "Patch",
   "mode": "wiring",
-  "tagline": "Nothing is wired. Draw the wires yourself.",
-  "signals": "Every kind of signal meets here, and outputs are devices: lights, digit displays, fans, servos, speakers and displays.",
+  "tagline": "Every block reads every signal.",
+  "signals": "A block reads any signal as its own kind: a digit is 1 unless it's 0, a shape is 1 when solid, and as a digit a shape is its corners. A bit or digit read as a shape is a circle, solid for anything but 0.",
   "circuits": [
     {
       "id": "patch-01",
-      "name": "Plug In",
-      "hint": "Drag from the dot on A to the dot on the left of g, then from g's right dot to X. Then press RUN.",
+      "name": "Cross Talk",
+      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, and a shape is 1 when it's solid.",
       "inputs": {
         "A": {
+          "signal": "decimal 0"
+        },
+        "B": {
+          "signal": "shape solid amber circle"
+        },
+        "C": {
           "signal": "binary 0"
         }
       },
       "blocks": {
         "g": {
-          "kind": "B1"
+          "kind": "B2"
         }
       },
       "outputs": {
@@ -25,55 +31,29 @@
         }
       },
       "solution": [
-        "A -> g",
-        "g -> X"
-      ]
-    },
-    {
-      "id": "patch-02",
-      "name": "Top and Bottom",
-      "hint": "A block with two inputs can care which wire goes in on top. Click a wire to take it off.",
-      "inputs": {
-        "A": {
-          "signal": "binary 0011"
-        },
-        "B": {
-          "signal": "binary 0101"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "B4",
-          "state": 2
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "light"
-        }
-      },
-      "solution": [
-        "A -> g.0",
+        "B -> g.0",
         "B -> g.1",
         "g -> X"
       ]
     },
     {
-      "id": "patch-03",
-      "name": "In Line",
-      "hint": "Every block has to be used, so put both of them in the signal's path.",
+      "id": "patch-02",
+      "name": "Corner Count",
+      "hint": "A digit block reads a shape as its number of corners.",
       "inputs": {
         "A": {
-          "signal": "decimal 3"
+          "signal": "shape solid hexagon"
+        },
+        "B": {
+          "signal": "decimal 2"
+        },
+        "C": {
+          "signal": "shape hollow triangle"
         }
       },
       "blocks": {
         "g": {
-          "kind": "D1",
-          "state": 1
-        },
-        "h": {
-          "kind": "D3"
+          "kind": "D1"
         }
       },
       "outputs": {
@@ -83,14 +63,13 @@
       },
       "solution": [
         "A -> g",
-        "g -> h",
-        "h -> X"
+        "g -> X"
       ]
     },
     {
-      "id": "patch-04",
+      "id": "patch-03",
       "name": "Branch",
-      "hint": "One signal can feed many wires: drag from the same dot again. A digit display shows a shape's corners.",
+      "hint": "One signal can feed many wires. A digit display shows a shape's corners.",
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
@@ -120,87 +99,50 @@
       ]
     },
     {
-      "id": "patch-05",
-      "name": "Cross Talk",
-      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, and a shape is 1 when it's solid.",
+      "id": "patch-04",
+      "name": "Bit Shapes",
+      "hint": "A shape block reads a bit as a circle: solid for 1, hollow for 0.",
       "inputs": {
         "A": {
-          "signal": "decimal 0"
+          "signal": "binary 0101"
         },
         "B": {
-          "signal": "shape solid circle"
-        },
-        "C": {
-          "signal": "binary 0"
+          "signal": "decimal 3"
         }
       },
       "blocks": {
         "g": {
-          "kind": "B2"
+          "kind": "S2"
         }
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
-        "B -> g.0",
-        "B -> g.1",
+        "A -> g",
         "g -> X"
       ]
     },
     {
-      "id": "patch-06",
-      "name": "Blink",
-      "hint": "Some signals change as the loop plays. Watch the target light: when is it on?",
+      "id": "patch-05",
+      "name": "Moving Parts",
+      "hint": "A fan reads a shape by its corners: a hexagon spins it fastest.",
       "inputs": {
         "A": {
-          "signal": "binary 1100"
+          "signal": "shape solid square"
         },
         "B": {
-          "signal": "binary 0011"
-        },
-        "C": {
           "signal": "binary 0101"
         }
       },
       "blocks": {
         "g": {
-          "kind": "B4"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "light"
-        }
-      },
-      "solution": [
-        "B -> g.0",
-        "C -> g.1",
-        "g -> X"
-      ]
-    },
-    {
-      "id": "patch-07",
-      "name": "Moving Parts",
-      "hint": "A fan spins faster the bigger its signal. A servo swings its arm from left to right as its signal rises.",
-      "inputs": {
-        "A": {
-          "signal": "decimal 9"
-        },
-        "B": {
-          "signal": "decimal 4"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "D2",
-          "state": 1
+          "kind": "S2"
         },
         "h": {
-          "kind": "D3",
-          "state": 1
+          "kind": "B1"
         }
       },
       "outputs": {
@@ -212,10 +154,9 @@
         }
       },
       "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
+        "A -> g",
         "g -> X",
+        "B -> h",
         "h -> Y"
       ]
     }

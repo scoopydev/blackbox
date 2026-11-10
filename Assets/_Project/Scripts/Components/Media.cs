@@ -21,18 +21,27 @@ namespace Blackbox.Components
         Sampled,
     }
 
-    /// <summary>Shape values: <c>form * 2 + fill</c>.</summary>
+    /// <summary>
+    /// Shape values: <c>(colour * 4 + form) * 2 + fill</c>, 32 in all. A shape has
+    /// a form (its corners), a fill and a colour. Shape blocks keep a shape's
+    /// colour with its form; a light shows only the colour.
+    /// </summary>
     public static class Shapes
     {
-        public const int Forms = 4;
+        public const int Forms = 4, Colours = 4;
+        public const int Size = Forms * 2 * Colours;
         public const int Circle = 0, Triangle = 1, Square = 2, Hexagon = 3;
         public static readonly string[] FormNames = { "circle", "triangle", "square", "hexagon" };
+        /// <summary>The colours. Cyan is the plain signal colour.</summary>
+        public static readonly string[] ColourNames = { "cyan", "pink", "amber", "green" };
         /// <summary>Corners of each form. A circle has none.</summary>
         public static readonly int[] Corners = { 0, 3, 4, 6 };
 
-        public static int Form(int v) => v / 2;
+        public static int Form(int v) => v / 2 % Forms;
         public static bool Solid(int v) => (v & 1) == 1;
-        public static int Make(int form, bool solid) => ((form % Forms + Forms) % Forms) * 2 + (solid ? 1 : 0);
+        public static int Colour(int v) => v / (Forms * 2) % Colours;
+        public static int Make(int form, bool solid, int colour = 0) =>
+            (((colour % Colours + Colours) % Colours) * Forms + (form % Forms + Forms) % Forms) * 2 + (solid ? 1 : 0);
     }
 
     /// <summary>
@@ -181,7 +190,7 @@ namespace Blackbox.Components
             {
                 case Medium.Binary: return 2;
                 case Medium.Decimal: return 10;
-                case Medium.Shape: return Shapes.Forms * 2;
+                case Medium.Shape: return Shapes.Size;
                 case Medium.Wave: return Waves.Size;
                 default: return Sampled.Size;
             }
@@ -264,7 +273,7 @@ namespace Blackbox.Components
                 case Medium.Decimal:
                     return v.ToString();
                 case Medium.Shape:
-                    return (Shapes.Solid(v) ? "solid " : "hollow ") + Shapes.FormNames[Shapes.Form(v)];
+                    return (Shapes.Solid(v) ? "solid " : "hollow ") + (Shapes.Colour(v) > 0 ? Shapes.ColourNames[Shapes.Colour(v)] + " " : "") + Shapes.FormNames[Shapes.Form(v)];
                 case Medium.Wave:
                     return $"{Waves.FormNames[Waves.Form(v)]} f{Waves.Frequency(v) + 1} a{Waves.Height(v) + 1}" + (Waves.Phase(v) > 0 ? $" p{Waves.Phase(v)}" : "");
                 default:
@@ -291,13 +300,20 @@ namespace Blackbox.Components
             }
             if (m == Medium.Shape)
             {
-                bool solid = s.StartsWith("solid ", StringComparison.Ordinal);
-                bool hollow = s.StartsWith("hollow ", StringComparison.Ordinal);
-                if (!solid && !hollow) return false;
-                string form = s.Substring(solid ? 6 : 7).Trim();
-                int f = Array.IndexOf(Shapes.FormNames, form);
+                // "solid triangle", "hollow pink square": fill, then an optional colour, then form.
+                var words = s.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length < 2 || words.Length > 3) return false;
+                bool solid = words[0] == "solid";
+                if (!solid && words[0] != "hollow") return false;
+                int colour = 0;
+                if (words.Length == 3)
+                {
+                    colour = Array.IndexOf(Shapes.ColourNames, words[1]);
+                    if (colour < 0) return false;
+                }
+                int f = Array.IndexOf(Shapes.FormNames, words[words.Length - 1]);
                 if (f < 0) return false;
-                v = Shapes.Make(f, solid);
+                v = Shapes.Make(f, solid, colour);
                 return true;
             }
             if (IsWave(m)) return TryParseWave(m, s, out v);
