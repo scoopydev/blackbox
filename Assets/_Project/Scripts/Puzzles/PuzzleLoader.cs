@@ -347,15 +347,22 @@ namespace Blackbox.Puzzles
             return new WireDef { From = source, To = target, ToPort = port };
         }
 
-        static void CheckDrivers(List<WireDef> wires, PuzzleDef p, string where)
+        /// <summary>
+        /// One wire into each port, and every output wired. Every block input must
+        /// be wired too, except, when <paramref name="spareAllowed"/>, on a spare
+        /// block that leads to no output (a wired circuit's solution may leave
+        /// blocks spare).
+        /// </summary>
+        static void CheckDrivers(List<WireDef> wires, PuzzleDef p, string where, bool spareAllowed = false)
         {
             var driven = new HashSet<(NodeDef, int)>();
             foreach (var w in wires)
                 if (!driven.Add((w.To, w.ToPort)))
                     throw new PuzzleFormatException($"{where}: {w.To.Id} port {w.ToPort} has two wires running into it.");
+            var spare = new HashSet<int>(spareAllowed ? WiringSession.UnusedBlocks(p, wires) : new List<int>());
             foreach (var b in p.Blocks)
                 for (int port = 0; port < b.Kind.InputCount; port++)
-                    if (!driven.Contains((b, port)))
+                    if (!spare.Contains(b.Index) && !driven.Contains((b, port)))
                         throw new PuzzleFormatException($"{where}: block '{b.Id}' port {port} has nothing wired into it.");
             foreach (var o in p.Outputs)
                 if (!driven.Contains((o, 0)))
@@ -490,7 +497,7 @@ namespace Blackbox.Puzzles
                 wire.Index = p.Solution.Count;
                 p.Solution.Add(wire);
             }
-            CheckDrivers(p.Solution, p, $"{where} solution");
+            CheckDrivers(p.Solution, p, $"{where} solution", spareAllowed: true);
             CheckLoops(p.Solution, p, $"{where} solution");
 
             if (c.Has("start"))
@@ -512,9 +519,6 @@ namespace Blackbox.Puzzles
             foreach (var o in p.Outputs)
                 o.Want = values[p.Inputs.Count + p.Blocks.Count + o.Index]
                     ?? throw new PuzzleFormatException($"{where}: the solution sends nothing to output '{o.Id}'.");
-            var unused = WiringSession.UnusedBlocks(p, p.Solution);
-            if (unused.Count > 0)
-                throw new PuzzleFormatException($"{where}: the solution doesn't use block '{p.Blocks[unused[0]].Id}': every block must lead to an output.");
 
             BoardLayout.ApplyWiring(p);
             return p;

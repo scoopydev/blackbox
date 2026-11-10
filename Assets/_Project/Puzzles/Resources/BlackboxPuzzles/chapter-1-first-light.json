@@ -73,7 +73,7 @@
     {
       "id": "first-light-03",
       "name": "Under the Lid",
-      "hint": "Now you wire it all. Every block has to be used, and every block input needs a wire. The dots under a block show which of its settings it is fixed in.",
+      "hint": "Now you wire it all. You don't have to use every block, but a block only works when every one of its inputs has a wire. The dots under a block show which of its settings it is fixed in.",
       "inputs": {
         "A": {
           "signal": "binary 0110"

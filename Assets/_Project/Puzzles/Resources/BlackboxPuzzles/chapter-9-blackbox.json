@@ -250,7 +250,7 @@
     {
       "id": "blackbox-06",
       "name": "Black Box",
-      "hint": "Solve one output at a time. Every block still has to be used.",
+      "hint": "Solve one output at a time. You may not need every block.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"

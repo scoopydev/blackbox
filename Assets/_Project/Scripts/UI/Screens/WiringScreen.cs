@@ -15,8 +15,8 @@ namespace Blackbox.UI.Screens
     /// shows its target beside it from the start. RUN sends the signals through:
     /// each block shows what it sends (or why it sends nothing), then each output
     /// does what reaches it. A run solves the circuit when every output does what
-    /// its target shows, every block leads to an output, and every block input
-    /// has a wire.
+    /// its target shows. Blocks can be left spare, but a block with an empty
+    /// input sends nothing.
     /// </summary>
     public sealed class WiringScreen : GameScreen, IWiringHost
     {
@@ -535,26 +535,13 @@ namespace Blackbox.UI.Screens
             Say(Verdict(report), 6f);
         }
 
-        /// <summary>What the run found, in a sentence: the first broken rule, or how many outputs are right.</summary>
+        /// <summary>What the run found, in a sentence: a block left with an empty input, or how many outputs are right.</summary>
         string Verdict(WiringReport r)
         {
             int total = Puzzle.Outputs.Count;
-            bool allMet = r.Met == total;
-            string lead = allMet ? "Every output matches, but " : "";
-            if (r.EmptyBlocks.Count > 0)
-            {
-                string id = Puzzle.Blocks[r.EmptyBlocks[0]].Id;
-                return allMet
-                    ? lead + $"block {id} has an empty input. Every block input needs a wire."
-                    : $"Block {id} has an input with no wire, so it sends nothing. Every block input needs a wire.";
-            }
-            if (r.UnusedBlocks.Count > 0)
-            {
-                string id = Puzzle.Blocks[r.UnusedBlocks[0]].Id;
-                return allMet
-                    ? lead + $"block {id} isn't used. Every block has to lead to an output."
-                    : $"Block {id} isn't used: its signal doesn't reach any output. Every block has to lead to one.";
-            }
+            int empty = r.FirstEmptyUsedBlock;
+            if (empty >= 0)
+                return $"Block {Puzzle.Blocks[empty].Id} has an input with no wire, so it sends nothing. A block only works with all its inputs wired.";
             if (r.UnwiredOutputs.Count > 0 && r.Met == 0)
                 return $"Output {Puzzle.Outputs[r.UnwiredOutputs[0]].Id} has no wire into it yet.";
             if (r.Met == 0) return total == 1 ? "The output doesn't do what its target shows yet. Change the wiring and run it again." : "No output does what its target shows yet. Change the wiring and run it again.";

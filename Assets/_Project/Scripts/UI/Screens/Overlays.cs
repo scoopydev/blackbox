@@ -312,7 +312,7 @@ namespace Blackbox.UI.Screens
             var ideas = Wiring ? new List<string>
             {
                 "Wire the circuit so every output does what its target shows. Drag from a dot to a dot to run a wire; click a wire to take it off.",
-                "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
+                "You don't have to use every block. But a block only works when every one of its inputs has a wire: with an empty input it sends nothing.",
                 "Blocks keep hidden rules. The dots under a named block show which setting it is fixed in. Wire a block between an input and an output, run it, and watch what it sends.",
                 "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
                 "Outputs are devices: lights glow, fans spin, servos swing, digit displays count, speakers play. A target is met when the device does the same thing.",

@@ -105,7 +105,7 @@
     {
       "id": "unmarked-04",
       "name": "Strobe",
-      "hint": "Two outputs, two blocks. Each block has to lead to an output, through other blocks or straight there.",
+      "hint": "One block's signal can run to an output and on to another block at the same time.",
       "inputs": {
         "A": {
           "signal": "binary 1"

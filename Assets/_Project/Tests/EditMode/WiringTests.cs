@@ -292,7 +292,7 @@ namespace Blackbox.Tests
             s.Connect(a, g, 0);
             s.Connect(a, g, 1);
             report = s.Check();
-            Assert.That(report.RulesKept, Is.True);
+            Assert.That(report.EmptyBlocks, Is.Empty);
             Assert.That(report.Solved, Is.False, "steady instead of blinking");
             Assert.That(s.Connect(b, g, 1), Is.True, "a new wire replaces the old one in that port");
             Assert.That(s.DriverOf(g, 1), Is.EqualTo(b));
@@ -306,8 +306,44 @@ namespace Blackbox.Tests
             Assert.That(s.Check().Solved, Is.True, "undo puts it back");
         }
 
+        const string Spare = @"{
+            ""id"": ""s"", ""name"": ""Spare"",
+            ""inputs"": { ""A"": ""binary 1"", ""B"": ""binary 0"" },
+            ""blocks"": { ""g"": { ""kind"": ""B1"" }, ""h"": { ""kind"": ""B2"" } },
+            ""outputs"": { ""X"": ""light"" },
+            ""solution"": [ ""B -> g"", ""g -> X"" ]
+        }";
+
         [Test]
-        public void EveryBlockMustBeUsed()
+        public void BlocksCanBeLeftSpare()
+        {
+            var p = TestContent.ParseWired(Spare);
+            Assert.That(p.Outputs[0].Want, Is.Not.Null, "a solution may leave a block spare, with no wires at all");
+            var s = new WiringSession(p);
+            int a = 0, b = 1, g = s.BlockNode(0), h = s.BlockNode(1), x = s.OutputNode(0);
+            s.Connect(b, g, 0);
+            s.Connect(g, x, 0);
+            var report = s.Check();
+            Assert.That(report.UnusedBlocks, Is.EqualTo(new[] { 1 }), "h leads nowhere");
+            Assert.That(report.EmptyBlocks, Is.EqualTo(new[] { 1 }), "and has empty inputs");
+            Assert.That(report.FirstEmptyUsedBlock, Is.EqualTo(-1), "which doesn't matter for a spare block");
+            Assert.That(report.Solved, Is.True, "not every block has to be used");
+
+            s.Connect(g, h, 0);
+            s.Connect(h, x, 0);
+            report = s.Check();
+            Assert.That(report.FirstEmptyUsedBlock, Is.EqualTo(1), "h is on the way to X now, with an empty input");
+            Assert.That(report.Values[h], Is.Null, "so it sends nothing");
+            Assert.That(report.Solved, Is.False, "and X gets nothing");
+
+            s.Connect(a, h, 1);
+            report = s.Check();
+            Assert.That(report.UnusedBlocks, Is.Empty);
+            Assert.That(report.Solved, Is.True, "with both inputs wired, h works");
+        }
+
+        [Test]
+        public void TakingOffEveryWireFromASourceIsOneChange()
         {
             var p = TestContent.ParseWired(Small);
             var s = new WiringSession(p);
@@ -316,9 +352,6 @@ namespace Blackbox.Tests
             s.Connect(b, g, 1);
             s.Connect(a, h, 0);
             s.Connect(g, x, 0);
-            var report = s.Check();
-            Assert.That(report.UnusedBlocks, Is.EqualTo(new[] { 1 }), "h leads nowhere");
-            Assert.That(report.Solved, Is.False, "the output can't be met without h anyway, and h must be used");
 
             Assert.That(s.DisconnectFrom(a), Is.True);
             Assert.That(s.DriverOf(g, 0), Is.EqualTo(-1));
@@ -355,8 +388,9 @@ namespace Blackbox.Tests
                 Assert.That(ex.Message, Does.Contain(expect), reason);
             }
             Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""W1"""), "a wave block fed a bit sends nothing", "sends nothing");
-            Refused(Small.Replace(@"""g -> h"", ", ""), "the solution must use every block", "nothing wired into it");
-            Refused(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""B -> g.1"", ""A -> h"", ""g -> X"" ]"), "a block that leads nowhere", "doesn't use block 'h'");
+            Refused(Small.Replace(@"""g -> h"", ", ""), "a block the solution uses needs every input wired", "nothing wired into it");
+            Assert.That(TestContent.ParseWired(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""B -> g.1"", ""A -> h"", ""g -> X"" ]")).Outputs[0].Want, Is.Not.Null,
+                "a solution may leave a block leading nowhere");
             Refused(Small.Replace(@"""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"""hint"": ""none"""), "no solution", "solution");
             Refused(Small.Replace(@"""outputs"":", @"""probes"": 2, ""outputs"":"), "no probes", "probes");
             Refused(Small.Replace(@"""X"": ""light""", @"""X"": ""toaster"""), "unknown device", "toaster");
