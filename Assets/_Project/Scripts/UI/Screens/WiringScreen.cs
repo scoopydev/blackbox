@@ -62,7 +62,7 @@ namespace Blackbox.UI.Screens
             BuildHeader();
             BuildGoal();
             _board = WiringBoard.Create(Root, _session, this);
-            _board.SetShowRules(Game.Save.Prefs.DebugRules);
+            _board.SetShowRules(RulesShown);
 
             _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
@@ -329,6 +329,7 @@ namespace Blackbox.UI.Screens
             Game.Save.RecordSolve(p.Id, _session.Moves);
             SaveWires();
             Game.SaveNow();
+            _board.SetShowRules(true);
 
             PartDef openedPart = null;
             for (int i = 0; i < library.Parts.Count; i++)
@@ -348,7 +349,7 @@ namespace Blackbox.UI.Screens
                 if (openedPart != null) Say($"Solved. {openedPart.Title.ToUpperInvariant()} is open: {openedPart.Tagline}", 7f);
                 else Say($"Solved. Chapter {opened.Numeral} is open: {opened.Title}.", 6f);
             }
-            else Say(first ? "Solved. Every output does what its target shows." : "Solved again.", 3.5f);
+            else Say(first ? "Solved. Each block's rule is now written under it." : "Solved again.", first ? 5f : 3.5f);
         }
 
         void FillSolvedPanel(bool first, int? previousBest)
@@ -658,9 +659,15 @@ namespace Blackbox.UI.Screens
             Game.Screens.Push(help);
         }
 
+        /// <summary>
+        /// Each block's rule is written under it once the circuit has been solved,
+        /// and from then on whenever it's opened. The debug setting shows them always.
+        /// </summary>
+        bool RulesShown => Game.Save.Prefs.DebugRules || Game.Progress.IsSolved(Puzzle);
+
         public override void OnUncovered()
         {
-            _board.SetShowRules(Game.Save.Prefs.DebugRules);
+            _board.SetShowRules(RulesShown);
             RefreshCounters();
         }
 

@@ -271,7 +271,7 @@ New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTes
 
 ## Spoilers: the rules
 
-A named block shows only its kind code, its ports and its state dots; an unmarked one only its ports. Port 0 is the top input. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes each block's rule from this table under it.
+A named block shows only its kind code, its ports and its state dots; an unmarked one only its ports. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule from this table written under it, and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
 
 | Kind | Inputs | States, in order |
 |---|---|---|
