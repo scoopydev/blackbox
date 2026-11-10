@@ -31,7 +31,7 @@ The chapters, in play order, by file name without `.json`:
 |---|---|---|
 | `id` | yes | Stable id. Saves refer to it, so don't rename it once players have it. |
 | `title` | yes | Shown on the chapter map and the title card. |
-| `medium` | yes | The kind of signal: `binary`, `decimal`, `shape` or `wave`. Every circuit in the chapter uses it. |
+| `medium` | yes | The kind of signal: `binary`, `decimal`, `shape`, `wave` (analog) or `sampled`. Every circuit in the chapter uses it. |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
 | `signals` | no | One line about the medium, shown on the title card and in the help. |
@@ -88,6 +88,7 @@ There must be at least one target somewhere, or the circuit can never be solved.
 | `at` | Position, `[column, row]`. |
 | `value` | Where the input starts. Defaults to the medium's first value. |
 | `adjustable` | `true` gives the input arrows so the player can change it. Inputs are fixed by default. |
+| `options` | The values an adjustable input steps through, in order, such as `["sine f1 a7", "sine f2 a7", "sine f3 a7"]`. Without it the input steps through every value of the medium. Wave and sampled inputs have hundreds, so an adjustable one must list its options: two to five that differ in the one setting the circuit is about. `value` and any `target` must be among them. |
 | `target` | The value the input must end at. Give it the same value as `value` for a **return** circuit, where the player has to change the input to learn, then put it back. |
 
 The short form `[column, row]` is a fixed input at the first value.
@@ -124,7 +125,10 @@ Write values the way the player sees them:
 | `binary` | 0 and 1 | `1` |
 | `decimal` | 0 to 9 | `7` |
 | `shape` | `hollow` or `solid`, then `circle`, `triangle`, `square` or `hexagon` | `"solid triangle"` |
-| `wave` | `sine`, `square` or `saw`, then `low`, `mid` or `high` | `"square high"` |
+| `wave` | `sine`, `square` or `saw`, then `f1` to `f7` (frequency) and `a1` to `a7` (amplitude), and optionally `p1`, `p2` or `p3` (quarter cycles late), in any order | `"sine f3 a5"`, `"square f1 a7 p2"` |
+| `sampled` | the same form, frequency and amplitude, then `s3`, `s6` or `s12` (steps a cycle) | `"saw f2 a6 s6"` |
+
+Two sampled waves can trace the same staircase: a square is a square whether it is read 6 or 12 times a cycle, and a low sine read 3 times rounds the same way at A3 and A4. Either meets a target that names the other. Write targets as the intended solution makes them, so the target's caption matches the output's; a test checks this.
 
 ### Positions
 
@@ -162,7 +166,11 @@ The player sees only a kind's code. The rules are listed in [Design.md](Design.m
 | wave | W1 | 1 | 2 |
 | wave | W2 | 1 | 3 |
 | wave | W3 | 2 | 2 |
-| wave | W4 | 2 | 2 |
+| wave | W4 | 1 | 2 |
+| sampled | Q1 | 1 | 2 |
+| sampled | Q2 | 1 | 2 |
+| sampled | Q3 | 2 | 2 |
+| sampled | Q4 | 2 | 2 |
 
 ## What makes a good circuit
 

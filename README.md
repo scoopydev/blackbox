@@ -14,7 +14,7 @@ The core loop is experimentation:
 4. **Deduce** – form a theory about each block's hidden rule, and write it on the circuit with the pen or the text tool.
 5. **Solve** – use what you've learned to meet every target in one run.
 
-Each chapter uses a different kind of signal: bits, digits, shapes, and sounds, and the first circuit of every chapter is open from the start. Every signal can be heard as well as seen.
+Each chapter uses a different kind of signal: bits, digits, shapes, analog waves and sampled waves, and the first circuit of every chapter is open from the start. Every signal can be heard as well as seen.
 
 There is no tutorial text explaining the parts. Understanding *is* the puzzle.
 
@@ -44,7 +44,7 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | H | How to play |
 | Esc | Finish typing, put the pen down, or open the menu |
 
-There are four chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes) and *Resonance* (sounds). See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
+There are five chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes), *Resonance* (analog waves) and *Grain* (sampled waves). See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
 ## Project layout
 

@@ -15,8 +15,10 @@ namespace Blackbox.Components
         Decimal,
         /// <summary>A form (circle, triangle, square, hexagon) that is hollow or solid.</summary>
         Shape,
-        /// <summary>A wave form (sine, square, saw) at one of three pitches.</summary>
+        /// <summary>An analog wave: a sine, square or saw at one of 7 frequencies and 7 heights, shifted by 0 to 3 quarter cycles.</summary>
         Wave,
+        /// <summary>A sampled wave: an analog wave read a few times a cycle and held between readings, so it rises and falls in steps.</summary>
+        Sampled,
     }
 
     /// <summary>Shape values: <c>form * 2 + fill</c>.</summary>
@@ -33,18 +35,139 @@ namespace Blackbox.Components
         public static int Make(int form, bool solid) => ((form % Forms + Forms) % Forms) * 2 + (solid ? 1 : 0);
     }
 
-    /// <summary>Wave values: <c>form * 3 + pitch</c>.</summary>
+    /// <summary>
+    /// Analog wave values: <c>((form * 7 + frequency) * 7 + height) * 4 + phase</c>,
+    /// 588 in all. Every step is counted from 0 here and shown to the player from 1.
+    /// <list type="bullet">
+    /// <item>Frequency: how many cycles fit in one loop of a run, <see cref="Cycles"/>. It is also the pitch the wave sounds at.</item>
+    /// <item>Height (amplitude): the peak, 1 to 7 levels above the middle. It is also how loud the wave sounds.</item>
+    /// <item>Phase: how many quarter cycles later the wave starts. A sine half a cycle late is the same sine upside down.</item>
+    /// </list>
+    /// </summary>
     public static class Waves
     {
-        public const int Forms = 3;
-        public const int Pitches = 3;
+        public const int Forms = 3, Frequencies = 7, Heights = 7, Phases = 4;
+        public const int Size = Forms * Frequencies * Heights * Phases;
         public const int Sine = 0, SquareWave = 1, Saw = 2;
         public static readonly string[] FormNames = { "sine", "square", "saw" };
-        public static readonly string[] PitchNames = { "low", "mid", "high" };
 
-        public static int Form(int v) => v / Pitches;
-        public static int Pitch(int v) => v % Pitches;
-        public static int Make(int form, int pitch) => ((form % Forms + Forms) % Forms) * Pitches + ((pitch % Pitches + Pitches) % Pitches);
+        /// <summary>
+        /// Cycles in one loop for each frequency step. The steps are octaves and
+        /// fifths of the slowest, so they sound in tune together, and every cycle,
+        /// half cycle and quarter cycle lands exactly on a step of a <see cref="Trace"/>.
+        /// </summary>
+        public static readonly int[] Cycles = { 1, 2, 3, 4, 6, 8, 12 };
+
+        /// <summary>How a phase reads after the frequency and height: "", " +1/4", " +1/2", " +3/4".</summary>
+        public static readonly string[] PhaseMarks = { "", " +1/4", " +1/2", " +3/4" };
+
+        public static int Form(int v) => v / (Frequencies * Heights * Phases);
+        public static int Frequency(int v) => v / (Heights * Phases) % Frequencies;
+        public static int Height(int v) => v / Phases % Heights;
+        public static int Phase(int v) => v % Phases;
+
+        /// <summary>A wave from its parts. Each part wraps round, so the step after the last is the first.</summary>
+        public static int Make(int form, int frequency, int height, int phase = 0) =>
+            ((Wrap(form, Forms) * Frequencies + Wrap(frequency, Frequencies)) * Heights + Wrap(height, Heights)) * Phases + Wrap(phase, Phases);
+
+        public static int WithForm(int v, int form) => Make(form, Frequency(v), Height(v), Phase(v));
+        public static int WithFrequency(int v, int frequency) => Make(Form(v), frequency, Height(v), Phase(v));
+        public static int WithHeight(int v, int height) => Make(Form(v), Frequency(v), height, Phase(v));
+        public static int WithPhase(int v, int phase) => Make(Form(v), Frequency(v), Height(v), phase);
+
+        /// <summary>
+        /// The basic form between -1 and 1, <paramref name="cycles"/> cycles in. A sine
+        /// starts at the middle going up; a square is high for the first half of each
+        /// cycle; a saw climbs steadily from the bottom to the top, then drops sheer.
+        /// </summary>
+        public static double Shape(int form, double cycles)
+        {
+            double f = cycles - Math.Floor(cycles);
+            switch (form)
+            {
+                case SquareWave: return f < 0.5 ? 1.0 : -1.0;
+                case Saw: return 2.0 * f - 1.0;
+                default: return Math.Sin(f * 2.0 * Math.PI);
+            }
+        }
+
+        /// <summary>The wave's level, in steps of height (-7 to 7), a fraction <paramref name="loop"/> of the way through a loop.</summary>
+        public static double At(int v, double loop) =>
+            (Height(v) + 1) * Shape(Form(v), Cycles[Frequency(v)] * loop - Phase(v) * 0.25);
+
+        /// <summary>
+        /// The level at step <paramref name="step"/> of a loop of <paramref name="steps"/>.
+        /// Worked out so a step that falls exactly on an edge of a square or saw
+        /// lands on the right side of it.
+        /// </summary>
+        public static double AtStep(int v, int step, int steps) =>
+            (Height(v) + 1) * Shape(Form(v), (double)(Cycles[Frequency(v)] * step) / steps - Phase(v) * 0.25);
+
+        /// <summary>"F3 A5", "F1 A7 +1/4": frequency and amplitude as the player reads them.</summary>
+        public static string Settings(int v) => $"F{Frequency(v) + 1} A{Height(v) + 1}{PhaseMarks[Phase(v)]}";
+
+        internal static int Wrap(int v, int n) => ((v % n) + n) % n;
+    }
+
+    /// <summary>
+    /// Sampled wave values: <c>((form * 7 + frequency) * 7 + height) * 3 + rate</c>,
+    /// 441 in all. A sampled wave is an analog one read <see cref="StepsPerCycle"/>
+    /// times a cycle, each reading taken at the middle of its step, rounded to a
+    /// whole level and held for the step, so it climbs and falls in steps. Frequency
+    /// and height work as for <see cref="Waves"/>.
+    /// </summary>
+    public static class Sampled
+    {
+        public const int Forms = Waves.Forms, Frequencies = Waves.Frequencies, Heights = Waves.Heights, Rates = 3;
+        public const int Size = Forms * Frequencies * Heights * Rates;
+        public static readonly int[] StepsPerCycle = { 3, 6, 12 };
+
+        public static int Form(int v) => v / (Frequencies * Heights * Rates);
+        public static int Frequency(int v) => v / (Heights * Rates) % Frequencies;
+        public static int Height(int v) => v / Rates % Heights;
+        public static int Rate(int v) => v % Rates;
+
+        public static int Make(int form, int frequency, int height, int rate) =>
+            ((Waves.Wrap(form, Forms) * Frequencies + Waves.Wrap(frequency, Frequencies)) * Heights + Waves.Wrap(height, Heights)) * Rates + Waves.Wrap(rate, Rates);
+
+        public static int WithForm(int v, int form) => Make(form, Frequency(v), Height(v), Rate(v));
+        public static int WithFrequency(int v, int frequency) => Make(Form(v), frequency, Height(v), Rate(v));
+        public static int WithHeight(int v, int height) => Make(Form(v), Frequency(v), height, Rate(v));
+        public static int WithRate(int v, int rate) => Make(Form(v), Frequency(v), Height(v), rate);
+
+        /// <summary>
+        /// The level held at a point <paramref name="cycles"/> cycles in: the form read
+        /// at the middle of the current step and rounded to a whole level.
+        /// </summary>
+        public static int Level(int form, int height, int steps, double cycles) =>
+            Reading(form, height, steps, (long)Math.Floor(cycles * steps));
+
+        /// <summary>
+        /// The level held through the <paramref name="index"/>th step, counted from
+        /// the start of the first cycle. A reading exactly halfway between two levels
+        /// (7 × sin 30° is 3.5) rounds away from the middle; the nudge stops a sine
+        /// that comes out a hair under 0.5 from rounding the other way.
+        /// </summary>
+        public static int Reading(int form, int height, int steps, long index)
+        {
+            double r = (height + 1) * Waves.Shape(form, (index + 0.5) / steps);
+            return (int)Math.Round(r + Math.Sign(r) * 1e-9, MidpointRounding.AwayFromZero);
+        }
+
+        /// <summary>The level (-7 to 7) a fraction <paramref name="loop"/> of the way through a loop.</summary>
+        public static int At(int v, double loop) =>
+            Level(Form(v), Height(v), StepsPerCycle[Rate(v)], Waves.Cycles[Frequency(v)] * loop);
+
+        /// <summary>The level at step <paramref name="step"/> of a loop of <paramref name="steps"/>, counted exactly.</summary>
+        public static int AtStep(int v, int step, int steps)
+        {
+            int perCycle = StepsPerCycle[Rate(v)];
+            long index = (long)Waves.Cycles[Frequency(v)] * perCycle * step / steps;
+            return Reading(Form(v), Height(v), perCycle, index);
+        }
+
+        /// <summary>"F3 A5 S6": frequency, amplitude and steps a cycle.</summary>
+        public static string Settings(int v) => $"F{Frequency(v) + 1} A{Height(v) + 1} S{StepsPerCycle[Rate(v)]}";
     }
 
     public static class Media
@@ -57,11 +180,40 @@ namespace Blackbox.Components
                 case Medium.Binary: return 2;
                 case Medium.Decimal: return 10;
                 case Medium.Shape: return Shapes.Forms * 2;
-                default: return Waves.Forms * Waves.Pitches;
+                case Medium.Wave: return Waves.Size;
+                default: return Sampled.Size;
             }
         }
 
         public static bool IsValid(Medium m, int v) => v >= 0 && v < Size(m);
+
+        /// <summary>
+        /// True when two values are the same signal. Bits, digits and shapes are
+        /// the same only when equal. Waves are the same when they trace the same
+        /// line through a run: a square read 2 or 8 times a cycle is still the
+        /// same square, so either meets a target that asks for the other.
+        /// </summary>
+        public static bool Same(Medium m, int a, int b)
+        {
+            if (a == b) return true;
+            if (!IsWave(m) || !IsValid(m, a) || !IsValid(m, b)) return false;
+            return TraceOf(m, a).Matches(TraceOf(m, b));
+        }
+
+        static readonly Dictionary<(Medium, int), Trace> s_Traces = new Dictionary<(Medium, int), Trace>();
+
+        /// <summary>The value's trace, made once and kept. Traces never change.</summary>
+        public static Trace TraceOf(Medium m, int v)
+        {
+            lock (s_Traces)
+            {
+                if (!s_Traces.TryGetValue((m, v), out var trace)) s_Traces[(m, v)] = trace = Trace.Of(m, v);
+                return trace;
+            }
+        }
+
+        /// <summary>True for the two kinds of wave, which are drawn as lines and heard as tones.</summary>
+        public static bool IsWave(Medium m) => m == Medium.Wave || m == Medium.Sampled;
 
         /// <summary>The medium's name as puzzle files write it.</summary>
         public static string Key(Medium m) => m.ToString().ToLowerInvariant();
@@ -80,7 +232,7 @@ namespace Blackbox.Components
             return false;
         }
 
-        /// <summary>What one value is called: "a bit", "a digit", "a shape", "a wave".</summary>
+        /// <summary>What one value is called: "a bit", "a digit", "a shape", "a wave", "a sampled wave".</summary>
         public static string Noun(Medium m)
         {
             switch (m)
@@ -88,14 +240,19 @@ namespace Blackbox.Components
                 case Medium.Binary: return "bit";
                 case Medium.Decimal: return "digit";
                 case Medium.Shape: return "shape";
-                default: return "wave";
+                case Medium.Wave: return "wave";
+                default: return "sampled wave";
             }
         }
 
         /// <summary>The verb an output uses for its value in goal sentences.</summary>
-        public static string Verb(Medium m) => m == Medium.Wave ? "play" : "show";
+        public static string Verb(Medium m) => IsWave(m) ? "play" : "show";
 
-        /// <summary>A value in words, for goals, tests and the editor. "1", "7", "solid triangle", "square wave, high".</summary>
+        /// <summary>
+        /// A value in words, for puzzle files, tests and the editor: "1", "7",
+        /// "solid triangle", "sine f3 a5", "square f1 a7 p2" (two quarter cycles late),
+        /// "saw f2 a4 s6" (sampled 6 times a cycle).
+        /// </summary>
         public static string Describe(Medium m, int v)
         {
             if (!IsValid(m, v)) return "?";
@@ -106,14 +263,19 @@ namespace Blackbox.Components
                     return v.ToString();
                 case Medium.Shape:
                     return (Shapes.Solid(v) ? "solid " : "hollow ") + Shapes.FormNames[Shapes.Form(v)];
+                case Medium.Wave:
+                    return $"{Waves.FormNames[Waves.Form(v)]} f{Waves.Frequency(v) + 1} a{Waves.Height(v) + 1}" + (Waves.Phase(v) > 0 ? $" p{Waves.Phase(v)}" : "");
                 default:
-                    return Waves.FormNames[Waves.Form(v)] + " " + Waves.PitchNames[Waves.Pitch(v)];
+                    return $"{Waves.FormNames[Sampled.Form(v)]} f{Sampled.Frequency(v) + 1} a{Sampled.Height(v) + 1} s{Sampled.StepsPerCycle[Sampled.Rate(v)]}";
             }
         }
 
         /// <summary>
         /// Reads a value as puzzle files write it: a number for binary and decimal,
-        /// words for shapes ("solid triangle") and waves ("square high").
+        /// words for shapes ("solid triangle"), and for waves the form followed by
+        /// its settings in any order: f1 to f7 (frequency), a1 to a7 (amplitude),
+        /// p0 to p3 for an analog wave (quarter cycles late, 0 if left out) and s3,
+        /// s6 or s12 for a sampled one (steps a cycle). "sine f3 a5", "saw f1 a7 s6".
         /// </summary>
         public static bool TryParse(Medium m, string s, out int v)
         {
@@ -136,17 +298,44 @@ namespace Blackbox.Components
                 v = Shapes.Make(f, solid);
                 return true;
             }
+            if (IsWave(m)) return TryParseWave(m, s, out v);
+            return false;
+        }
+
+        static bool TryParseWave(Medium m, string s, out int v)
+        {
+            v = -1;
+            var parts = s.Replace(",", " ").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 3) return false;
+            int form = Array.IndexOf(Waves.FormNames, parts[0]);
+            if (form < 0) return false;
+            int frequency = -1, height = -1, phase = -1, steps = -1;
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string part = parts[i];
+                if (part.Length < 2 || !int.TryParse(part.Substring(1), out int n)) return false;
+                switch (part[0])
+                {
+                    case 'f': if (frequency >= 0 || n < 1 || n > Waves.Frequencies) return false; frequency = n - 1; break;
+                    case 'a': if (height >= 0 || n < 1 || n > Waves.Heights) return false; height = n - 1; break;
+                    case 'p': if (m != Medium.Wave || phase >= 0 || n < 0 || n >= Waves.Phases) return false; phase = n; break;
+                    case 's':
+                        if (m != Medium.Sampled || steps >= 0) return false;
+                        steps = Array.IndexOf(Sampled.StepsPerCycle, n);
+                        if (steps < 0) return false;
+                        break;
+                    default: return false;
+                }
+            }
+            if (frequency < 0 || height < 0) return false;
             if (m == Medium.Wave)
             {
-                var parts = s.Replace(",", " ").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length != 2) return false;
-                int f = Array.IndexOf(Waves.FormNames, parts[0]);
-                int p = Array.IndexOf(Waves.PitchNames, parts[1]);
-                if (f < 0 || p < 0) return false;
-                v = Waves.Make(f, p);
+                v = Waves.Make(form, frequency, height, Math.Max(0, phase));
                 return true;
             }
-            return false;
+            if (steps < 0) return false;
+            v = Sampled.Make(form, frequency, height, steps);
+            return true;
         }
 
         /// <summary>Every value of the medium in order, for tests and tools.</summary>

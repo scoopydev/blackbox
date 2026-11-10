@@ -8,26 +8,27 @@ namespace Blackbox.Components
     /// turns the samples into clips.
     /// <list type="bullet">
     /// <item>Bits: a 1 beeps. A 0 is only a soft, dull tap, so the player knows it played.</item>
-    /// <item>Digits: one steady tone, longer the bigger the digit. 0 is the dull tap.</item>
+    /// <item>Digits: one short tone, higher the bigger the digit, climbing a major scale from C4 (0) to E5 (9).</item>
     /// <item>Shapes: one click per corner (a circle is one smooth note), low and warm when solid, high and thin when hollow.</item>
-    /// <item>Waves: the wave itself, a sine, square or saw at A3, E4 or A4.</item>
+    /// <item>Analog waves: the wave itself. Each frequency step is a pitch (D3 up to A6, in octaves and fifths) and each height step is louder. Phase can't be heard.</item>
+    /// <item>Sampled waves: the same pitches, but the wave is held in steps as it is drawn, so it sounds buzzy and stepped, and louder the taller its steps. Fewer steps sound harsher.</item>
     /// </list>
     /// </summary>
     public static class SignalSound
     {
         public const int SampleRate = 44100;
 
-        /// <summary>How much longer a digit's tone gets for each step up, in seconds: 1 is this long, 9 nine times as long.</summary>
-        public const float DigitStep = 0.15f;
+        /// <summary>The pitch of each digit, in Hz: a major scale, do (0) to mi an octave up (9), so counting up sounds like climbing.</summary>
+        public static readonly float[] DigitHz = { 261.63f, 293.66f, 329.63f, 349.23f, 392f, 440f, 493.88f, 523.25f, 587.33f, 659.25f };
         /// <summary>The time between a shape's corner clicks, in seconds.</summary>
         public const float CornerSpacing = 0.11f;
 
         const float Tau = (float)(Math.PI * 2.0);
         const float BeepHz = 880f;
-        const float DigitHz = 523.25f;
         const float SolidHz = 261.63f;
         const float HollowHz = 783.99f;
-        static readonly float[] WaveHz = { 220f, 329.63f, 440f };
+        /// <summary>The pitch of the slowest wave. Each frequency step multiplies it by <see cref="Waves.Cycles"/>, so step 3 is A4.</summary>
+        public const float WaveBaseHz = 440f / 3f;
 
         /// <summary>How long a value's sound lasts, in seconds.</summary>
         public static float Duration(Medium m, int v)
@@ -37,16 +38,24 @@ namespace Blackbox.Components
                 case Medium.Binary:
                     return 0.26f;
                 case Medium.Decimal:
-                    return v <= 0 ? 0.26f : v * DigitStep + 0.1f;
+                    return 0.36f;
                 case Medium.Shape:
                 {
                     int corners = Shapes.Corners[Shapes.Form(Clamp(v, 0, 7))];
                     return corners == 0 ? 0.5f : corners * CornerSpacing + 0.16f;
                 }
                 default:
-                    return 0.8f;
+                    return WaveLength;
             }
         }
+
+        const float WaveLength = 0.8f;
+
+        /// <summary>The pitch of a wave's frequency step, in Hz.</summary>
+        public static float WaveHz(int frequency) => WaveBaseHz * Waves.Cycles[Clamp(frequency, 0, Waves.Frequencies - 1)];
+
+        /// <summary>How loud a height step is, from 1 (the tallest) down by 2.5 dB a step.</summary>
+        public static float HeightGain(int height) => (float)Math.Pow(10.0, -2.5 * (Waves.Heights - 1 - Clamp(height, 0, Waves.Heights - 1)) / 20.0);
 
         /// <summary>The sound of one value, as mono samples between -1 and 1.</summary>
         public static float[] Render(Medium m, int v, int rate = SampleRate)
@@ -71,11 +80,13 @@ namespace Blackbox.Components
                 case Medium.Binary:
                     return v == 1 ? Beep(t) : Tap(t);
                 case Medium.Decimal:
-                    return v <= 0 ? Tap(t) : Digit(v, t);
+                    return Digit(v, t);
                 case Medium.Shape:
                     return ShapeSound(Shapes.Form(v), Shapes.Solid(v), t);
+                case Medium.Wave:
+                    return WaveSound(Waves.Form(v), Waves.Frequency(v), t) * HeightGain(Waves.Height(v));
                 default:
-                    return WaveSound(Waves.Form(v), Waves.Pitch(v), t);
+                    return SampledSound(v, t);
             }
         }
 
@@ -90,11 +101,12 @@ namespace Blackbox.Components
             return tone * Gate(t, 0.005f, 0.17f, 0.025f) * 0.2f;
         }
 
-        /// <summary>One unbroken tone, held for as long as the digit is big.</summary>
+        /// <summary>One short tone, the same length for every digit, pitched by the digit.</summary>
         static float Digit(int v, float t)
         {
-            float tone = Sin(DigitHz, t) + 0.2f * Sin(DigitHz * 2f, t) + 0.05f * Sin(DigitHz * 3f, t);
-            return tone * Gate(t, 0.006f, v * DigitStep, 0.02f) * 0.17f;
+            float hz = DigitHz[Clamp(v, 0, DigitHz.Length - 1)];
+            float tone = Sin(hz, t) + 0.2f * Sin(hz * 2f, t) + 0.05f * Sin(hz * 3f, t);
+            return tone * Gate(t, 0.006f, 0.22f, 0.04f) * 0.17f;
         }
 
         static float ShapeSound(int form, bool solid, float t)
@@ -116,9 +128,9 @@ namespace Blackbox.Components
         }
 
         /// <summary>A sine, square or saw, built from its harmonics up to about 7 kHz so the edges stay soft and nothing aliases.</summary>
-        static float WaveSound(int form, int pitch, float t)
+        static float WaveSound(int form, int frequency, float t)
         {
-            float hz = WaveHz[Clamp(pitch, 0, WaveHz.Length - 1)];
+            float hz = WaveHz(frequency);
             float w = Tau * hz * t;
             float v = 0f;
             if (form == Waves.Sine) v = (float)Math.Sin(w);
@@ -139,6 +151,21 @@ namespace Blackbox.Components
             // Each form at roughly the same loudness.
             float gain = form == Waves.Sine ? 0.26f : form == Waves.SquareWave ? 0.15f : 0.17f;
             return v * Gate(t, 0.02f, 0.45f, 0.11f) * gain;
+        }
+
+        /// <summary>
+        /// The wave held in steps at audio speed, just as it is drawn: read a few
+        /// times a cycle, rounded to a whole level and held. The held steps add a
+        /// buzz of their own; the fewer the steps, the buzzier. The sound follows
+        /// the levels alone, so two sampled waves that trace the same steps sound
+        /// the same, whatever form they were read from.
+        /// </summary>
+        static float SampledSound(int v, float t)
+        {
+            int form = Sampled.Form(v), height = Sampled.Height(v), steps = Sampled.StepsPerCycle[Sampled.Rate(v)];
+            float hz = WaveHz(Sampled.Frequency(v));
+            float level = Sampled.Level(form, height, steps, hz * t) / (float)Trace.Peak;
+            return level * Gate(t, 0.02f, 0.45f, 0.11f) * 0.18f;
         }
 
         // ------------------------------------------------------------------ helpers

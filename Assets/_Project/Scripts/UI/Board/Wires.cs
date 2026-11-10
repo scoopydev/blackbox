@@ -241,7 +241,7 @@ namespace Blackbox.UI.Board
             view.Index = index;
             var host = board.Host;
 
-            float valueSize = medium == Medium.Wave ? 22f : 24f;
+            float valueSize = Media.IsWave(medium) ? 22f : 24f;
             float valueW = ValueView.WidthFor(medium, valueSize);
             float cardW = valueW + 26f, cardH = 36f, lift = 40f;
 

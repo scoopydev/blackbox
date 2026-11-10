@@ -146,8 +146,8 @@ namespace Blackbox.UI.Board
 
             view._ring = UIKit.Shape(rt, "Ring", ShapeKind.Circle);
             view._ring.rectTransform.Stretch();
-            view._value = ValueView.Create(rt, medium, (medium == Medium.Wave ? 30f : 32f) * s, medium == Medium.Wave);
-            if (medium == Medium.Wave) view._value.transform.localScale = Vector3.one * 0.82f;
+            view._value = ValueView.Create(rt, medium, (Media.IsWave(medium) ? 30f : 32f) * s, Media.IsWave(medium));
+            if (Media.IsWave(medium)) view._value.transform.localScale = Vector3.one * 0.82f;
 
             if (def.Adjustable)
             {
@@ -465,7 +465,7 @@ namespace Blackbox.UI.Board
             float s = m.Scale;
             Vector2 c = m.Position(def.At);
             bool target = def.Target.HasValue;
-            float valueSize = (medium == Medium.Wave ? 36f : 42f) * s;
+            float valueSize = (Media.IsWave(medium) ? 36f : 42f) * s;
             float valueW = ValueView.WidthFor(medium, valueSize);
             float half = Mathf.Max(96f * s, valueW + 34f * s);
             float w = target ? half * 2f + 24f * s : half, h = 88f * s;
@@ -486,7 +486,7 @@ namespace Blackbox.UI.Board
             view._label = UIKit.Text(rt, def.Id, TextStyle.Label.WithSize(Mathf.RoundToInt(15 * s)), TextAnchor.MiddleLeft, "Label");
             view._label.rectTransform.Centered(-w * 0.5f + 4f + 40f, h * 0.5f + 15f * s, 80f, 20f);
 
-            view._now = ValueView.Create(rt, medium, valueSize, medium == Medium.Wave, "Now");
+            view._now = ValueView.Create(rt, medium, valueSize, Media.IsWave(medium), "Now");
             view._now.GetComponent<RectTransform>().Centered(nowX, 0f, valueW, valueSize);
             view._now.MakePlayable(host.PlayValue);
 
@@ -495,7 +495,7 @@ namespace Blackbox.UI.Board
                 float wantX = w * 0.5f - half * 0.5f;
                 view._relation = UIKit.Glyph(rt, "notequal", Palette.Faint, 1.8f, "Relation");
                 view._relation.rectTransform.Centered((nowX + wantX) * 0.5f, 0f, 20f * s, 20f * s);
-                view._want = ValueView.Create(rt, medium, valueSize, medium == Medium.Wave, "Want");
+                view._want = ValueView.Create(rt, medium, valueSize, Media.IsWave(medium), "Want");
                 view._want.GetComponent<RectTransform>().Centered(wantX, 0f, valueW, valueSize);
                 view._want.Set(def.Target.Value, ValueLook.Target);
                 view._want.MakePlayable(host.PlayValue);

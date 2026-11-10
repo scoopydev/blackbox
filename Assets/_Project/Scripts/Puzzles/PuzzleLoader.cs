@@ -142,8 +142,11 @@ namespace Blackbox.Puzzles
                     node.Value = v.Has("value") ? ReadValue(v["value"], p.Medium, $"input '{m.Key}' value", where) : 0;
                     node.Adjustable = v["adjustable"].AsBool(false);
                     node.Target = ReadTarget(v, p.Medium, $"input '{m.Key}'", where);
+                    ReadOptions(v, node, p.Medium, where);
                 }
                 else throw new PuzzleFormatException($"{where}: input '{m.Key}' must be [column, row] or an object.");
+                if (node.Adjustable && node.Options == null && Media.IsWave(p.Medium))
+                    throw new PuzzleFormatException($"{where}: input '{m.Key}' is adjustable, so it needs \"options\": the waves it steps through.");
                 p.Inputs.Add(node);
             }
         }
@@ -195,6 +198,27 @@ namespace Blackbox.Puzzles
             }
         }
 
+        static void ReadOptions(JsonValue v, InputDef node, Medium medium, string where)
+        {
+            if (!v.Has("options") || v["options"].IsNull) return;
+            var list = v["options"];
+            string what = $"input '{node.Id}'";
+            if (!node.Adjustable) throw new PuzzleFormatException($"{where}: {what} has options but isn't adjustable.");
+            if (!list.IsArray || list.Count < 2) throw new PuzzleFormatException($"{where}: {what} options must be a list of at least two values.");
+            var options = new int[list.Count];
+            for (int i = 0; i < list.Count; i++)
+            {
+                options[i] = ReadValue(list[i], medium, $"{what} option {i + 1}", where);
+                if (System.Array.IndexOf(options, options[i], 0, i) >= 0)
+                    throw new PuzzleFormatException($"{where}: {what} lists {Media.Describe(medium, options[i])} twice.");
+            }
+            if (System.Array.IndexOf(options, node.Value) < 0)
+                throw new PuzzleFormatException($"{where}: {what} starts at {Media.Describe(medium, node.Value)}, which isn't one of its options.");
+            if (node.Target.HasValue && System.Array.IndexOf(options, node.Target.Value) < 0)
+                throw new PuzzleFormatException($"{where}: {what} has a target of {Media.Describe(medium, node.Target.Value)}, which isn't one of its options.");
+            node.Options = options;
+        }
+
         static int? ReadTarget(JsonValue node, Medium medium, string what, string where)
         {
             if (!node.Has("target") || node["target"].IsNull) return null;
@@ -216,7 +240,8 @@ namespace Blackbox.Puzzles
                 case Medium.Binary: return "Use 0 or 1.";
                 case Medium.Decimal: return "Use 0 to 9.";
                 case Medium.Shape: return "Use words like \"solid triangle\" or \"hollow hexagon\".";
-                default: return "Use words like \"sine low\" or \"saw high\".";
+                case Medium.Wave: return "Use the form and its settings, like \"sine f3 a5\" or \"saw f1 a7 p2\".";
+                default: return "Use the form and its settings, like \"sine f3 a5 s6\" or \"saw f1 a7 s12\".";
             }
         }
 

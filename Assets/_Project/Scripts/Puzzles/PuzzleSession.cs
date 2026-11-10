@@ -75,7 +75,7 @@ namespace Blackbox.Puzzles
             {
                 if (resume.Inputs.Length == _inputs.Length)
                     for (int i = 0; i < _inputs.Length; i++)
-                        if (puzzle.InputChangeable(i) && Media.IsValid(Medium, resume.Inputs[i])) _inputs[i] = resume.Inputs[i];
+                        if (puzzle.InputChangeable(i) && puzzle.Inputs[i].ChoiceIndex(Medium, resume.Inputs[i]) >= 0) _inputs[i] = resume.Inputs[i];
                 if (resume.States.Length == _states.Length)
                     for (int b = 0; b < _states.Length; b++)
                         if (puzzle.BlockChangeable(b) && resume.States[b] >= 0 && resume.States[b] < puzzle.Blocks[b].Kind.StateCount) _states[b] = resume.States[b];
@@ -127,7 +127,7 @@ namespace Blackbox.Puzzles
         public bool TargetMatched(int target)
         {
             var t = Puzzle.Targets[target];
-            return ValueOf(t.Node) == t.Want;
+            return Media.Same(Medium, ValueOf(t.Node), t.Want);
         }
 
         public int MatchedTargets
@@ -161,8 +161,7 @@ namespace Blackbox.Puzzles
         public bool SetInput(int input, int value)
         {
             if (!CanChangeInput(input)) return false;
-            int size = Media.Size(Medium);
-            value = ((value % size) + size) % size;
+            if (Puzzle.Inputs[input].ChoiceIndex(Medium, value) < 0) return false;
             if (_inputs[input] == value) return false;
             _undo.Push((ChangeKind.Input, input, _inputs[input]));
             _inputs[input] = value;
@@ -172,8 +171,16 @@ namespace Blackbox.Puzzles
             return true;
         }
 
-        /// <summary>Steps an input to its next (+1) or previous (-1) value, wrapping round.</summary>
-        public bool CycleInput(int input, int direction) => CanChangeInput(input) && SetInput(input, _inputs[input] + direction);
+        /// <summary>Steps an input to its next (+1) or previous (-1) choice, wrapping round.</summary>
+        public bool CycleInput(int input, int direction)
+        {
+            if (!CanChangeInput(input)) return false;
+            var def = Puzzle.Inputs[input];
+            int n = def.ChoiceCount(Medium);
+            int k = def.ChoiceIndex(Medium, _inputs[input]);
+            k = (((k < 0 ? 0 : k + direction) % n) + n) % n;
+            return SetInput(input, def.Choice(k));
+        }
 
         public bool SetState(int block, int state)
         {

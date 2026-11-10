@@ -6,7 +6,7 @@
   "title": "Tally",
   "medium": "decimal",
   "tagline": "Count what changes.",
-  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0. A digit sounds as one steady tone: the bigger the digit, the longer the tone.",
+  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0. A digit sounds as a short tone: the bigger the digit, the higher the tone.",
   "circuits": [
     {
       // Introduces D1. Solution: d = add 3, e = add 2 (8 + 2 wraps to 0).

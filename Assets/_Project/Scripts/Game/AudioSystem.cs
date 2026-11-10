@@ -40,7 +40,8 @@ namespace Blackbox.Game
         float _musicFade = 1f;
         readonly Dictionary<Sfx, float> _lastPlayed = new Dictionary<Sfx, float>();
         /// <summary>Every signal value's sound, by medium and value. See <see cref="SignalSound"/>.</summary>
-        readonly Dictionary<Medium, AudioClip[]> _signals = new Dictionary<Medium, AudioClip[]>();
+        /// <summary>Signal sounds, made the first time each is played: waves alone have over a thousand.</summary>
+        readonly Dictionary<(Medium, int), AudioClip> _signals = new Dictionary<(Medium, int), AudioClip>();
         AudioSource _tone;
         Coroutine _sequence;
 
@@ -83,18 +84,6 @@ namespace Blackbox.Game
             });
             _clips[Sfx.Name] = Make("name", 0.4f, (t, s) => (Sine(1318.5f, t) * 0.6f + Sine(1975.5f, t) * 0.3f) * Env(t, 0.003f, 0.25f) * 0.12f);
             _clips[Sfx.Tick] = Make("tick", 0.06f, (t, s) => Sine(1600f, t) * Env(t, 0.001f, 0.025f) * 0.08f);
-
-            foreach (Medium m in new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave })
-            {
-                var clips = new AudioClip[Media.Size(m)];
-                for (int v = 0; v < clips.Length; v++)
-                {
-                    var data = SignalSound.Render(m, v, Rate);
-                    clips[v] = AudioClip.Create($"bb_signal_{Media.Key(m)}_{v}", data.Length, 1, Rate, false);
-                    clips[v].SetData(data, 0);
-                }
-                _signals[m] = clips;
-            }
 
             _music.clip = Drone();
         }
@@ -189,12 +178,24 @@ namespace Blackbox.Game
         /// <returns>How long the sound lasts, in seconds.</returns>
         float PlaySignalClip(Medium medium, int value)
         {
-            if (_tone == null || !_signals.TryGetValue(medium, out var clips) || value < 0 || value >= clips.Length) return 0f;
+            var clip = SignalClip(medium, value);
+            if (_tone == null || clip == null) return 0f;
             _tone.Stop();
-            _tone.clip = clips[value];
+            _tone.clip = clip;
             _tone.volume = _master * _effects;
             _tone.Play();
-            return clips[value].length;
+            return clip.length;
+        }
+
+        AudioClip SignalClip(Medium medium, int value)
+        {
+            if (!Media.IsValid(medium, value)) return null;
+            if (_signals.TryGetValue((medium, value), out var clip)) return clip;
+            var data = SignalSound.Render(medium, value, Rate);
+            clip = AudioClip.Create($"bb_signal_{Media.Key(medium)}_{value}", data.Length, 1, Rate, false);
+            clip.SetData(data, 0);
+            _signals[(medium, value)] = clip;
+            return clip;
         }
 
         // ------------------------------------------------------------------ synthesis

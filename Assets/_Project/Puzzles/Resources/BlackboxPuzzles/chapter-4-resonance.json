@@ -1,4 +1,4 @@
-// Chapter IV: wave signals. See Docs/PuzzleFormat.md for the format.
+// Chapter IV: analog wave signals. See Docs/PuzzleFormat.md for the format.
 // Block kinds: W1, W2, W3, W4. Notes above each circuit give its solution.
 {
   "id": "resonance",
@@ -6,143 +6,143 @@
   "title": "Resonance",
   "medium": "wave",
   "tagline": "Listen closely.",
-  "signals": "Signals here are sounds: a sine, square or saw wave at a low, middle or high pitch.",
+  "signals": "Signals here are waves: a sine, square or saw. F, from 1 to 7, is how fast a wave repeats and how high it sounds. A, from 1 to 7, is how tall it is and how loud. A wave marked +1/4, +1/2 or +3/4 starts that much of a cycle late.",
   "circuits": [
     {
-      // Introduces W1. Solution: u = raise pitch, v = lower pitch.
+      // Introduces W1. Solution: u = faster, v = slower.
       "id": "resonance-01",
       "name": "Hum",
-      "hint": "Signals are sounds now. Click any wave you can see to hear it.",
+      "hint": "Signals are waves now. F is how fast a wave repeats, A how tall it is. Click any wave to hear it.",
       "probes": 0,
       "inputs": {
-        "A": {"at": [0, 0], "value": "sine low"},
-        "B": {"at": [0, 1], "value": "saw high"}
+        "A": {"at": [0, 0], "value": "sine f2 a6"},
+        "B": {"at": [0, 1], "value": "saw f5 a4"}
       },
       "blocks": {
         "u": {"kind": "W1", "state": 1, "at": [1, 0]},
         "v": {"kind": "W1", "state": 0, "at": [1, 1]}
       },
       "outputs": {
-        "X": {"at": [2, 0], "target": "sine mid"},
-        "Y": {"at": [2, 1], "target": "saw mid"}
+        "X": {"at": [2, 0], "target": "sine f3 a6"},
+        "Y": {"at": [2, 1], "target": "saw f4 a4"}
       },
       "wires": ["A -> u", "u -> X", "B -> v", "v -> Y"]
     },
     {
-      // Introduces W2. w is locked on make saw, so A needs a high pitch (any form). x = make sine.
+      // Introduces W2. w is locked on make saw, so A = sine f3 a7. x = make sine.
       "id": "resonance-02",
       "name": "Timbre",
       "hint": "You can't change a locked block, but you can change what goes into it.",
       "probes": 0,
       "inputs": {
-        "A": {"at": [0, 0], "value": "sine low", "adjustable": true},
-        "B": {"at": [0, 1], "value": "square mid"}
+        "A": {"at": [0, 0], "value": "sine f1 a7", "adjustable": true, "options": ["sine f1 a7", "sine f2 a7", "sine f3 a7", "sine f4 a7"]},
+        "B": {"at": [0, 1], "value": "square f2 a5"}
       },
       "blocks": {
         "w": {"kind": "W2", "state": 2, "locked": true, "at": [1, 0]},
         "x": {"kind": "W2", "state": 0, "at": [1, 1]}
       },
       "outputs": {
-        "X": {"at": [2, 0], "target": "saw high"},
-        "Y": {"at": [2, 1], "target": "sine mid"}
+        "X": {"at": [2, 0], "target": "saw f3 a7"},
+        "Y": {"at": [2, 1], "target": "sine f2 a5"}
       },
       "wires": ["A -> w", "w -> X", "B -> x", "x -> Y"]
     },
     {
-      // Introduces W3. k (locked, raise pitch) needs a low sine, so g = form of bottom, pitch of top,
-      // and B must be a sine (any pitch).
+      // Introduces W3. k is locked on faster, so g must send saw f1 a3:
+      // g = top's wave at bottom's height, B = sine f4 a3.
       "id": "resonance-03",
       "name": "Splice",
-      "hint": "Click a probe to hear the wave it reads.",
+      "hint": "Two waves in, one out. A probe shows the wave on its wire when you RUN.",
       "probes": 1,
       "inputs": {
-        "A": {"at": [0, 0], "value": "saw low"},
-        "B": {"at": [0, 2], "value": "square mid", "adjustable": true}
+        "A": {"at": [0, 0], "value": "saw f1 a7"},
+        "B": {"at": [0, 2], "value": "sine f4 a5", "adjustable": true, "options": ["sine f4 a1", "sine f4 a3", "sine f4 a5", "sine f4 a7"]}
       },
       "blocks": {
-        "g": {"kind": "W3", "state": 0, "at": [1, 1]},
+        "g": {"kind": "W3", "state": 1, "at": [1, 1]},
         "k": {"kind": "W1", "state": 0, "locked": true, "at": [2, 1]}
       },
       "outputs": {
-        "X": {"at": [3, 1], "target": "sine mid"}
+        "X": {"at": [3, 1], "target": "saw f2 a3"}
       },
       "wires": ["A -> g.0", "B -> g.1", "g -> k", "k -> X"]
     },
     {
-      // Introduces W4, locked on higher. Unique solution:
-      // A = sine low, B = saw mid, a = form of top, pitch of bottom, b = raise pitch.
+      // Introduces W4, locked on a quarter later. Unique solution:
+      // A = sine f3 a7 p3, B = square f1 a4, a = top's wave at bottom's height, b = half a cycle later.
       "id": "resonance-04",
-      "name": "Interval",
-      "hint": "Compare by ear: click the inputs to hear them.",
+      "name": "Offset",
+      "hint": "Some waves start late: +1/4 is a quarter of a cycle late. Watch where each one starts.",
       "probes": 1,
       "inputs": {
-        "A": {"at": [0, 0], "value": "sine mid", "adjustable": true},
-        "B": {"at": [0, 2], "value": "saw high", "adjustable": true}
+        "A": {"at": [0, 0], "value": "sine f3 a7", "adjustable": true, "options": ["sine f3 a7", "sine f3 a7 p1", "sine f3 a7 p2", "sine f3 a7 p3"]},
+        "B": {"at": [0, 2], "value": "square f1 a6", "adjustable": true, "options": ["square f1 a2", "square f1 a4", "square f1 a6"]}
       },
       "blocks": {
-        "g": {"kind": "W4", "state": 0, "locked": true, "at": [1, 1]},
-        "a": {"kind": "W3", "state": 1, "at": [2, 0]},
-        "b": {"kind": "W1", "state": 1, "at": [2, 2]}
+        "g": {"kind": "W4", "state": 0, "locked": true, "at": [1, 0]},
+        "a": {"kind": "W3", "state": 1, "at": [2, 1]},
+        "b": {"kind": "W4", "state": 0, "at": [2, 2]}
       },
       "outputs": {
-        "X": {"at": [3, 0], "target": "sine mid"},
-        "Y": {"at": [3, 2], "target": "saw high"}
+        "X": {"at": [3, 1], "target": "sine f3 a4"},
+        "Y": {"at": [3, 2], "target": "square f1 a4 p2"}
       },
-      "wires": ["A -> g.0", "B -> g.1", "A -> a.0", "g -> a.1", "g -> b", "a -> X", "b -> Y"]
+      "wires": ["A -> g", "g -> a.0", "B -> a.1", "B -> b", "a -> X", "b -> Y"]
     },
     {
-      // Unique solution: p = lower pitch, q = lower, r = form of top, pitch of bottom, s = make saw.
+      // Unique solution: p = slower, q = bottom's wave at top's height, r = half a cycle later, s = make sine.
       "id": "resonance-05",
       "name": "Echo",
       "hint": "A and B already sit where they must end. Change them to learn what the blocks do, then put them back.",
       "probes": 0,
       "inputs": {
-        "A": {"at": [0, 0.5], "value": "sine low", "adjustable": true, "target": "sine low"},
-        "B": {"at": [0, 2.5], "value": "square high", "adjustable": true, "target": "square high"}
+        "A": {"at": [0, 0.5], "value": "sine f4 a3", "adjustable": true, "options": ["sine f2 a3", "sine f4 a3", "sine f6 a3"], "target": "sine f4 a3"},
+        "B": {"at": [0, 2.5], "value": "saw f1 a7", "adjustable": true, "options": ["saw f1 a5", "saw f1 a7"], "target": "saw f1 a7"}
       },
       "blocks": {
         "p": {"kind": "W1", "state": 0, "at": [1, 0]},
-        "q": {"kind": "W4", "state": 0, "at": [1, 2]},
-        "r": {"kind": "W3", "state": 1, "at": [2, 1]},
+        "q": {"kind": "W3", "state": 0, "at": [1, 2]},
+        "r": {"kind": "W4", "state": 0, "at": [2, 1]},
         "s": {"kind": "W2", "state": 0, "at": [2, 3]}
       },
       "outputs": {
-        "X": {"at": [3, 0], "target": "sine high"},
-        "Y": {"at": [3, 1], "target": "sine low"},
-        "Z": {"at": [3, 3], "target": "saw low"}
+        "X": {"at": [3, 0], "target": "sine f3 a3"},
+        "Y": {"at": [3, 1], "target": "sine f3 a3 p2"},
+        "Z": {"at": [3, 3], "target": "sine f1 a3"}
       },
-      "wires": ["A -> p", "A -> q.0", "B -> q.1", "p -> r.0", "q -> r.1", "q -> s", "p -> X", "r -> Y", "s -> Z"]
+      "wires": ["A -> p", "A -> q.0", "B -> q.1", "p -> r", "q -> s", "p -> X", "r -> Y", "s -> Z"]
     },
     {
-      // 15,552 combinations, one solution:
-      // A = square low, B = sine mid, p = form of bottom, pitch of top, q = make saw, r = raise pitch,
-      // s = form of top, pitch of bottom, t = form of top, pitch of bottom, u = raise pitch, w = lower.
-      // Locked: v = form of bottom, pitch of top.
+      // 2,592 combinations, one solution:
+      // A = sine f4 a5, B = saw f6 a4, p = slower, q = top's wave at bottom's height, r = make saw,
+      // s = half a cycle later, t = bottom's wave at top's height, u = make square, w = a quarter cycle later.
+      // Locked: v = bottom's wave at top's height.
       "id": "resonance-06",
       "name": "Chorus",
       "hint": "The last circuit. Listen, probe and take notes.",
       "probes": 2,
       "inputs": {
-        "A": {"at": [0, 0], "value": "square low", "adjustable": true},
-        "B": {"at": [0, 2], "value": "saw mid", "adjustable": true},
-        "C": {"at": [0, 4], "value": "square mid"}
+        "A": {"at": [0, 0], "value": "sine f2 a5", "adjustable": true, "options": ["sine f2 a5", "sine f3 a5", "sine f4 a5"]},
+        "B": {"at": [0, 2], "value": "saw f6 a6", "adjustable": true, "options": ["saw f6 a2", "saw f6 a4", "saw f6 a6"]},
+        "C": {"at": [0, 4], "value": "square f1 a3"}
       },
       "blocks": {
-        "p": {"kind": "W3", "state": 0, "at": [1, 0.5]},
-        "q": {"kind": "W2", "state": 0, "at": [1, 2.5]},
-        "r": {"kind": "W1", "state": 1, "at": [1, 4]},
-        "s": {"kind": "W3", "state": 1, "at": [2, 1]},
-        "t": {"kind": "W3", "state": 1, "at": [2, 3]},
-        "u": {"kind": "W1", "state": 1, "at": [3, 0]},
+        "p": {"kind": "W1", "state": 0, "at": [1, 0.5]},
+        "q": {"kind": "W3", "state": 1, "at": [1, 2.5]},
+        "r": {"kind": "W2", "state": 0, "at": [1, 4]},
+        "s": {"kind": "W4", "state": 0, "at": [2, 1]},
+        "t": {"kind": "W3", "state": 0, "at": [2, 3]},
+        "u": {"kind": "W2", "state": 0, "at": [3, 0]},
         "v": {"kind": "W3", "state": 1, "locked": true, "at": [3, 2]},
         "w": {"kind": "W4", "state": 0, "at": [3, 4]}
       },
       "outputs": {
-        "X": {"at": [4, 0], "target": "sine high"},
-        "Y": {"at": [4, 2], "target": "saw mid"},
-        "Z": {"at": [4, 4], "target": "square low"}
+        "X": {"at": [4, 0], "target": "square f3 a5 p2"},
+        "Y": {"at": [4, 2], "target": "saw f1 a5"},
+        "Z": {"at": [4, 4], "target": "sine f4 a4 p1"}
       },
-      "wires": ["A -> p.0", "B -> p.1", "B -> q", "C -> r", "p -> s.0", "q -> s.1", "q -> t.0", "r -> t.1", "s -> u", "s -> v.0", "t -> v.1", "t -> w.0", "A -> w.1", "u -> X", "v -> Y", "w -> Z"]
+      "wires": ["A -> p", "A -> q.0", "B -> q.1", "C -> r", "p -> s", "q -> t.0", "r -> t.1", "s -> u", "s -> v.0", "t -> v.1", "q -> w", "u -> X", "v -> Y", "w -> Z"]
     }
   ]
 }

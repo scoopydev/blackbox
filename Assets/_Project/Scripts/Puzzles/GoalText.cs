@@ -76,15 +76,18 @@ namespace Blackbox.Puzzles
             return text.ToString();
         }
 
-        /// <summary>A value as it reads in a sentence: "1", "7", "a solid triangle", "a high square wave".</summary>
+        /// <summary>A value as it reads in a sentence: "1", "7", "a solid triangle", "a square wave at F3 A5", "a stepped saw at F2 A7 S6".</summary>
         public static string Phrase(Medium m, int v)
         {
+            if (!Media.IsValid(m, v)) return "?";
             switch (m)
             {
                 case Medium.Shape:
                     return "a " + Media.Describe(m, v);
                 case Medium.Wave:
-                    return $"a {Waves.PitchNames[Waves.Pitch(v)]} {Waves.FormNames[Waves.Form(v)]} wave";
+                    return $"a {Waves.FormNames[Waves.Form(v)]} wave at {Waves.Settings(v)}";
+                case Medium.Sampled:
+                    return $"a stepped {Waves.FormNames[Sampled.Form(v)]} at {Sampled.Settings(v)}";
                 default:
                     return Media.Describe(m, v);
             }

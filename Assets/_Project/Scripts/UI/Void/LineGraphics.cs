@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Blackbox.Components;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,8 +8,11 @@ namespace Blackbox.UI
 {
     /// <summary>
     /// A few cycles of a sine, square or saw wave drawn across its rect. Wave
-    /// signals use it: the form is the shape of the line, and a higher pitch packs
-    /// in more cycles.
+    /// signals use it: the form is the shape of the line, a higher frequency packs
+    /// in more cycles, a taller wave reaches further from the middle, and a later
+    /// phase slides it to the right. Give it <see cref="StepsPerCycle"/> to draw a
+    /// sampled wave: the line is held flat in steps, each rounded to one of
+    /// <see cref="Levels"/> levels either side of the middle.
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class WaveGraphic : VoidGraphic
@@ -18,6 +23,9 @@ namespace Blackbox.UI
         float _cycles = 2f;
         float _width = 2f;
         float _amplitude = 0.78f;
+        float _phase;
+        int _steps;
+        int _levels = 7;
         Paint _paint = Paint.Signal;
         Color _tint = Color.white;
         float _glow;
@@ -27,11 +35,18 @@ namespace Blackbox.UI
         public float LineWidth { get => _width; set { if (_width != value) { _width = value; SetVerticesDirty(); } } }
         /// <summary>Peak height as a fraction of half the rect's height.</summary>
         public float Amplitude { get => _amplitude; set { if (_amplitude != value) { _amplitude = value; SetVerticesDirty(); } } }
+        /// <summary>How late the wave starts, in cycles (0.25 is a quarter cycle).</summary>
+        public float Phase { get => _phase; set { if (_phase != value) { _phase = value; SetVerticesDirty(); } } }
+        /// <summary>Steps a cycle for a sampled wave; 0 draws a smooth analog wave.</summary>
+        public int StepsPerCycle { get => _steps; set { if (_steps != value) { _steps = value; SetVerticesDirty(); } } }
+        /// <summary>Whole levels between the middle and the peak that a sampled wave's steps round to.</summary>
+        public int Levels { get => _levels; set { if (_levels != value) { _levels = value; SetVerticesDirty(); } } }
         public Paint Paint { get => _paint; set { if (_paint != value) { _paint = value; SetVerticesDirty(); } } }
         public Color Tint { get => _tint; set { if (_tint != value) { _tint = value; SetVerticesDirty(); } } }
         public float GlowAmount { get => _glow; set { if (_glow != value) { _glow = value; SetVerticesDirty(); } } }
 
         readonly List<Vector2> _pts = new List<Vector2>(200);
+        readonly List<float> _breaks = new List<float>(64);
 
         void Build()
         {
@@ -41,52 +56,56 @@ namespace Blackbox.UI
             float cy = r.center.y;
             Vector2 P(float u, float y) => new Vector2(r.xMin + u * r.width, cy + y * amp);
             float c = Mathf.Max(0.25f, _cycles);
+            // Cycles into the form at a point u (0 to 1) across the rect.
+            double At(float u) => c * u - _phase;
 
-            switch (_form)
+            if (_steps > 0)
             {
-                case Square:
+                // Sampled: flat steps, with sheer rises and falls between them.
+                int levels = Mathf.Max(1, _levels);
+                double first = Math.Floor(At(0f) * _steps);
+                for (double k = first; ; k++)
                 {
-                    // High for the first half of each cycle, low for the second, with sheer edges.
-                    float y = 1f;
-                    _pts.Add(P(0f, y));
-                    for (int k = 1; ; k++)
-                    {
-                        float u = k / (2f * c);
-                        if (u >= 1f) break;
-                        _pts.Add(P(u, y));
-                        y = -y;
-                        _pts.Add(P(u, y));
-                    }
-                    _pts.Add(P(1f, y));
-                    break;
+                    float u0 = Mathf.Max(0f, (float)((k / _steps + _phase) / c));
+                    float u1 = Mathf.Min(1f, (float)(((k + 1) / _steps + _phase) / c));
+                    if (u0 >= 1f) break;
+                    float y = Sampled.Level(_form, levels - 1, _steps, (k + 0.5) / _steps) / (float)levels;
+                    _pts.Add(P(u0, y));
+                    _pts.Add(P(u1, y));
                 }
-                case Saw:
-                {
-                    // Rises from the middle, drops sheer at each peak.
-                    float Phase(float u) => c * u + 0.5f;
-                    _pts.Add(P(0f, 0f));
-                    for (int k = 1; ; k++)
-                    {
-                        float u = (k - 0.5f) / c;
-                        if (u >= 1f) break;
-                        _pts.Add(P(u, 1f));
-                        _pts.Add(P(u, -1f));
-                    }
-                    float end = Phase(1f);
-                    _pts.Add(P(1f, 2f * (end - Mathf.Floor(end)) - 1f));
-                    break;
-                }
-                default:
-                {
-                    int n = Mathf.Clamp(Mathf.RoundToInt(c * 28f), 24, 160);
-                    for (int i = 0; i <= n; i++)
-                    {
-                        float u = (float)i / n;
-                        _pts.Add(P(u, Mathf.Sin(u * c * Mathf.PI * 2f)));
-                    }
-                    break;
-                }
+                return;
             }
+
+            if (_form == Sine)
+            {
+                int n = Mathf.Clamp(Mathf.RoundToInt(c * 28f), 24, 220);
+                for (int i = 0; i <= n; i++)
+                {
+                    float u = (float)i / n;
+                    _pts.Add(P(u, (float)Waves.Shape(Waves.Sine, At(u))));
+                }
+                return;
+            }
+
+            // Square and saw are straight between their sheer edges: square edges
+            // fall at every half cycle, a saw's drop at the end of each cycle.
+            _breaks.Clear();
+            double step = _form == Square ? 0.5 : 1.0;
+            for (double e = Math.Ceiling(At(0f) / step) * step; ; e += step)
+            {
+                float u = (float)((e + _phase) / c);
+                if (u >= 1f) break;
+                if (u > 0f) _breaks.Add(u);
+            }
+            int form = _form == Square ? Waves.SquareWave : Waves.Saw;
+            const float eps = 1e-4f;
+            _pts.Add(P(0f, (float)Waves.Shape(form, At(0f))));
+            foreach (float u in _breaks)
+            {
+                _pts.Add(P(u, (float)Waves.Shape(form, At(u) - eps)));
+                _pts.Add(P(u, (float)Waves.Shape(form, At(u) + eps)));
+            }
+            _pts.Add(P(1f, (float)Waves.Shape(form, At(1f) - eps)));
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)

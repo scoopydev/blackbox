@@ -91,7 +91,7 @@ namespace Blackbox.Puzzles
             // The dials the player can turn: (is input, index, how many values).
             var dials = new List<(bool input, int index, int count)>();
             for (int i = 0; i < p.Inputs.Count; i++)
-                if (p.InputChangeable(i)) dials.Add((true, i, Media.Size(p.Medium)));
+                if (p.InputChangeable(i)) dials.Add((true, i, p.Inputs[i].ChoiceCount(p.Medium)));
             for (int b = 0; b < p.Blocks.Count; b++)
                 if (p.BlockChangeable(b)) dials.Add((false, b, p.Blocks[b].Kind.StateCount));
 
@@ -118,13 +118,13 @@ namespace Blackbox.Puzzles
                 for (int k = 0; k < dials.Count; k++)
                 {
                     var d = dials[k];
-                    if (d.input) inputs[d.index] = digits[k];
+                    if (d.input) inputs[d.index] = p.Inputs[d.index].Choice(digits[k]);
                     else states[d.index] = digits[k];
                 }
 
                 circuit.Evaluate(inputs, states, values);
                 bool ok = targetNodes.Length > 0;
-                for (int t = 0; t < targetNodes.Length && ok; t++) ok = values[targetNodes[t]] == wants[t];
+                for (int t = 0; t < targetNodes.Length && ok; t++) ok = Media.Same(p.Medium, values[targetNodes[t]], wants[t]);
                 if (ok)
                 {
                     report.SolutionCount++;
@@ -149,7 +149,7 @@ namespace Blackbox.Puzzles
 
             if (p.Probes > p.Wires.Count) report.Warnings.Add($"allows {p.Probes} probes but has only {p.Wires.Count} wires.");
             foreach (var t in p.Targets)
-                if (t.Node is InputDef input && !input.Adjustable && input.Value != t.Want)
+                if (t.Node is InputDef input && !input.Adjustable && !Media.Same(p.Medium, input.Value, t.Want))
                     report.Errors.Add($"input '{input.Id}' is fixed at {Media.Describe(p.Medium, input.Value)} but its target is {Media.Describe(p.Medium, t.Want)}.");
             foreach (var b in p.Blocks)
                 if (b.Locked && b.Kind.StateCount == 1) report.Warnings.Add($"block '{b.Id}' is locked but only has one state anyway.");

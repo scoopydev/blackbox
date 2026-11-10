@@ -433,15 +433,16 @@ namespace Blackbox.UI.Screens
                 case Medium.Binary: values = new[] { 1, 0, 1, 1 }; break;
                 case Medium.Decimal: values = new[] { 1, 3, 5 }; break;
                 case Medium.Shape: values = new[] { Shapes.Make(0, true), Shapes.Make(1, false), Shapes.Make(2, true), Shapes.Make(3, false) }; break;
-                default: values = new[] { Waves.Make(Waves.Sine, 0), Waves.Make(Waves.SquareWave, 1), Waves.Make(Waves.Saw, 2) }; break;
+                case Medium.Wave: values = new[] { Waves.Make(Waves.Sine, 0, 6), Waves.Make(Waves.SquareWave, 2, 3), Waves.Make(Waves.Saw, 4, 5), Waves.Make(Waves.Sine, 3, 6, 1) }; break;
+                default: values = new[] { Sampled.Make(Waves.Sine, 0, 6, 2), Sampled.Make(Waves.Sine, 2, 4, 1), Sampled.Make(Waves.Saw, 3, 6, 2), Sampled.Make(Waves.Sine, 4, 2, 0) }; break;
             }
-            float size = m == Medium.Wave ? 38f : 40f;
+            float size = Media.IsWave(m) ? 38f : 40f;
             float pitch = ValueView.WidthFor(m, size) + 56f;
             var row = UIKit.Rect(Root, "Samples").At(cx, 796f, 0f, 0f);
             var views = new List<ValueView>();
             for (int i = 0; i < values.Length; i++)
             {
-                var v = ValueView.Create(row, m, size, m == Medium.Wave);
+                var v = ValueView.Create(row, m, size, Media.IsWave(m));
                 v.GetComponent<RectTransform>().Centered((i - (values.Length - 1) * 0.5f) * pitch, 0f, ValueView.WidthFor(m, size), size);
                 v.Set(values[i], ValueLook.Live);
                 v.MakePlayable(value => App.Audio?.PlaySignal(m, value));

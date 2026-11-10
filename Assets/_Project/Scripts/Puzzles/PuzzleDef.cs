@@ -34,6 +34,24 @@ namespace Blackbox.Puzzles
         public int Value;
         /// <summary>True when the player may change it.</summary>
         public bool Adjustable;
+        /// <summary>
+        /// The values an adjustable input steps through, in order. Null means every
+        /// value of the medium. Waves have hundreds, so their inputs list a few.
+        /// </summary>
+        public int[] Options;
+
+        /// <summary>How many values the player can choose from.</summary>
+        public int ChoiceCount(Medium m) => Options?.Length ?? Media.Size(m);
+
+        /// <summary>The <paramref name="k"/>th value the player can choose.</summary>
+        public int Choice(int k) => Options != null ? Options[k] : k;
+
+        /// <summary>Where a value sits among the choices, or -1 if it isn't one.</summary>
+        public int ChoiceIndex(Medium m, int value)
+        {
+            if (Options != null) return System.Array.IndexOf(Options, value);
+            return Media.IsValid(m, value) ? value : -1;
+        }
     }
 
     /// <summary>A block with a hidden rule. Its target, if any, is on the signal it sends.</summary>

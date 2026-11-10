@@ -19,8 +19,9 @@ namespace Blackbox.UI.Board
     /// <summary>
     /// One signal value in any medium, drawn to fit a square of side <c>Size</c>:
     /// a digit for binary and decimal, a filled or outlined form for shapes, and a
-    /// few cycles of the waveform (wider than tall) for waves. A value that isn't
-    /// known yet (-1), such as an output before the circuit has run, shows a faint ?.
+    /// few cycles of the waveform (wider than tall) for waves, smooth or in steps. A
+    /// value that isn't known yet (-1), such as an output before the circuit has
+    /// run, shows a faint ?.
     /// </summary>
     public sealed class ValueView : MonoBehaviour
     {
@@ -33,7 +34,7 @@ namespace Blackbox.UI.Board
         VoidText _digit;
         ShapeGraphic _shape;
         WaveGraphic _wave;
-        VoidText _pitch;
+        VoidText _settings;
         VoidText _unknown;
         GlyphGraphic _speaker;
         bool _styled;
@@ -45,9 +46,9 @@ namespace Blackbox.UI.Board
         public Medium Medium => _medium;
 
         /// <summary>The width the value takes up, for laying out cards around it.</summary>
-        public static float WidthFor(Medium m, float size) => m == Medium.Wave ? size * 1.7f : size;
+        public static float WidthFor(Medium m, float size) => Media.IsWave(m) ? size * 1.7f : size;
 
-        /// <param name="caption">For waves: write the pitch under the line.</param>
+        /// <param name="caption">For waves: write the settings (frequency, amplitude, phase or steps) under the line.</param>
         public static ValueView Create(Transform parent, Medium medium, float size, bool caption = false, string name = "Value")
         {
             float w = WidthFor(medium, size);
@@ -64,13 +65,14 @@ namespace Blackbox.UI.Board
                     view._shape.rectTransform.Stretch();
                     break;
                 case Medium.Wave:
+                case Medium.Sampled:
                     view._wave = UIKit.Add<WaveGraphic>(rt, "Wave");
                     view._wave.raycastTarget = false;
                     view._wave.rectTransform.Centered(0f, caption ? size * 0.12f : 0f, w, caption ? size * 0.7f : size * 0.86f);
                     if (caption)
                     {
-                        view._pitch = UIKit.Text(rt, "", TextStyle.Label.WithSize(Mathf.Max(9, Mathf.RoundToInt(size * 0.2f))).WithTracking(0.24f), TextAnchor.MiddleCenter, "Pitch");
-                        view._pitch.rectTransform.Centered(0f, -size * 0.42f, w + 40f, size * 0.26f);
+                        view._settings = UIKit.Text(rt, "", TextStyle.Label.WithSize(Mathf.Max(9, Mathf.RoundToInt(size * 0.2f))).WithTracking(0.16f), TextAnchor.MiddleCenter, "Settings");
+                        view._settings.rectTransform.Centered(0f, -size * 0.42f, w + 60f, size * 0.26f);
                     }
                     break;
                 default:
@@ -78,7 +80,7 @@ namespace Blackbox.UI.Board
                     view._digit.rectTransform.Centered(0f, 0f, w + 20f, size * 1.2f);
                     break;
             }
-            if (medium == Medium.Shape || medium == Medium.Wave)
+            if (medium == Medium.Shape || Media.IsWave(medium))
             {
                 view._unknown = UIKit.Text(rt, "?", TextStyle.Value.WithSize(Mathf.RoundToInt(size * 0.8f)).WithWeight(200).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Unknown");
                 view._unknown.rectTransform.Centered(0f, 0f, w, size * 1.2f);
@@ -185,21 +187,32 @@ namespace Blackbox.UI.Board
                     break;
                 }
                 case Medium.Wave:
+                case Medium.Sampled:
                 {
                     _wave.enabled = has;
-                    if (_pitch != null) _pitch.enabled = has;
+                    if (_settings != null) _settings.enabled = has;
                     if (!has) break;
-                    int form = Waves.Form(_value);
+                    bool sampled = _medium == Medium.Sampled;
+                    int form = sampled ? Sampled.Form(_value) : Waves.Form(_value);
+                    int frequency = sampled ? Sampled.Frequency(_value) : Waves.Frequency(_value);
+                    int height = sampled ? Sampled.Height(_value) : Waves.Height(_value);
                     _wave.Form = form == Waves.Sine ? WaveGraphic.Sine : form == Waves.SquareWave ? WaveGraphic.Square : WaveGraphic.Saw;
-                    _wave.Cycles = 1.5f + Waves.Pitch(_value);
+                    // A small picture, not the whole loop: faster waves pack in more
+                    // cycles and taller ones reach further, enough to tell apart, and
+                    // the caption gives the exact steps.
+                    _wave.Cycles = sampled ? 1f + 0.25f * frequency : 1f + 0.42f * frequency;
+                    _wave.Amplitude = 0.25f + 0.75f * height / (Waves.Heights - 1);
+                    _wave.Phase = sampled ? 0f : Waves.Phase(_value) * 0.25f;
+                    _wave.StepsPerCycle = sampled ? Sampled.StepsPerCycle[Sampled.Rate(_value)] : 0;
+                    _wave.Levels = height + 1;
                     _wave.LineWidth = Mathf.Max(1.4f, _size * 0.045f);
                     _wave.Paint = live ? Paint.Signal : Paint.Solid;
                     _wave.Tint = live ? Color.white : quiet;
                     _wave.GlowAmount = live ? 0.3f + 0.4f * _ping : 0.3f * _ping;
-                    if (_pitch != null)
+                    if (_settings != null)
                     {
-                        _pitch.text = Waves.PitchNames[Waves.Pitch(_value)];
-                        _pitch.color = live ? Palette.Dim : quiet;
+                        _settings.text = sampled ? Sampled.Settings(_value) : Waves.Settings(_value);
+                        _settings.color = live ? Palette.Dim : quiet;
                     }
                     break;
                 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Blackbox.Circuits;
 using Blackbox.Components;
 using Blackbox.Core;
 using Blackbox.Puzzles;
@@ -19,7 +20,7 @@ namespace Blackbox.Tests
         public void ChaptersLoad()
         {
             var library = TestContent.Library;
-            Assert.That(library.Chapters.Count, Is.EqualTo(4));
+            Assert.That(library.Chapters.Count, Is.EqualTo(5));
             foreach (var chapter in library.Chapters)
             {
                 Assert.That(chapter.Puzzles.Count, Is.EqualTo(6), chapter.Title);
@@ -27,7 +28,7 @@ namespace Blackbox.Tests
                 Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
                 Assert.That(chapter.Puzzles.All(p => p.Medium == chapter.Medium), Is.True, chapter.Title);
             }
-            Assert.That(library.Chapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(4), "one chapter for each medium");
+            Assert.That(library.Chapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(5), "one chapter for each medium");
             foreach (var chapter in library.Chapters)
                 Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter is open from the start");
         }
@@ -51,6 +52,35 @@ namespace Blackbox.Tests
             Assert.That(goal, Does.Not.Contain("?"), "every target is a value of the medium");
             if (puzzle.Targets.Count <= GoalText.MaxListed)
                 foreach (var t in puzzle.Targets) Assert.That(goal, Does.Contain(t.Node.Id), $"the goal names {t.Node.Id}");
+        }
+
+        [TestCaseSource(nameof(AllPuzzles))]
+        public void TargetsAreWrittenAsTheSolutionMakesThem(PuzzleDef puzzle)
+        {
+            // Two sampled waves can trace the same line and both meet a target. The
+            // file should still name the one the solution makes, so the target's
+            // caption reads the same as the output's.
+            var report = PuzzleSolver.Analyse(puzzle, 1);
+            Assume.That(report.Solutions, Is.Not.Empty);
+            var solution = report.Solutions[0];
+            var circuit = new CompiledCircuit(puzzle);
+            var values = circuit.Evaluate(solution.Inputs, solution.States);
+            foreach (var t in puzzle.Targets)
+                Assert.That(Media.Describe(puzzle.Medium, values[circuit.NodeOf(t.Node)]), Is.EqualTo(Media.Describe(puzzle.Medium, t.Want)), $"{puzzle.Id}: target on {t.Node.Id}");
+        }
+
+        [TestCaseSource(nameof(AllPuzzles))]
+        public void AdjustableWavesListTheirOptions(PuzzleDef puzzle)
+        {
+            foreach (var input in puzzle.Inputs)
+            {
+                if (!input.Adjustable || !Media.IsWave(puzzle.Medium)) continue;
+                Assert.That(input.Options, Is.Not.Null, $"{puzzle.Id}: {input.Id}");
+                Assert.That(input.Options.Length, Is.InRange(2, 5), $"{puzzle.Id}: {input.Id} has a short list to step through");
+                for (int a = 0; a < input.Options.Length; a++)
+                    for (int b = a + 1; b < input.Options.Length; b++)
+                        Assert.That(Media.Same(puzzle.Medium, input.Options[a], input.Options[b]), Is.False, $"{puzzle.Id}: {input.Id} offers two options that are the same signal");
+            }
         }
 
         [Test]

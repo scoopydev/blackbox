@@ -49,10 +49,12 @@ namespace Blackbox.Components
     /// Every block kind in the game. Kinds are code, not data, so their behaviour is
     /// type checked and unit tested; puzzle files refer to them by id.
     ///
-    /// The kinds of each medium follow one pattern, so a player who has learned the
-    /// binary chapter has a head start on the others: a one-input block that changes
-    /// its signal, one that replaces part of it, a two-input block that combines, and
-    /// one that compares. States are listed in the order a block cycles through them.
+    /// The bit, digit and shape kinds follow one pattern, so a player who has learned
+    /// the binary chapter has a head start on the others: a one-input block that
+    /// changes its signal, one that replaces part of it, a two-input block that
+    /// combines, and one that compares. The wave kinds each work one setting of a
+    /// wave (frequency, form, height, phase; steps and height for sampled waves).
+    /// States are listed in the order a block cycles through them.
     /// </summary>
     public static class KindCatalog
     {
@@ -118,23 +120,39 @@ namespace Blackbox.Components
                     return (s == 0) == (a > b) ? x[0] : x[1];
                 });
 
-            // ---- Waves: three forms at three pitches ---------------------------------
+            // ---- Analog waves: form, frequency, height and phase ----------------------
 
-            Add("W1", Medium.Wave, 1, new[] { "raise pitch (high wraps to low)", "lower pitch (low wraps to high)" },
-                (x, s) => Waves.Make(Waves.Form(x[0]), Waves.Pitch(x[0]) + (s == 0 ? 1 : -1)));
+            Add("W1", Medium.Wave, 1, new[] { "one step faster (the fastest wraps to the slowest)", "one step slower (the slowest wraps to the fastest)" },
+                (x, s) => Waves.WithFrequency(x[0], Waves.Frequency(x[0]) + (s == 0 ? 1 : -1)));
 
             Add("W2", Medium.Wave, 1, new[] { "make it a square wave", "make it a sine wave", "make it a saw wave" },
-                (x, s) => Waves.Make(s == 0 ? Waves.SquareWave : s == 1 ? Waves.Sine : Waves.Saw, Waves.Pitch(x[0])));
+                (x, s) => Waves.WithForm(x[0], s == 0 ? Waves.SquareWave : s == 1 ? Waves.Sine : Waves.Saw));
 
-            Add("W3", Medium.Wave, 2, new[] { "form of top, pitch of bottom", "form of bottom, pitch of top" },
+            Add("W3", Medium.Wave, 2, new[] { "top's wave at bottom's height", "bottom's wave at top's height" },
                 (x, s) => s == 0
-                    ? Waves.Make(Waves.Form(x[0]), Waves.Pitch(x[1]))
-                    : Waves.Make(Waves.Form(x[1]), Waves.Pitch(x[0])));
+                    ? Waves.WithHeight(x[0], Waves.Height(x[1]))
+                    : Waves.WithHeight(x[1], Waves.Height(x[0])));
 
-            Add("W4", Medium.Wave, 2, new[] { "the higher (top on a tie)", "the lower (top on a tie)" },
+            Add("W4", Medium.Wave, 1, new[] { "a quarter cycle later", "half a cycle later" },
+                (x, s) => Waves.WithPhase(x[0], Waves.Phase(x[0]) + (s == 0 ? 1 : 2)));
+
+            // ---- Sampled waves: an analog wave read a few times a cycle -------------
+
+            Add("Q1", Medium.Sampled, 1, new[] { "more steps a cycle (3, 6, 12, then 3 again)", "fewer steps a cycle (12, 6, 3, then 12 again)" },
+                (x, s) => Sampled.WithRate(x[0], Sampled.Rate(x[0]) + (s == 0 ? 1 : -1)));
+
+            Add("Q2", Medium.Sampled, 1, new[] { "one level taller (7 wraps to 1)", "one level shorter (1 wraps to 7)" },
+                (x, s) => Sampled.WithHeight(x[0], Sampled.Height(x[0]) + (s == 0 ? 1 : -1)));
+
+            Add("Q3", Medium.Sampled, 2, new[] { "top's wave with bottom's steps", "bottom's wave with top's steps" },
+                (x, s) => s == 0
+                    ? Sampled.WithRate(x[0], Sampled.Rate(x[1]))
+                    : Sampled.WithRate(x[1], Sampled.Rate(x[0])));
+
+            Add("Q4", Medium.Sampled, 2, new[] { "the taller (top on a tie)", "the shorter (top on a tie)" },
                 (x, s) =>
                 {
-                    int a = Waves.Pitch(x[0]), b = Waves.Pitch(x[1]);
+                    int a = Sampled.Height(x[0]), b = Sampled.Height(x[1]);
                     if (a == b) return x[0];
                     return (s == 0) == (a > b) ? x[0] : x[1];
                 });

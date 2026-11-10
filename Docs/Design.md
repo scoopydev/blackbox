@@ -34,7 +34,27 @@ Each chapter uses a different kind of signal, and its blocks work on that kind o
 | I First Light | binary | 0 and 1 | Digits |
 | II Tally | decimal | 0 to 9, wrapping round | Digits |
 | III Forms | shape | circle, triangle, square or hexagon, hollow or solid | The shape itself, outlined or filled |
-| IV Resonance | wave | sine, square or saw, at a low, mid or high pitch | The waveform, with more cycles for higher pitches |
+| IV Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
+| V Grain | sampled wave | an analog wave read 3, 6 or 12 times a cycle, each reading rounded to a whole level and held, at F1 to F7 and A1 to A7 | The waveform as a staircase, settings under it ("F3 A5 S6") |
+
+### Signals over time
+
+Every signal is also a **trace**: its level at each of the 288 steps of one loop of a run (`Components/Trace.cs`). Bits, digits and shapes are flat traces. Waves rise and fall.
+
+* **Frequency** F1 to F7 fits 1, 2, 3, 4, 6, 8 or 12 cycles into a loop. Those are octaves and fifths of each other, so the pitches are in tune, and every cycle, half and quarter cycle lands exactly on a step.
+* **Amplitude** A1 to A7 is the peak, 1 to 7 levels from the middle.
+* **Phase** moves an analog wave a quarter cycle at a time. A sine half a cycle late is the same sine upside down, so the two cancel when added; a sine and a cosine (a quarter apart) don't.
+* A **sampled** wave reads the analog form at the middle of each of its 3, 6 or 12 steps a cycle and rounds the reading to a whole level. Two sampled waves that trace the same staircase (a square read 6 or 12 times, say) are the same signal, so either meets a target that names the other.
+
+The trace also defines how one kind of signal reads as another, for the wiring puzzles to come. These rules are provisional:
+
+| Read as | From a bit | From a digit | From a shape | From a wave |
+|---|---|---|---|---|
+| bit | itself | 1 unless 0 | 1 when solid | 1 while above the middle |
+| digit | 0 or 1 | itself | its corners | its height, 0 (bottom) to 9 (top) |
+| shape | a circle, solid when 1 | a circle, solid unless 0 | itself | a circle, solid while above the middle |
+| analog wave | top when 1, bottom when 0 | a flat level, 0 at the bottom and 9 at the top | top when solid, bottom when hollow | itself |
+| sampled wave | as for analog, rounded to whole levels at every step | | | |
 
 ### Signal sounds
 
@@ -43,15 +63,16 @@ Each medium is heard in its own way, so a player can follow a circuit by ear as 
 | Medium | Sounds like |
 |---|---|
 | binary | A 1 is a clear beep. A 0 is only a soft, dull tap, so the player knows it played. |
-| decimal | One steady tone whose length is the digit: 1 is a short blip and 9 lasts nine times as long. 0 is the tap. |
+| decimal | One short tone whose pitch is the digit, climbing a major scale: 0 is C4 (do), 7 is C5, 9 is E5. Every digit lasts as long. |
 | shape | One click per corner: a circle is a single smooth note, a triangle three clicks, a square four and a hexagon six. Solid shapes are low and warm, hollow ones high and thin. |
-| wave | The wave itself: a sine, square or saw at A3, E4 or A4. |
+| wave | The wave itself. Its frequency is its pitch (F1 is D3, F3 is A4, F7 is A6) and its amplitude its loudness, 2.5 dB a step. Phase can't be heard. |
+| sampled wave | The same pitches, but held in steps exactly as drawn, so it buzzes; the fewer the steps the harsher. Loudness follows the levels. |
 
 Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead, and setting an input stays quiet. Clicking a value always plays it. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
 
 ## Progression
 
-* Four chapters, one per medium, with six circuits each.
+* Five chapters, one per medium, with six circuits each.
 * Every chapter is open from the start, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
@@ -107,16 +128,29 @@ The tables give the number of combinations of input values and block states a pl
 
 ### Chapter IV: Resonance
 
-*Listen closely.* Signals are sounds.
+*Listen closely.* Signals are analog waves. Adjustable inputs step through a short list of waves given in the file.
 
 | # | Circuit | Teaches | Combinations | Solutions |
 |---|---|---|---|---|
-| 01 | Hum | Waves you can hear, and W1 | 4 | 1 |
-| 02 | Timbre | W2, locked | 27 | 3 |
-| 03 | Splice | W3 | 18 | 3 |
-| 04 | Interval | W4, locked | 324 | 1 |
-| 05 | Echo | A return circuit | 1,944 | 1 |
-| 06 | Chorus | The tangle | 15,552 | 1 |
+| 01 | Hum | Frequency and amplitude, and W1 | 4 | 1 |
+| 02 | Timbre | W2, locked | 12 | 1 |
+| 03 | Splice | W3 | 8 | 1 |
+| 04 | Offset | Phase, and W4, locked | 48 | 1 |
+| 05 | Echo | A return circuit | 144 | 1 |
+| 06 | Chorus | The tangle | 2,592 | 1 |
+
+### Chapter V: Grain
+
+*Up close, every curve is a staircase.* Signals are sampled waves.
+
+| # | Circuit | Teaches | Combinations | Solutions |
+|---|---|---|---|---|
+| 01 | Stairs | Steps a cycle, and Q1 | 4 | 1 |
+| 02 | Level | Q2, locked | 6 | 1 |
+| 03 | Graft | Q3 | 6 | 1 |
+| 04 | Measure | Q4, locked | 24 | 1 |
+| 05 | Replay | A return circuit | 96 | 1 |
+| 06 | Mosaic | The tangle | 288 | 1 |
 
 Every circuit is checked by brute force in the tests and from **BLACKBOX → Validate Puzzles**. Each one must have at least one solution and must not be solved at the start.
 
@@ -160,11 +194,11 @@ Tests/EditMode/ NUnit tests for everything in Core, Components, Circuit and Puzz
 
 ### Evaluation
 
-Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 8 shapes (form × 2 + fill) and 9 waves (form × 3 + pitch). A circuit is compiled once into an order where every node comes after the nodes that feed it, and the whole circuit is evaluated again after every change. Circuits have no memory and no loops; a loop is rejected when the circuit loads.
+Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 8 shapes (form × 2 + fill), 588 analog waves (((form × 7 + frequency) × 7 + amplitude) × 4 + phase) and 441 sampled waves (((form × 7 + frequency) × 7 + amplitude) × 3 + steps). Targets on waves are met by any value that traces the same line (`Media.Same`). A circuit is compiled once into an order where every node comes after the nodes that feed it, and the whole circuit is evaluated again after every change. Circuits have no memory and no loops; a loop is rejected when the circuit loads.
 
 ### Adding a chapter
 
-1. Write `chapter-5-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
+1. Write `chapter-6-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to `chapters.json`.
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.
@@ -189,7 +223,11 @@ The game shows only a block's kind code, its ports and its state dots. Port 0 is
 | S2 | 1 | next form, previous form (circle, triangle, square, hexagon, round again) |
 | S3 | 2 | form of top with fill of bottom, form of bottom with fill of top |
 | S4 | 2 | the one with more corners, the one with fewer (top on a tie) |
-| W1 | 1 | raise pitch, lower pitch (wrapping) |
-| W2 | 1 | make square, make sine, make saw (pitch kept) |
-| W3 | 2 | form of top with pitch of bottom, form of bottom with pitch of top |
-| W4 | 2 | the higher, the lower (top on a tie) |
+| W1 | 1 | one frequency step faster, one slower (wrapping) |
+| W2 | 1 | make square, make sine, make saw (frequency, amplitude and phase kept) |
+| W3 | 2 | top's wave at bottom's amplitude, bottom's wave at top's amplitude |
+| W4 | 1 | a quarter cycle later, half a cycle later (wrapping) |
+| Q1 | 1 | more steps a cycle, fewer (3, 6, 12, wrapping) |
+| Q2 | 1 | one level taller, one shorter (A1 to A7, wrapping) |
+| Q3 | 2 | top's wave with bottom's steps, bottom's wave with top's steps |
+| Q4 | 2 | the taller, the shorter (top on a tie) |
