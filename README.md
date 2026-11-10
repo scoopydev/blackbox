@@ -41,10 +41,11 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | Drag from a dot to a dot, or click one and then the other | Draw a wire. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each |
 | Drag from a port that has a wire | Pick that wire up and move it |
 | Click a wire, or right-click a dot | Take wires off |
+| Drag a block by its body | Move it; its wires follow. The circuit remembers where you put it, and RESET in the menu puts every block back |
 | RUN, or Space | Run it: the signal flows for a few seconds, every block shows what it sends, and each output works its device beside its target |
 | Click a signal or a target | Hear it |
 | Z or Backspace, CLEAR | Undo a wire change, or take every wire off |
-| D, E | Pen and eraser. Right-drag rubs out while the pen is on |
+| D, E | Pen and eraser, with the colours showing while a pen or text tool is out. Right-drag rubs out while the pen is on |
 | T | Text tool: click anywhere and type a note. Enter finishes it, Shift+Enter starts a new line, and dragging a note moves it |
 | Enter | Next circuit, once solved |
 | H | How it works |

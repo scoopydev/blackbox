@@ -7,13 +7,15 @@ The block rules are listed near the end, under a spoiler heading.
 
 Every circuit gives the player **inputs** on the left, **blocks** in the middle and **outputs** on the right. The player **draws the wires** so every output does what its target shows. Only the outputs count. Each block hides a rule; the player never reads it, they work it out by wiring the block into something and running it.
 
-1. **Read the goal.** The goal is one sentence above the board, with a count of the outputs met. Every output shows its target device beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
-2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires.
+1. **Read the goal.** The goal is one short sentence above the board ("Make light X do what its target shows."), with the two rules in small letters under it and a count of the outputs met beside it. Every output shows its target device beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
+2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires. Dragging a block by its body moves it, and its wires follow, so the player can untangle a circuit; a block can't be dropped on another card. The circuit remembers where its blocks were left, and RESET in the menu puts them back.
 3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs work their devices top to bottom, each playing its sound. Any change hides the results again, so each run shows one wiring.
 4. **Keep the rules.** Every block must be used: it must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused. The verdict after a run names the first broken rule, such as "block g has an input with no wire" or "block h isn't used".
 5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
-7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered.
+7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered. Each block's rule is then written under it, in a few words, and pointing at the block puts the whole rule in the status line.
+
+The circuit screen keeps its text down: the pen colours show only while a pen or text tool is out, CLEAR NOTES only once there are notes, and an input's type is named on its card only in chapters that mix types.
 
 Blocks are fixed: the player never changes a block's setting. A **named** block shows its kind's code (such as "B3") and a dot for each of the kind's settings, with the one it is fixed in filled, so two blocks of one kind that behave differently never look the same. In Part Three blocks are **unmarked**: no code and no dots, only their ports.
 
@@ -271,7 +273,7 @@ New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTes
 
 ## Spoilers: the rules
 
-A named block shows only its kind code, its ports and its state dots; an unmarked one only its ports. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule from this table written under it, and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
+A named block shows only its kind code, its ports and its state dots; an unmarked one only its ports. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule from this table written under it (shortened to a few words by `BlockKind.ShortRule`; pointing at the block shows the whole rule), and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
 
 | Kind | Inputs | States, in order |
 |---|---|---|

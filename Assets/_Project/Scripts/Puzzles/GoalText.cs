@@ -94,14 +94,17 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>"Wire the circuit so light X and display Y do what their targets show. Use every block."</summary>
+        /// <summary>The rules of every wired circuit, shown under its goal.</summary>
+        public const string WiringRules = "USE EVERY BLOCK  ·  WIRE EVERY BLOCK INPUT";
+
+        /// <summary>"Make light X and display Y do what their targets show." The rules go under it: <see cref="WiringRules"/>.</summary>
         static string ForWiring(PuzzleDef p)
         {
             var names = new List<string>();
             foreach (var o in p.Outputs) names.Add($"{Devices.Noun(o.Device)} {o.Id}");
             string who = p.Outputs.Count > MaxListed ? $"all {p.Outputs.Count} outputs" : JoinAnd(names);
-            string verb = p.Outputs.Count == 1 ? "does what its target shows" : "do what their targets show";
-            return $"Wire the circuit so {who} {verb}. Use every block, with every block input connected.";
+            string verb = p.Outputs.Count == 1 ? "do what its target shows" : "do what their targets show";
+            return $"Make {who} {verb}.";
         }
 
         static string Count(int n, string noun) => n == 1 ? $"1 {noun}" : $"{n} {noun}s";

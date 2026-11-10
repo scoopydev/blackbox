@@ -347,8 +347,10 @@ namespace Blackbox.UI.Screens
                 "DRAG A WIRE'S END", "move it, or drop it to take it off",
                 "CLICK A WIRE", "take it off",
                 "RIGHT-CLICK A DOT", "take its wires off",
+                "DRAG A BLOCK", "move it",
                 "CLICK A SIGNAL", "hear it",
                 "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
+                "RIGHT-DRAG", "rub out a note",
                 "Z  ·  BACKSPACE", "undo",
                 "ESC", "put a wire down, or menu",
             } : new[]

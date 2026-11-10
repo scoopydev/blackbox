@@ -257,6 +257,7 @@ namespace Blackbox.Tests
             save.Circuits["b"] = circuit;
             var wired = new CircuitState();
             wired.Wires.AddRange(new[] { "A -> g.0", "g -> X" });
+            wired.Places["g"] = (-120, 64);
             save.Circuits["w"] = wired;
             var stroke = new InkStroke { Color = 2 };
             stroke.Points.AddRange(new[] { 100, 200, 104, 207, 110, 215 });
@@ -297,6 +298,8 @@ namespace Blackbox.Tests
             Assert.That(copy.Prefs.DebugOpenAll, Is.True);
             Assert.That(new SaveData().Prefs.DebugOpenAll, Is.False, "off by default");
             Assert.That(copy.Circuits["w"].Wires, Is.EqualTo(new[] { "A -> g.0", "g -> X" }));
+            Assert.That(copy.Circuits["w"].Places["g"], Is.EqualTo((-120, 64)), "where the player moved a block");
+            Assert.That(copy.Circuits["b"].Places, Is.Empty);
             Assert.That(copy.Circuits["b"].Wires, Is.Empty);
         }
 

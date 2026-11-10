@@ -32,6 +32,19 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void ShortRulesFitUnderABlock()
+        {
+            // Once a circuit is solved its blocks show their rules on the board, in at most two short lines.
+            foreach (var kind in KindCatalog.All)
+                for (int s = 0; s < kind.StateCount; s++)
+                {
+                    string rule = kind.ShortRule(s);
+                    Assert.That(rule, Is.Not.Empty, $"{kind.Id}/{s}");
+                    Assert.That(rule.Length, Is.LessThanOrEqualTo(30), $"{kind.Id}/{s}: \"{rule}\"");
+                }
+        }
+
+        [Test]
         public void MixingKindsAreWellFormed()
         {
             var mixing = KindCatalog.All.Where(k => k.Mixing).ToList();

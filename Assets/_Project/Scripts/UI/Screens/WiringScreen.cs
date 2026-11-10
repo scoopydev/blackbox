@@ -29,6 +29,8 @@ namespace Blackbox.UI.Screens
         VoidText _title, _record, _status, _moves;
         VoidText _goal, _matchedValue, _matchedLabel;
         PillButton _pen, _eraser, _textTool, _undo, _clear;
+        Clickable _clearNotes;
+        Vector2 _clearNotesAt;
         readonly List<ShapeGraphic> _swatches = new List<ShapeGraphic>();
         CanvasGroup _controls, _solved;
         VoidText _solvedStats;
@@ -61,7 +63,13 @@ namespace Blackbox.UI.Screens
 
             BuildHeader();
             BuildGoal();
-            _board = WiringBoard.Create(Root, _session, this);
+            Dictionary<string, Vector2> places = null;
+            if (resume != null && resume.Places.Count > 0)
+            {
+                places = new Dictionary<string, Vector2>();
+                foreach (var kv in resume.Places) places[kv.Key] = new Vector2(kv.Value.x, kv.Value.y);
+            }
+            _board = WiringBoard.Create(Root, _session, this, places);
             _board.SetShowRules(RulesShown);
 
             _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
@@ -123,11 +131,13 @@ namespace Blackbox.UI.Screens
             label.rectTransform.At(Left + 40f, GoalY, 80f, 20f);
 
             string sentence = GoalText.For(Puzzle);
-            int size = sentence.Length > 150 ? 19 : sentence.Length > 120 ? 21 : 24;
+            int size = sentence.Length > 110 ? 20 : sentence.Length > 80 ? 22 : 24;
             _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(size).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
             _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _goal.LineHeight = 1.3f;
-            _goal.rectTransform.At(Left + 110f + 485f, GoalY, 970f, 64f);
+            _goal.LineHeight = 1.2f;
+            _goal.rectTransform.At(Left + 110f + 485f, GoalY - 10f, 970f, 34f);
+            var rules = UIKit.Text(Root, GoalText.WiringRules, TextStyle.Label.WithSize(11).WithTracking(0.26f).WithColor(Palette.Faint), TextAnchor.MiddleLeft, "Rules");
+            rules.rectTransform.At(Left + 110f + 485f, GoalY + 20f, 970f, 16f);
 
             _run = PillButton.Create(Root, "RUN", 1466f, GoalY, 184f, 46f, true, "play");
             _run.Click.ClickSound = Sfx.Hover;
@@ -170,22 +180,19 @@ namespace Blackbox.UI.Screens
                 };
             }
 
-            Chrome.TextButton(Root, "CLEAR NOTES", Left + 610f, ToolsY, false, () =>
+            _clearNotes = Chrome.TextButton(Root, "CLEAR NOTES", Left + 610f, ToolsY, false, () =>
             {
                 _ink.FinishTyping();
                 if (_ink.ItemCount == 0) { Say("There are no notes on this circuit yet. Press D for the pen, or T to type.", 3f); return; }
                 Game.Confirm("Rub out every note on this circuit?", "CLEAR", true, () => { _ink.Clear(); Say("Notes cleared.", 2.5f); });
             });
 
-            Chrome.KeyHints(Root, Left, HintsY, false, "D", "PEN", "E", "ERASE", "T", "TEXT", "RIGHT-DRAG", "RUB OUT");
         }
 
         void BuildControls()
         {
             var rt = UIKit.Rect(Root, "Controls").Stretch();
             _controls = rt.Group();
-            var how = UIKit.Text(rt, "DRAG DOT TO DOT TO WIRE  ·  CLICK A WIRE TO TAKE IT OFF", TextStyle.Label.WithSize(11).WithTracking(0.26f).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "How");
-            how.rectTransform.At(VoidFrame.Width * 0.5f + 150f, ToolsY, 640f, 18f);
             _undo = PillButton.Create(rt, "UNDO", Right - 75f - 166f, ToolsY, 150f, 46f, false, "undo");
             _undo.Click.ClickSound = Sfx.Hover;
             _undo.Click.Clicked = Undo;
@@ -248,8 +255,19 @@ namespace Blackbox.UI.Screens
             _pen.Active = _ink.Tool == InkTool.Pen;
             _eraser.Active = _ink.Tool == InkTool.Eraser;
             _textTool.Active = _ink.Tool == InkTool.Text;
+            // The colours only matter while drawing or typing, and clearing only once there are notes.
+            bool inking = _ink.Tool == InkTool.Pen || _ink.Tool == InkTool.Text;
+            if (_clearNotes != null)
+            {
+                var rt = (RectTransform)_clearNotes.transform;
+                if (_clearNotesAt == Vector2.zero) _clearNotesAt = rt.anchoredPosition;
+                // With the colours hidden, it moves up beside the tools.
+                rt.anchoredPosition = _clearNotesAt - new Vector2(inking ? 0f : 118f, 0f);
+                _clearNotes.gameObject.SetActive(_ink.ItemCount > 0);
+            }
             for (int i = 0; i < _swatches.Count; i++)
             {
+                _swatches[i].transform.parent.gameObject.SetActive(inking);
                 bool chosen = i == _ink.Colour;
                 var c = InkLayer.Inks[i];
                 _swatches[i].Style(Paint.Solid, chosen ? c : c.WithAlpha(0.45f), chosen ? Paint.Solid : Paint.None, Palette.Text, 1.4f);
@@ -305,6 +323,16 @@ namespace Blackbox.UI.Screens
             if (_solvedShown) SetSolvedShown(false);
             if (_session.Runs == 0 && !Game.Progress.IsSolved(Puzzle) && _session.WireCount >= 2)
                 Say("Press RUN, or Space, to send the signals through and see what comes out.", 4f);
+        }
+
+        public void BlocksMoved() => SavePlaces();
+
+        void SavePlaces()
+        {
+            if (!Game.Save.Circuits.TryGetValue(Puzzle.Id, out var state)) Game.Save.Circuits[Puzzle.Id] = state = new CircuitState();
+            state.Places.Clear();
+            foreach (var kv in _board.Places()) state.Places[kv.Key] = (Mathf.RoundToInt(kv.Value.x), Mathf.RoundToInt(kv.Value.y));
+            Game.MarkDirty();
         }
 
         void SaveWires()
@@ -392,6 +420,14 @@ namespace Blackbox.UI.Screens
                 App.Sound(Sfx.Close);
                 Say("The wires are back as the circuit began. Undo puts yours back.", 3f);
             }
+        }
+
+        void PutBlocksBack()
+        {
+            // The blocks glide home, so the save forgets every place now.
+            if (!_board.PutBlocksBack()) return;
+            if (Game.Save.Circuits.TryGetValue(Puzzle.Id, out var state)) state.Places.Clear();
+            Game.MarkDirty();
         }
 
         public void ClearWires()
@@ -635,15 +671,16 @@ namespace Blackbox.UI.Screens
             _ink.FinishTyping();
             var pause = Game.Screens.Create<PauseOverlay>();
             pause.Puzzle = Puzzle;
+            bool moved = _board.BlocksMoved;
             if (_session.HasStart)
             {
-                pause.Reset = RestartWires;
-                pause.ResetQuestion = "Put the wires back as this circuit began? Notes stay.";
+                pause.Reset = () => { RestartWires(); PutBlocksBack(); };
+                pause.ResetQuestion = moved ? "Put the wires back as this circuit began, and every block where it started? Notes stay." : "Put the wires back as this circuit began? Notes stay.";
             }
             else
             {
-                pause.Reset = ClearWires;
-                pause.ResetQuestion = "Take every wire off this circuit? Notes stay.";
+                pause.Reset = () => { ClearWires(); PutBlocksBack(); };
+                pause.ResetQuestion = moved ? "Take every wire off this circuit, and put every block back where it started? Notes stay." : "Take every wire off this circuit? Notes stay.";
             }
             Game.Screens.Push(pause);
         }

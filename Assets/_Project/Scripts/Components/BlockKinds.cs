@@ -51,9 +51,35 @@ namespace Blackbox.Components
 
         /// <summary>
         /// What each state does, for designers, tests and the editor validator.
-        /// Never shown in game: working out the rule is the puzzle.
+        /// In game a block's rule shows only once its circuit is solved (or with
+        /// the debug setting): working it out is the puzzle.
         /// </summary>
         public IReadOnlyList<string> Spoilers { get; }
+
+        /// <summary>
+        /// A rule short enough to sit under a block on the board: the spoiler
+        /// itself when it's short, otherwise a few words, with the whole rule
+        /// kept for when the player points at the block.
+        /// </summary>
+        public string ShortRule(int state)
+        {
+            if (ShortRules.TryGetValue(Id, out var shorts) && state < shorts.Length) return shorts[state];
+            string rule = Spoilers[state];
+            if (rule.Length <= 30) return rule;
+            int cut = rule.IndexOf(" (", StringComparison.Ordinal);
+            return cut > 0 ? rule.Substring(0, cut) : rule;
+        }
+
+        static readonly Dictionary<string, string[]> ShortRules = new Dictionary<string, string[]>
+        {
+            { "M1", new[] { "add them as waves" } },
+            { "M2", new[] { "turn it upside down" } },
+            { "M4", new[] { "sample it 12 times a loop" } },
+            { "M5", new[] { "top, only while bottom is on" } },
+            { "M6", new[] { "count its switch-ons" } },
+            { "M7", new[] { "twice as fast" } },
+            { "M8", new[] { "1 while top is higher" } },
+        };
 
         public BlockKind(string id, Medium medium, int inputCount, string[] spoilers, Func<int[], int, int> rule)
         {

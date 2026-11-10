@@ -16,6 +16,8 @@ namespace Blackbox.UI.Board
         void Say(string message, float seconds);
         /// <summary>Plays a signal's sound.</summary>
         void PlayTrace(Trace trace);
+        /// <summary>The player moved a block, so where the blocks sit should be saved.</summary>
+        void BlocksMoved();
     }
 
     /// <summary>
@@ -24,7 +26,8 @@ namespace Blackbox.UI.Board
     /// to another to run a wire (or click one dot, then the other). Dragging the
     /// end of a wire out of a block or output picks it up to move it; dropping it
     /// on nothing takes it off. Clicking a wire, or right-clicking a dot, takes
-    /// wires off too.
+    /// wires off too. Dragging a block by its body moves it, and its wires
+    /// follow; a block can't be dropped on top of another card.
     ///
     /// Outputs show what reaches them only after a run, beside their target, and
     /// each block shows what it sends, or why it sends nothing.
@@ -55,15 +58,16 @@ namespace Blackbox.UI.Board
         public const float LoopSeconds = 2.4f;
         const float SnapReach = 30f;
 
-        public static WiringBoard Create(Transform parent, WiringSession session, IWiringHost host)
+        /// <param name="places">Where the player last left each block, by block id, in board coordinates. Missing blocks sit where the circuit puts them.</param>
+        public static WiringBoard Create(Transform parent, WiringSession session, IWiringHost host, IDictionary<string, Vector2> places = null)
         {
             var rt = UIKit.Rect(parent, "Wiring board").Stretch();
             var board = rt.gameObject.AddComponent<WiringBoard>();
-            board.Build(session, host);
+            board.Build(session, host, places);
             return board;
         }
 
-        void Build(WiringSession session, IWiringHost host)
+        void Build(WiringSession session, IWiringHost host, IDictionary<string, Vector2> places)
         {
             Session = session;
             Host = host;
@@ -87,6 +91,9 @@ namespace Blackbox.UI.Board
             foreach (var input in p.Inputs) Inputs.Add(WiredInputView.Create(_nodeLayer, input, Metrics, this));
             foreach (var block in p.Blocks) Blocks.Add(WiredBlockView.Create(_nodeLayer, block, Metrics, this));
             foreach (var output in p.Outputs) Outputs.Add(WiredOutputView.Create(_nodeLayer, output, Metrics, this));
+            if (places != null)
+                foreach (var b in Blocks)
+                    if (places.TryGetValue(b.Def.Id, out var at) && Fits(b, Clamp(b, at))) b.MoveTo(Clamp(b, at));
 
             _ghost = UIKit.Add<PathGraphic>(_dragLayer, "Ghost");
             _ghost.raycastTarget = false;
@@ -115,6 +122,13 @@ namespace Blackbox.UI.Board
                 Links.Add(LinkView.Create(_linkLayer, from, to, port, SourcePort(from).Position, SinkPort(to, port).Position, this));
             foreach (var pv in _ports) pv.Connected = pv.IsSource ? Session.ReadersOf(pv.Node).Count > 0 : Session.DriverOf(pv.Node, pv.Port) >= 0;
             if (_solved) foreach (var l in Links) l.SetCelebrate(true, 0f);
+        }
+
+        /// <summary>Redraws the wires into and out of one node where its ports are now.</summary>
+        void RerouteLinks(int node)
+        {
+            foreach (var l in Links)
+                if (l.From == node || l.To == node) l.SetEnds(SourcePort(l.From).Position, SinkPort(l.To, l.Port).Position);
         }
 
         public PortView SourcePort(int node) => _ports.Find(p => p.IsSource && p.Node == node);
@@ -302,6 +316,125 @@ namespace Blackbox.UI.Board
             foreach (var v in Outputs) v.Tick(loop, dt, _shown);
         }
 
+        // ------------------------------------------------------------------ moving blocks
+
+        WiredBlockView _moving;
+        Vector2 _moveFrom, _grabOffset;
+
+        /// <summary>Any block sits somewhere other than where the circuit put it.</summary>
+        public bool BlocksMoved
+        {
+            get
+            {
+                foreach (var b in Blocks) if ((b.Centre - b.Home).sqrMagnitude > 1f) return true;
+                return false;
+            }
+        }
+
+        /// <summary>Where every block sits now, by block id, in board coordinates. Blocks still at home are left out.</summary>
+        public Dictionary<string, Vector2> Places()
+        {
+            var places = new Dictionary<string, Vector2>();
+            foreach (var b in Blocks) if ((b.Centre - b.Home).sqrMagnitude > 1f) places[b.Def.Id] = b.Centre;
+            return places;
+        }
+
+        /// <summary>Puts every block back where the circuit placed it. True if any moved.</summary>
+        public bool PutBlocksBack()
+        {
+            bool any = false;
+            foreach (var b in Blocks)
+            {
+                if ((b.Centre - b.Home).sqrMagnitude <= 1f) continue;
+                Glide(b, b.Home);
+                any = true;
+            }
+            return any;
+        }
+
+        internal bool BeginMove(WiredBlockView block)
+        {
+            if (!Host.CanWire || Drawing || _moving != null) return false;
+            _moving = block;
+            _moveFrom = block.Centre;
+            _grabOffset = block.Centre - Pointer();
+            block.transform.SetAsLastSibling();
+            block.Lifted = true;
+            App.Sound(Sfx.Tick, 1.2f, 0.4f);
+            return true;
+        }
+
+        internal void Move(WiredBlockView block)
+        {
+            if (_moving != block) return;
+            if (!Host.CanWire) { EndMove(block); return; }
+            var at = Clamp(block, Pointer() + _grabOffset);
+            block.MoveTo(at);
+            block.Crowded = !Fits(block, at);
+            RerouteLinks(NodeOf(block.Def));
+        }
+
+        internal void EndMove(WiredBlockView block)
+        {
+            if (_moving != block) return;
+            _moving = null;
+            block.Lifted = false;
+            block.Crowded = false;
+            if (!Fits(block, block.Centre))
+            {
+                Glide(block, _moveFrom);
+                App.Sound(Sfx.Miss, 1.5f, 0.3f);
+                Host.Say("There's no room there: a block can't sit on top of another one.", 3f);
+                return;
+            }
+            if ((block.Centre - _moveFrom).sqrMagnitude > 1f)
+            {
+                App.Sound(Sfx.Dial, 1.3f, 0.45f);
+                Host.BlocksMoved();
+            }
+        }
+
+        void Glide(WiredBlockView block, Vector2 to)
+        {
+            Vector2 from = block.Centre;
+            int node = NodeOf(block.Def);
+            if (App.ReduceMotion)
+            {
+                block.MoveTo(to);
+                RerouteLinks(node);
+                return;
+            }
+            Tweener.Run(block, "glide", 0.25f, t =>
+            {
+                block.MoveTo(Vector2.Lerp(from, to, t));
+                RerouteLinks(node);
+            }, Ease.OutCubic);
+        }
+
+        /// <summary>Keeps a block, with the readout above it and the note below, inside the board.</summary>
+        Vector2 Clamp(WiredBlockView block, Vector2 at)
+        {
+            var area = BoardMetrics.Area;
+            float halfW = block.Size.x * 0.5f, halfH = block.Size.y * 0.5f;
+            float minX = area.xMin - VoidFrame.Width * 0.5f + halfW + 40f;
+            float maxX = area.xMax - VoidFrame.Width * 0.5f - halfW - 40f;
+            float maxY = VoidFrame.Height * 0.5f - area.yMin - halfH - 44f;
+            float minY = VoidFrame.Height * 0.5f - area.yMax + halfH + 30f;
+            return new Vector2(Mathf.Clamp(at.x, minX, maxX), Mathf.Clamp(at.y, minY, maxY));
+        }
+
+        /// <summary>The block's card, at this spot, keeps clear of every other card on the board.</summary>
+        bool Fits(WiredBlockView block, Vector2 at)
+        {
+            var me = new Rect(at - block.Size * 0.5f, block.Size);
+            const float gap = 14f;
+            bool Hits(Rect other) => me.xMin < other.xMax + gap && me.xMax > other.xMin - gap && me.yMin < other.yMax + gap && me.yMax > other.yMin - gap;
+            foreach (var b in Blocks) if (b != block && Hits(new Rect(b.Centre - b.Size * 0.5f, b.Size))) return false;
+            foreach (var i in Inputs) if (Hits(i.Bounds)) return false;
+            foreach (var o in Outputs) if (Hits(o.Bounds)) return false;
+            return true;
+        }
+
         // ------------------------------------------------------------------ running
 
         /// <summary>Each node's distance from the inputs along the wires, for the run's flow.</summary>
@@ -390,6 +523,8 @@ namespace Blackbox.UI.Board
         public bool IsSource;
         /// <summary>Where the dot is, in board space.</summary>
         public Vector2 Position;
+        /// <summary>Where the dot is on its card, from the card's centre.</summary>
+        public Vector2 Offset;
 
         WiringBoard _board;
         ShapeGraphic _dot;
@@ -403,6 +538,7 @@ namespace Blackbox.UI.Board
             view.Port = port;
             view.IsSource = source;
             view.Position = boardPosition;
+            view.Offset = local;
             view._board = board;
             UIKit.Hit(rt).rectTransform.Stretch();
             view._dot = UIKit.Shape(rt, "Dot", ShapeKind.Circle);
@@ -452,6 +588,7 @@ namespace Blackbox.UI.Board
         public int From, To, Port;
         PathGraphic _path;
         FlowGraphic _flow;
+        HitArea _hit;
         RectTransform _rt;
         WiringBoard _board;
         bool _hover, _celebrate, _pulsing;
@@ -466,13 +603,9 @@ namespace Blackbox.UI.Board
             view.Port = port;
             view._board = board;
             view._rt = rt;
-            var pts = new List<Vector2>();
-            MeshKit.WireCurve(pts, a, b);
             view._path = rt.gameObject.AddComponent<PathGraphic>();
             view._path.raycastTarget = false;
-            view._path.SetPoints(pts);
             view._path.LitWidth = 2.2f;
-            view._length = MeshKit.Length(pts);
 
             var flowRt = UIKit.Rect(rt, "Flow").Stretch();
             view._flow = flowRt.gameObject.AddComponent<FlowGraphic>();
@@ -480,13 +613,24 @@ namespace Blackbox.UI.Board
             view._flow.Source = view._path;
             view._flow.enabled = false;
 
-            Vector2 min = pts[0], max = pts[0];
-            foreach (var p in pts) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
-            var hit = UIKit.Hit(rt, "Hit");
-            hit.rectTransform.Centered((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, max.x - min.x + 24f, max.y - min.y + 24f);
-            hit.gameObject.AddComponent<LinkHit>().Link = view;
+            view._hit = UIKit.Hit(rt, "Hit");
+            view._hit.gameObject.AddComponent<LinkHit>().Link = view;
+            view.SetEnds(a, b);
             view.ApplyRest();
             return view;
+        }
+
+        /// <summary>Redraws the wire between two dots, as when a block it joins is moved.</summary>
+        public void SetEnds(Vector2 a, Vector2 b)
+        {
+            var pts = new List<Vector2>();
+            MeshKit.WireCurve(pts, a, b);
+            _path.SetPoints(pts);
+            _length = MeshKit.Length(pts);
+            Vector2 min = pts[0], max = pts[0];
+            foreach (var p in pts) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+            _hit.rectTransform.Centered((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, max.x - min.x + 24f, max.y - min.y + 24f);
+            if (_flow.enabled) _flow.SetVerticesDirty();
         }
 
         public List<Vector2> Points => _path.Points;
@@ -597,6 +741,8 @@ namespace Blackbox.UI.Board
         public InputDef Def;
         public Vector2 Centre;
         public PortView Out;
+        /// <summary>The card and its letter, in board coordinates.</summary>
+        public Rect Bounds;
         ShapeGraphic _card;
         SignalView _signal;
         VoidText _label;
@@ -611,6 +757,7 @@ namespace Blackbox.UI.Board
             var view = rt.gameObject.AddComponent<WiredInputView>();
             view.Def = def;
             view.Centre = c;
+            view.Bounds = Rect.MinMaxRect(c.x - w * 0.5f - 48f * s, c.y - h * 0.5f, c.x + w * 0.5f, c.y + h * 0.5f);
 
             view._card = UIKit.Shape(rt, "Card");
             view._card.raycastTarget = false;
@@ -629,8 +776,12 @@ namespace Blackbox.UI.Board
                 view._signal.Caption = spec.Medium == Medium.Sampled ? Sampled.Settings(spec.Value.Value) : Waves.Settings(spec.Value.Value);
             view._signal.MakePlayable(() => board.Host.PlayTrace(spec.Trace));
 
-            var kind = UIKit.Text(rt, Media.Noun(spec.Medium).ToUpperInvariant(), TextStyle.Label.WithSize(Mathf.RoundToInt(10 * s)).WithTracking(0.24f).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Type");
-            kind.rectTransform.Centered(0f, -h * 0.5f - 12f * s, w, 16f);
+            // Where every signal is one kind, as in Part One, naming it on each card is noise.
+            if (board.Puzzle.Chapter == null || board.Puzzle.Chapter.Mixed)
+            {
+                var kind = UIKit.Text(rt, Media.Noun(spec.Medium).ToUpperInvariant(), TextStyle.Label.WithSize(Mathf.RoundToInt(10 * s)).WithTracking(0.24f).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Type");
+                kind.rectTransform.Centered(0f, -h * 0.5f - 12f * s, w, 16f);
+            }
 
             view.Out = PortView.Create(rt, new Vector2(w * 0.5f, 0f), c + new Vector2(w * 0.5f, 0f), board.NodeOf(def), -1, true, board);
             view.Restyle();
@@ -660,14 +811,18 @@ namespace Blackbox.UI.Board
     {
         public BlockDef Def;
         public Vector2 Centre;
+        /// <summary>Where the circuit puts the block, before the player moves it.</summary>
+        public Vector2 Home;
+        /// <summary>The block's card, in board units.</summary>
+        public Vector2 Size;
         public PortView Out;
         public readonly List<PortView> Ins = new List<PortView>();
 
         ShapeGraphic _outline;
         VoidText _code, _id, _note, _rule;
         SignalView _readout;
-        bool _solved, _broken;
-        float _flash;
+        bool _solved, _broken, _lifted, _crowded, _hover;
+        float _flash, _noteY;
 
         public static WiredBlockView Create(RectTransform layer, BlockDef def, BoardMetrics m, WiringBoard board)
         {
@@ -677,7 +832,16 @@ namespace Blackbox.UI.Board
             var rt = UIKit.Rect(layer, "Block " + def.Id).Centered(c.x, c.y, w, h);
             var view = rt.gameObject.AddComponent<WiredBlockView>();
             view.Def = def;
-            view.Centre = c;
+            view.Centre = view.Home = c;
+            view.Size = new Vector2(w, h);
+            view._board = board;
+
+            // The body is what the player grabs to move the block. The dots sit on top of it.
+            var body = UIKit.Hit(rt, "Body");
+            body.rectTransform.Stretch();
+            var grip = body.gameObject.AddComponent<BlockGrip>();
+            grip.Block = view;
+            grip.Board = board;
 
             view._outline = UIKit.Shape(rt, "Outline");
             view._outline.raycastTarget = false;
@@ -722,11 +886,13 @@ namespace Blackbox.UI.Board
 
             view._note = UIKit.Text(rt, "", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.24f).WithColor(Palette.Violet), TextAnchor.MiddleCenter, "Note");
             view._note.rectTransform.Centered(0f, -h * 0.5f - 14f * s, w + 80f, 16f);
+            view._noteY = -h * 0.5f - 14f * s;
 
-            view._rule = UIKit.Text(rt, "", TextStyle.Body.WithSize(Mathf.Max(11, Mathf.RoundToInt(13 * s))).WithColor(Palette.Dim), TextAnchor.UpperCenter, "Rule");
+            // The rule sits right under the block, where the note would go; a note then goes under the rule.
+            view._rule = UIKit.Text(rt, "", TextStyle.Body.WithSize(Mathf.Max(12, Mathf.RoundToInt(13 * s))).WithColor(Palette.Dim), TextAnchor.UpperCenter, "Rule");
             view._rule.horizontalOverflow = HorizontalWrapMode.Wrap;
-            view._rule.LineHeight = 1.25f;
-            view._rule.rectTransform.Centered(0f, -h * 0.5f - 30f * s - 22f, Mathf.Max(w + 70f, 240f * s), 44f);
+            view._rule.LineHeight = 1.2f;
+            view._rule.rectTransform.Centered(0f, -h * 0.5f - 6f * s - 18f, Mathf.Max(w + 60f, 220f * s), 36f);
             view._rule.enabled = false;
 
             view.Restyle();
@@ -753,6 +919,21 @@ namespace Blackbox.UI.Board
 
         public void Tick(float loop) => _readout.Playhead = loop;
 
+        /// <summary>Moves the block, and its dots with it. The board redraws the wires.</summary>
+        public void MoveTo(Vector2 at)
+        {
+            Centre = at;
+            ((RectTransform)transform).Centered(at.x, at.y, Size.x, Size.y);
+            foreach (var p in Ins) p.Position = at + p.Offset;
+            Out.Position = at + Out.Offset;
+        }
+
+        /// <summary>Being dragged: the outline brightens.</summary>
+        public bool Lifted { get => _lifted; set { if (_lifted != value) { _lifted = value; Restyle(); } } }
+        /// <summary>Being dragged over another card, where it can't be dropped.</summary>
+        public bool Crowded { get => _crowded; set { if (_crowded != value) { _crowded = value; Restyle(); } } }
+        public bool Hover { get => _hover; set { if (_hover != value) { _hover = value; Restyle(); } } }
+
         /// <summary>The signal passing through on a run: the outline lights and fades.</summary>
         public void Flash()
         {
@@ -766,9 +947,21 @@ namespace Blackbox.UI.Board
             set
             {
                 _rule.enabled = value;
-                _rule.text = value ? $"{Def.Kind.Id}: {Def.Kind.Spoilers[Def.State]}" : "";
+                // A named block already shows its code, so its rule doesn't repeat it.
+                // Under the block goes a short form; pointing at the block gives the whole rule.
+                string rule = Def.Kind.ShortRule(Def.State);
+                _rule.text = !value ? "" : _board.Puzzle.Marked ? Capitalise(rule) : $"{Def.Kind.Id}: {rule}";
+                var nrt = _note.rectTransform;
+                nrt.anchoredPosition = new Vector2(nrt.anchoredPosition.x, value ? _noteY - 40f : _noteY);
             }
         }
+
+        /// <summary>The whole rule, for the status line, or null while the rule is hidden.</summary>
+        public string FullRule => _rule.enabled ? $"{Def.Id} ({Def.Kind.Id}): {Def.Kind.Spoilers[Def.State]}." : null;
+
+        static string Capitalise(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+
+        WiringBoard _board;
 
         public bool Solved
         {
@@ -795,12 +988,66 @@ namespace Blackbox.UI.Board
                 width = 1.7f;
                 glow = Mathf.Max(glow, 0.4f * _flash);
             }
+            if (_crowded) { edgePaint = Paint.Solid; edge = Palette.Violet; width = 1.7f; glow = 0f; }
+            else if (_lifted) { edgePaint = Paint.Solid; edge = Palette.Text; width = 1.7f; }
+            else if (_hover && !_solved && _flash <= 0.02f) edge = Color.Lerp(edge, Palette.Dim, 0.6f);
             _outline.Style(Paint.Solid, Color.black, edgePaint, edge, width);
             _outline.Glow = glow;
             _outline.GlowPaint = Paint.Signal;
             _outline.GlowRadius = 22f;
             _code.color = Palette.Dim;
             _id.color = Palette.Faint;
+        }
+    }
+
+    /// <summary>A block's body: press and drag it to move the block.</summary>
+    public sealed class BlockGrip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+    {
+        public WiredBlockView Block;
+        public WiringBoard Board;
+        bool _moving;
+        static int _tips;
+
+        public void OnPointerEnter(PointerEventData e)
+        {
+            Block.Hover = true;
+            if (Block.FullRule != null && !Board.Drawing)
+            {
+                Board.Host.Say(Block.FullRule, 4f);
+                return;
+            }
+            if (_tips < 3 && Board.Host.CanWire && !Board.Drawing)
+            {
+                _tips++;
+                Board.Host.Say("Drag a block to move it. Its wires follow.", 2.5f);
+            }
+        }
+
+        public void OnPointerExit(PointerEventData e) => Block.Hover = false;
+
+        public void OnBeginDrag(PointerEventData e)
+        {
+            if (e.button != PointerEventData.InputButton.Left) return;
+            _moving = Board.BeginMove(Block);
+        }
+
+        public void OnDrag(PointerEventData e)
+        {
+            if (_moving) Board.Move(Block);
+        }
+
+        public void OnEndDrag(PointerEventData e)
+        {
+            if (!_moving) return;
+            _moving = false;
+            Board.EndMove(Block);
+        }
+
+        void OnDisable()
+        {
+            if (!_moving) return;
+            _moving = false;
+            Board.EndMove(Block);
         }
     }
 
@@ -814,6 +1061,8 @@ namespace Blackbox.UI.Board
         public OutputDef Def;
         public Vector2 Centre;
         public PortView In;
+        /// <summary>The card and the labels over it, in board coordinates.</summary>
+        public Rect Bounds;
 
         ShapeGraphic _frame;
         DeviceView _now, _want;
@@ -836,6 +1085,7 @@ namespace Blackbox.UI.Board
             var view = rt.gameObject.AddComponent<WiredOutputView>();
             view.Def = def;
             view.Centre = c;
+            view.Bounds = Rect.MinMaxRect(left, c.y - h * 0.5f, left + w, c.y + h * 0.5f + 24f * s);
 
             view._frame = UIKit.Shape(rt, "Frame");
             view._frame.raycastTarget = false;

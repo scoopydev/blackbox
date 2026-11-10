@@ -30,6 +30,8 @@ namespace Blackbox.Core
         public readonly List<(int wire, int at)> Probes = new List<(int, int)>();
         /// <summary>A wired circuit's wires, like "A -> g.0".</summary>
         public readonly List<string> Wires = new List<string>();
+        /// <summary>Blocks the player moved, by block id: where each sits, in board coordinates.</summary>
+        public readonly Dictionary<string, (int x, int y)> Places = new Dictionary<string, (int x, int y)>();
     }
 
     /// <summary>One pen stroke: a colour and points in frame coordinates (x, y, x, y, ...).</summary>
@@ -174,6 +176,18 @@ namespace Blackbox.Core
                     foreach (var w in c.Wires) wires.Add(JsonValue.From(w));
                     obj.Set("wires", wires);
                 }
+                if (c.Places.Count > 0)
+                {
+                    var places = JsonValue.NewObject();
+                    foreach (var block in Sorted(c.Places.Keys))
+                    {
+                        var pair = JsonValue.NewArray();
+                        pair.Add(JsonValue.From(c.Places[block].x));
+                        pair.Add(JsonValue.From(c.Places[block].y));
+                        places.Set(block, pair);
+                    }
+                    obj.Set("places", places);
+                }
                 circuits.Set(id, obj);
             }
             root.Set("circuits", circuits);
@@ -253,6 +267,9 @@ namespace Blackbox.Core
                         if (pair.IsArray && pair.Count == 2) c.Probes.Add((pair[0].AsInt(), pair[1].AsInt()));
                     foreach (var w in m.Value["wires"].Items)
                         if (w.IsString) c.Wires.Add(w.AsString());
+                    foreach (var place in m.Value["places"].Members)
+                        if (place.Value.IsArray && place.Value.Count == 2)
+                            c.Places[place.Key] = (place.Value[0].AsInt(), place.Value[1].AsInt());
                     data.Circuits[m.Key] = c;
                 }
                 foreach (var m in root["ink"].Members)
