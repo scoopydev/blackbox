@@ -13,6 +13,8 @@ namespace Blackbox.Core
         public float EffectsVolume = 0.8f;
         public bool ReduceMotion;
         public bool Fullscreen = true;
+        /// <summary>Play each output's sound when a change reaches it.</summary>
+        public bool SignalSounds = true;
     }
 
     /// <summary>Where the player left one circuit: input values, block states and probes.</summary>
@@ -166,6 +168,7 @@ namespace Blackbox.Core
             prefs.Set("effectsVolume", Prefs.EffectsVolume);
             prefs.Set("reduceMotion", Prefs.ReduceMotion);
             prefs.Set("fullscreen", Prefs.Fullscreen);
+            prefs.Set("signalSounds", Prefs.SignalSounds);
             root.Set("preferences", prefs);
 
             return JsonWriter.Write(root);
@@ -221,6 +224,7 @@ namespace Blackbox.Core
                 EffectsVolume = Clamp01(p["effectsVolume"].AsFloat(d.EffectsVolume)),
                 ReduceMotion = p["reduceMotion"].AsBool(d.ReduceMotion),
                 Fullscreen = p["fullscreen"].AsBool(d.Fullscreen),
+                SignalSounds = p["signalSounds"].AsBool(d.SignalSounds),
             };
             return data;
         }

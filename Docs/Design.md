@@ -10,8 +10,9 @@ Every circuit has **inputs** on the left, **outputs** on the right, and **blocks
 1. **Read the goal.** The goal is written in one or two sentences above the board, with a count of the targets met. Every target also sits beside the thing it belongs to, with a tick or a cross, so the player always knows what finished looks like.
 2. **Change things.** Clicking a block steps it to its next state, clicking one of its dots jumps to that state, and right-clicking or scrolling goes the other way. Inputs with arrows can be changed the same way. Fixed inputs are drawn dashed, and a locked block has a padlock and a dashed outline: neither can be changed.
 3. **Probe.** Wires hide their signals. Clicking a wire puts a probe on it, which reads the signal there and keeps reading it live as things change. Each circuit allows a set number of probes, from none to two. Clicking a probe takes it off.
-4. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks, and the eraser (E) or a right-drag rubs notes out. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
-5. **Solve.** The moment every target is met, the whole circuit lights up and the next circuit is offered.
+4. **Listen.** Every signal has a sound as well as a look (see below). Clicking any value on the board plays it. **HEAR GOAL** (G) plays every target in the order the goal names them, lighting each one as it sounds, and **HEAR NOW** (N) plays what the outputs give now, so the two can be compared by ear. While playing, each change sounds out the input that was set and every output it reached.
+5. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks, and the eraser (E) or a right-drag rubs notes out. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
+6. **Solve.** The moment every target is met, the whole circuit lights up and the next circuit is offered.
 
 Every change sends a pulse of light along the wires downstream of what changed, so the player can see what it reaches, though not what it carries.
 
@@ -32,7 +33,20 @@ Each chapter uses a different kind of signal, and its blocks work on that kind o
 | I First Light | binary | 0 and 1 | Digits |
 | II Tally | decimal | 0 to 9, wrapping round | Digits |
 | III Forms | shape | circle, triangle, square or hexagon, hollow or solid | The shape itself, outlined or filled |
-| IV Resonance | wave | sine, square or saw, at a low, mid or high pitch | The waveform, with more cycles for higher pitches. Clicking any wave plays it. |
+| IV Resonance | wave | sine, square or saw, at a low, mid or high pitch | The waveform, with more cycles for higher pitches |
+
+### Signal sounds
+
+Each medium is heard in its own way, so a player can follow a circuit by ear as well as by eye. The sounds are synthesised in `Components/SignalSound.cs`.
+
+| Medium | Sounds like |
+|---|---|
+| binary | A 1 is a clear beep. A 0 is only a soft, dull tap, so the player knows it played. |
+| decimal | One held tone that lasts as many beats as the digit, gently re-struck on each beat so it can be counted. 0 is the tap. |
+| shape | One click per corner: a circle is a single smooth note, a triangle three clicks, a square four and a hexagon six. Solid shapes are low and warm, hollow ones high and thin. |
+| wave | The wave itself: a sine, square or saw at A3, E4 or A4. |
+
+Signal sounds can be turned off for changes in Settings (**SIGNAL SOUNDS**); clicking a value or the HEAR buttons always plays. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
 
 ## Progression
 
@@ -116,7 +130,7 @@ The look is called **Void**. The background is pure black, and nothing glows exc
 * Everything is drawn as procedural meshes with anti-aliased edges and vertex-alpha glow, so it is crisp at any resolution and needs no sprites or post-processing.
 * Reduce Motion (in Settings) stops pulses, bumps and drifting light.
 
-All sound is synthesised when the game starts: soft sine blips for clicks and changes, a chord when a circuit is solved, filtered noise for menus, and a slow, quiet drone. Wave signals are real tones at A3, E4 and A4, built from their harmonics.
+All sound is synthesised when the game starts: soft sine blips for clicks and changes, a chord when a circuit is solved, filtered noise for menus, a slow, quiet drone, and the signal sounds above.
 
 ## Architecture
 

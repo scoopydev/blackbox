@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Blackbox.Components;
 using Blackbox.Core;
@@ -37,6 +38,13 @@ namespace Blackbox.UI.Screens
         string _hint;
         PuzzleDef _nextPuzzle;
 
+        // Listening: every signal has a sound. These say what is sounding now.
+        enum Listening { None, Goal, Now, Change }
+        Listening _listening;
+        PillButton _hearGoal, _hearNow;
+        /// <summary>What each output showed before the latest change, to tell which ones it reached.</summary>
+        int[] _lastOutputs;
+
         // Keyboard: the item the arrows change. Hover wins over Tab focus.
         BoardItem _hoverItem;
         int _hoverIndex = -1;
@@ -67,6 +75,7 @@ namespace Blackbox.UI.Screens
             BuildHeader();
             BuildGoal();
             _board = BoardView.Create(Root, _session, this);
+            _lastOutputs = CurrentOutputs();
 
             _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
@@ -115,10 +124,19 @@ namespace Blackbox.UI.Screens
             label.rectTransform.At(Left + 40f, GoalY, 80f, 20f);
 
             string sentence = GoalText.For(Puzzle);
-            _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(sentence.Length > 110 ? 21 : 24).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
+            int size = sentence.Length > 150 ? 19 : sentence.Length > 120 ? 21 : 24;
+            _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(size).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
             _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
             _goal.LineHeight = 1.3f;
-            _goal.rectTransform.At(Left + 110f + 640f, GoalY, 1280f, 64f);
+            _goal.rectTransform.At(Left + 110f + 485f, GoalY, 970f, 64f);
+
+            // Hear the goal, and hear what the outputs give now, to compare by ear.
+            _hearGoal = PillButton.Create(Root, "HEAR GOAL", 1294f, GoalY, 196f, 40f, false, "sound");
+            _hearGoal.Click.ClickSound = Sfx.Hover;
+            _hearGoal.Click.Clicked = HearGoal;
+            _hearNow = PillButton.Create(Root, "HEAR NOW", 1497f, GoalY, 186f, 40f, false, "sound");
+            _hearNow.Click.ClickSound = Sfx.Hover;
+            _hearNow.Click.Clicked = HearNow;
 
             _matchedValue = UIKit.Text(Root, "", TextStyle.Value.WithSize(34).WithWeight(200), TextAnchor.MiddleRight, "Matched");
             _matchedValue.rectTransform.At(Right - 100f, GoalY - 8f, 200f, 44f);
@@ -195,7 +213,7 @@ namespace Blackbox.UI.Screens
             _reset = PillButton.Create(rt, "RESET", Right - 75f, ToolsY, 150f, 46f, false, "reset");
             _reset.Click.ClickSound = Sfx.Hover;
             _reset.Click.Clicked = AskReset;
-            Chrome.KeyHints(rt, Right, HintsY, true, "TAB", "SELECT", "LEFT RIGHT", "CHANGE", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
+            Chrome.KeyHints(rt, Right, HintsY, true, "G", "HEAR GOAL", "TAB", "SELECT", "LEFT RIGHT", "CHANGE", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
         }
 
         void BuildSolvedPanel()
@@ -292,7 +310,11 @@ namespace Blackbox.UI.Screens
             else _board.Blocks[index].SetState(_session.State(index), true);
             int newlyMatched = _board.Refresh(true);
             _board.Pulse(node);
-            if (Medium == Medium.Wave && kind == ChangeKind.Input) PlayValue(_session.InputValue(index));
+
+            var outputs = CurrentOutputs();
+            var reached = new List<int>();
+            for (int o = 0; o < outputs.Length; o++) if (outputs[o] != _lastOutputs[o]) reached.Add(o);
+            _lastOutputs = outputs;
 
             Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
             Game.MarkDirty();
@@ -301,17 +323,37 @@ namespace Blackbox.UI.Screens
             if (_session.Solved)
             {
                 if (!_solvedShown) OnSolved();
+                return;
             }
-            else
+            if (_solvedShown) SetSolvedShown(false);
+            Action chime = newlyMatched > 0 ? () => App.Sound(Sfx.Match, 1f, 0.7f) : (Action)null;
+            if (Game.Save.Prefs.SignalSounds && (kind == ChangeKind.Input || reached.Count > 0))
             {
-                if (_solvedShown) SetSolvedShown(false);
-                if (newlyMatched > 0) App.Sound(Sfx.Match, 1f, 0.7f);
+                // Sound out the change: the input that was set, then every output it reached.
+                var values = new List<int>();
+                var lights = new List<Action>();
+                if (kind == ChangeKind.Input)
+                {
+                    values.Add(_session.InputValue(index));
+                    var input = _board.Inputs[index];
+                    lights.Add(input.Ping);
+                }
+                foreach (int o in reached)
+                {
+                    values.Add(outputs[o]);
+                    var view = _board.Outputs[o];
+                    lights.Add(() => view.Ping(false));
+                }
+                Listen(Listening.Change, values, i => lights[i](), chime);
             }
+            else chime?.Invoke();
         }
 
         void OnSessionReset()
         {
+            StopListening();
             _board.Refresh(false);
+            _lastOutputs = CurrentOutputs();
             for (int i = 0; i < _board.Inputs.Count; i++) _board.Pulse(i);
             Game.Save.Circuits[Puzzle.Id] = _session.Snapshot();
             Game.MarkDirty();
@@ -331,6 +373,7 @@ namespace Blackbox.UI.Screens
 
         void OnSolved()
         {
+            StopListening();
             var p = Puzzle;
             var library = Game.Library;
             bool first = !Game.Progress.IsSolved(p);
@@ -406,6 +449,84 @@ namespace Blackbox.UI.Screens
         string NameOfInput(int i) => Puzzle.Inputs[i].Id;
         string NameOfBlock(int b) => Puzzle.Blocks[b].Id;
 
+        // ------------------------------------------------------------------ listening
+
+        int[] CurrentOutputs()
+        {
+            var values = new int[Puzzle.Outputs.Count];
+            for (int o = 0; o < values.Length; o++) values[o] = _session.ValueOf(Puzzle.Outputs[o]);
+            return values;
+        }
+
+        /// <summary>The targets in the order the goal sentence names them: outputs, then blocks, then inputs.</summary>
+        List<TargetDef> GoalOrder()
+        {
+            var list = new List<TargetDef>();
+            foreach (var role in new[] { NodeRole.Output, NodeRole.Block, NodeRole.Input })
+                foreach (var t in Puzzle.Targets) if (t.Node.Role == role) list.Add(t);
+            return list;
+        }
+
+        /// <summary>Plays every target's value in turn, lighting each one as it sounds. Again to stop.</summary>
+        void HearGoal()
+        {
+            if (_listening == Listening.Goal) { StopListening(); return; }
+            var targets = GoalOrder();
+            var values = new List<int>();
+            foreach (var t in targets) values.Add(t.Want);
+            Listen(Listening.Goal, values, i => PingTarget(targets[i]));
+        }
+
+        /// <summary>Plays what every output gives now, in order. Again to stop.</summary>
+        void HearNow()
+        {
+            if (_listening == Listening.Now) { StopListening(); return; }
+            var values = new List<int>(CurrentOutputs());
+            Listen(Listening.Now, values, i => _board.Outputs[i].Ping(false));
+        }
+
+        void PingTarget(TargetDef t)
+        {
+            switch (t.Node.Role)
+            {
+                case NodeRole.Output: _board.Outputs[t.Node.Index].Ping(true); break;
+                case NodeRole.Block: _board.Blocks[t.Node.Index].Target?.Ping(); break;
+                default: _board.Inputs[t.Node.Index].Target?.Ping(); break;
+            }
+        }
+
+        void Listen(Listening what, List<int> values, Action<int> onEach, Action done = null)
+        {
+            var audio = App.Audio;
+            if (audio == null || values.Count == 0) { done?.Invoke(); return; }
+            SetListening(what);
+            audio.PlaySignals(Medium, values, onEach, () =>
+            {
+                if (this == null) return;
+                SetListening(Listening.None);
+                done?.Invoke();
+            });
+        }
+
+        void StopListening()
+        {
+            if (_listening != Listening.None) App.Audio?.StopSignals();
+            SetListening(Listening.None);
+        }
+
+        void SetListening(Listening what)
+        {
+            _listening = what;
+            if (_hearGoal != null) _hearGoal.Active = what == Listening.Goal;
+            if (_hearNow != null) _hearNow.Active = what == Listening.Now;
+        }
+
+        void Update()
+        {
+            // A sequence that was cut short by another sound never reports that it ended.
+            if (_listening != Listening.None && (App.Audio == null || !App.Audio.PlayingSignals)) SetListening(Listening.None);
+        }
+
         // ------------------------------------------------------------------ IBoardHost
 
         public void InputStep(int input, int direction)
@@ -413,7 +534,8 @@ namespace Blackbox.UI.Screens
             if (!_session.CanChangeInput(input))
             {
                 App.Sound(Sfx.Miss, 1.6f, 0.35f);
-                if (Medium == Medium.Wave) PlayValue(_session.InputValue(input));
+                PlayValue(_session.InputValue(input));
+                _board.Inputs[input].Ping();
                 Say($"Input {NameOfInput(input)} is fixed. Only inputs with arrows can be changed.", 3.5f);
                 return;
             }
@@ -456,7 +578,7 @@ namespace Blackbox.UI.Screens
             _session.AddProbe(wire, at);
             App.Sound(Sfx.Open, 1.6f, 0.6f);
             if (_session.Probes.Count == 1 && !Game.Progress.IsSolved(Puzzle) && Puzzle.Number < 4)
-                Say("The probe reads the signal on that wire. Click it to take it off.", 3.5f);
+                Say("The probe reads the signal on that wire. Click its value to hear it, or the dot to take it off.", 4f);
         }
 
         public void ProbeClicked(int probe)
@@ -466,7 +588,9 @@ namespace Blackbox.UI.Screens
 
         public void PlayValue(int value)
         {
-            if (Medium == Medium.Wave && Media.IsValid(Medium, value)) Game.Audio.PlayWave(value);
+            if (!Media.IsValid(Medium, value)) return;
+            SetListening(Listening.None);
+            App.Audio?.PlaySignal(Medium, value);
         }
 
         public void Hover(BoardItem item, int index, bool on)
@@ -553,10 +677,13 @@ namespace Blackbox.UI.Screens
             if (GameInput.Down(Key.Right) || GameInput.Down(Key.Up) || GameInput.Down(Key.R)) StepKeyboardTarget(+1);
             else if (GameInput.Down(Key.Left) || GameInput.Down(Key.Down)) StepKeyboardTarget(-1);
             if (GameInput.Down(Key.H)) OpenHelp();
+            if (GameInput.Down(Key.G)) HearGoal();
+            if (GameInput.Down(Key.N)) HearNow();
         }
 
         void OpenPause()
         {
+            StopListening();
             var pause = Game.Screens.Create<PauseOverlay>();
             pause.Owner = this;
             Game.Screens.Push(pause);
@@ -577,6 +704,7 @@ namespace Blackbox.UI.Screens
 
         public override void OnClosing()
         {
+            StopListening();
             Tweener.Kill(this);
             if (_ink != null) _ink.SetTool(InkTool.Off);
             if (_session != null)

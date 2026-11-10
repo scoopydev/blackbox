@@ -1,4 +1,6 @@
+using System;
 using Blackbox.Components;
+using Blackbox.Game;
 using UnityEngine;
 
 namespace Blackbox.UI.Board
@@ -31,6 +33,10 @@ namespace Blackbox.UI.Board
         ShapeGraphic _shape;
         WaveGraphic _wave;
         VoidText _pitch;
+        GlyphGraphic _speaker;
+        float _ping;
+        Vector3 _restScale = Vector3.one;
+        bool _pinging;
 
         public int Value => _value;
         public Medium Medium => _medium;
@@ -72,6 +78,47 @@ namespace Blackbox.UI.Board
             return view;
         }
 
+        /// <summary>
+        /// Lets the player click the value to hear it. A small speaker appears
+        /// beside it on hover, so it reads as something to listen to.
+        /// </summary>
+        public Clickable MakePlayable(Action<int> play)
+        {
+            float w = WidthFor(_medium, _size);
+            var hit = UIKit.Hit(transform, "Listen");
+            hit.rectTransform.Centered(0f, 0f, w + 14f, _size + 12f);
+            float icon = Mathf.Max(11f, _size * 0.3f);
+            _speaker = UIKit.Glyph(transform, "sound", Palette.Dim, 1.3f, "Speaker");
+            _speaker.rectTransform.Centered(w * 0.5f + icon * 0.4f, _size * 0.5f, icon, icon);
+            _speaker.enabled = false;
+            var c = hit.gameObject.AddComponent<Clickable>();
+            c.HoverSound = false;
+            c.ClickSound = Sfx.Hover;
+            c.Clicked = () => { play(_value); Ping(); };
+            c.HoverChanged = on => _speaker.enabled = on;
+            return c;
+        }
+
+        /// <summary>A short swell and brightening, to show this is the value sounding.</summary>
+        public void Ping()
+        {
+            if (!_pinging) _restScale = transform.localScale;
+            _pinging = true;
+            bool motion = !App.ReduceMotion;
+            Tweener.Run(this, "ping", 0.45f, t =>
+            {
+                _ping = 1f - t;
+                if (motion) transform.localScale = _restScale * (1f + 0.16f * Mathf.Sin(Mathf.PI * Mathf.Min(1f, t * 1.6f)));
+                Restyle();
+            }, Ease.Linear, 0f, () =>
+            {
+                _pinging = false;
+                _ping = 0f;
+                transform.localScale = _restScale;
+                Restyle();
+            });
+        }
+
         public void Set(int value, ValueLook look)
         {
             if (value == _value && look == _look) return;
@@ -89,7 +136,7 @@ namespace Blackbox.UI.Board
         void Restyle()
         {
             bool live = _look == ValueLook.Live;
-            Color quiet = _look == ValueLook.Met ? Palette.Text : Palette.Dim;
+            Color quiet = Color.Lerp(_look == ValueLook.Met ? Palette.Text : Palette.Dim, Color.white, _ping);
             bool has = _value >= 0 && Media.IsValid(_medium, _value);
 
             switch (_medium)
@@ -106,7 +153,7 @@ namespace Blackbox.UI.Board
                     if (live)
                     {
                         _shape.Style(solid ? Paint.Signal : Paint.None, Color.white, Paint.Signal, Color.white, stroke);
-                        _shape.Glow = solid ? 0.35f : 0.25f;
+                        _shape.Glow = (solid ? 0.35f : 0.25f) + 0.4f * _ping;
                         _shape.GlowPaint = Paint.Signal;
                         _shape.GlowRadius = _size * 0.35f;
                     }
@@ -128,7 +175,7 @@ namespace Blackbox.UI.Board
                     _wave.LineWidth = Mathf.Max(1.4f, _size * 0.045f);
                     _wave.Paint = live ? Paint.Signal : Paint.Solid;
                     _wave.Tint = live ? Color.white : quiet;
-                    _wave.GlowAmount = live ? 0.3f : 0f;
+                    _wave.GlowAmount = live ? 0.3f + 0.4f * _ping : 0.3f * _ping;
                     if (_pitch != null)
                     {
                         _pitch.text = Waves.PitchNames[Waves.Pitch(_value)];

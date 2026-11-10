@@ -6,7 +6,7 @@
   "title": "First Light",
   "medium": "binary",
   "tagline": "Every block keeps a rule. Find it.",
-  "signals": "Signals here are bits: 0 or 1.",
+  "signals": "Signals here are bits, 0 or 1. A 1 sounds as a beep; a 0 makes none.",
   "circuits": [
     {
       // One block, two states. Solution: b on its second state.

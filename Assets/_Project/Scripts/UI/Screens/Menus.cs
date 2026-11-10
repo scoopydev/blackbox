@@ -124,7 +124,7 @@ namespace Blackbox.UI.Screens
 
         public void WireClicked(int wire, float at) { }
         public void ProbeClicked(int probe) { }
-        public void PlayValue(int value) { }
+        public void PlayValue(int value) { _timer = TouchPause; App.Audio?.PlaySignal(Medium.Binary, value); }
         public void Hover(BoardItem item, int index, bool on) { }
         public bool CanPlaceProbe => false;
     }

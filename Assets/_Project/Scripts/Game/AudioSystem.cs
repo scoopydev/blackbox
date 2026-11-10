@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Blackbox.Components;
 using UnityEngine;
@@ -38,9 +39,13 @@ namespace Blackbox.Game
         float _effects = 0.8f, _musicVolume = 0.5f, _master = 0.8f;
         float _musicFade = 1f;
         readonly Dictionary<Sfx, float> _lastPlayed = new Dictionary<Sfx, float>();
-        /// <summary>The wave signals as sounds, by value: form * 3 + pitch.</summary>
-        AudioClip[] _waves;
+        /// <summary>Every signal value's sound, by medium and value. See <see cref="SignalSound"/>.</summary>
+        readonly Dictionary<Medium, AudioClip[]> _signals = new Dictionary<Medium, AudioClip[]>();
         AudioSource _tone;
+        Coroutine _sequence;
+
+        /// <summary>The pause between signals played one after another, in seconds.</summary>
+        public const float SignalGap = 0.16f;
 
         public void Init()
         {
@@ -79,8 +84,17 @@ namespace Blackbox.Game
             _clips[Sfx.Name] = Make("name", 0.4f, (t, s) => (Sine(1318.5f, t) * 0.6f + Sine(1975.5f, t) * 0.3f) * Env(t, 0.003f, 0.25f) * 0.12f);
             _clips[Sfx.Tick] = Make("tick", 0.06f, (t, s) => Sine(1600f, t) * Env(t, 0.001f, 0.025f) * 0.08f);
 
-            _waves = new AudioClip[Waves.Forms * Waves.Pitches];
-            for (int v = 0; v < _waves.Length; v++) _waves[v] = WaveTone(Waves.Form(v), Waves.Pitch(v));
+            foreach (Medium m in new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave })
+            {
+                var clips = new AudioClip[Media.Size(m)];
+                for (int v = 0; v < clips.Length; v++)
+                {
+                    var data = SignalSound.Render(m, v, Rate);
+                    clips[v] = AudioClip.Create($"bb_signal_{Media.Key(m)}_{v}", data.Length, 1, Rate, false);
+                    clips[v].SetData(data, 0);
+                }
+                _signals[m] = clips;
+            }
 
             _music.clip = Drone();
         }
@@ -123,54 +137,67 @@ namespace Blackbox.Game
         }
 
         /// <summary>
-        /// Plays a wave signal as the tone it stands for. A new tone cuts off the
-        /// one before it, so clicking through waves never piles up.
+        /// Plays one signal value as its sound. A new signal cuts off the one
+        /// before it, and any sequence that was playing, so clicks never pile up.
         /// </summary>
-        public void PlayWave(int value)
+        public void PlaySignal(Medium medium, int value)
         {
-            if (_waves == null || _tone == null || value < 0 || value >= _waves.Length) return;
+            StopSignals();
+            PlaySignalClip(medium, value);
+        }
+
+        /// <summary>
+        /// Plays several values of one medium in turn, with a short gap between.
+        /// <paramref name="onEach"/> is called as each one starts, so the screen can
+        /// light up whatever is sounding; <paramref name="done"/> once the last one
+        /// has finished. Starting another signal stops the sequence, and then
+        /// <paramref name="done"/> is never called.
+        /// </summary>
+        public void PlaySignals(Medium medium, IList<int> values, Action<int> onEach = null, Action done = null)
+        {
+            StopSignals();
+            if (values == null || values.Count == 0)
+            {
+                done?.Invoke();
+                return;
+            }
+            _sequence = StartCoroutine(Sequence(medium, new List<int>(values), onEach, done));
+        }
+
+        /// <summary>True while a sequence from <see cref="PlaySignals"/> is playing.</summary>
+        public bool PlayingSignals => _sequence != null;
+
+        public void StopSignals()
+        {
+            if (_sequence != null) StopCoroutine(_sequence);
+            _sequence = null;
+            if (_tone != null) _tone.Stop();
+        }
+
+        IEnumerator Sequence(Medium medium, List<int> values, Action<int> onEach, Action done)
+        {
+            for (int i = 0; i < values.Count; i++)
+            {
+                onEach?.Invoke(i);
+                float length = PlaySignalClip(medium, values[i]);
+                yield return new WaitForSecondsRealtime(length + SignalGap);
+            }
+            _sequence = null;
+            done?.Invoke();
+        }
+
+        /// <returns>How long the sound lasts, in seconds.</returns>
+        float PlaySignalClip(Medium medium, int value)
+        {
+            if (_tone == null || !_signals.TryGetValue(medium, out var clips) || value < 0 || value >= clips.Length) return 0f;
             _tone.Stop();
-            _tone.clip = _waves[value];
+            _tone.clip = clips[value];
             _tone.volume = _master * _effects;
             _tone.Play();
+            return clips[value].length;
         }
 
         // ------------------------------------------------------------------ synthesis
-
-        /// <summary>The pitches the wave signals use: A3, E4 and A4.</summary>
-        static readonly float[] WavePitches = { 220f, 329.63f, 440f };
-
-        /// <summary>
-        /// One wave signal: a sine, square or saw, built from its harmonics up to
-        /// about 7 kHz so the edges stay soft and nothing aliases.
-        /// </summary>
-        static AudioClip WaveTone(int form, int pitch)
-        {
-            float hz = WavePitches[Mathf.Clamp(pitch, 0, WavePitches.Length - 1)];
-            int harmonics = form == 0 ? 1 : Mathf.Max(1, Mathf.FloorToInt(7000f / hz));
-            // Each form at roughly the same loudness.
-            float gain = form == 0 ? 0.26f : form == 1 ? 0.15f : 0.17f;
-            const float length = 0.8f;
-            return Make($"wave_{Waves.FormNames[form]}_{Waves.PitchNames[pitch]}", length, (t, s) =>
-            {
-                float v = 0f;
-                float w = 2f * Mathf.PI * hz * t;
-                if (form == 0) v = Mathf.Sin(w);
-                else if (form == 1)
-                {
-                    for (int k = 1; k <= harmonics; k += 2) v += Mathf.Sin(k * w) / k;
-                    v *= 4f / Mathf.PI;
-                }
-                else
-                {
-                    for (int k = 1; k <= harmonics; k++) v += ((k & 1) == 1 ? 1f : -1f) * Mathf.Sin(k * w) / k;
-                    v *= 2f / Mathf.PI;
-                }
-                // Soft attack, a held middle, and a gentle release.
-                float env = Mathf.Clamp01(t / 0.02f) * (t < 0.45f ? 1f : Mathf.Exp(-(t - 0.45f) * 9f));
-                return v * env * gain;
-            });
-        }
 
         sealed class SynthState
         {

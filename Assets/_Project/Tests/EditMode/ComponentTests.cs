@@ -149,5 +149,80 @@ namespace Blackbox.Tests
                     Assert.That(Waves.Pitch(v), Is.EqualTo(p));
                 }
         }
+
+        // ------------------------------------------------------------------ sounds
+
+        static IEnumerable<Medium> AllMedia() => new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave };
+
+        static float Rms(float[] samples)
+        {
+            double sum = 0;
+            foreach (var x in samples) sum += x * x;
+            return (float)System.Math.Sqrt(sum / System.Math.Max(1, samples.Length));
+        }
+
+        static float Peak(float[] samples) => samples.Length == 0 ? 0f : samples.Max(x => System.Math.Abs(x));
+
+        [TestCaseSource(nameof(AllMedia))]
+        public void EverySignalHasASound(Medium m)
+        {
+            foreach (int v in Media.All(m))
+            {
+                var samples = SignalSound.Render(m, v);
+                Assert.That(samples.Length, Is.EqualTo((int)System.Math.Ceiling(SignalSound.Duration(m, v) * SignalSound.SampleRate)), $"{m} {v}");
+                Assert.That(Peak(samples), Is.LessThanOrEqualTo(0.95f), $"{m} {v} clips");
+                Assert.That(Peak(samples), Is.GreaterThan(0.02f), $"{m} {v} is silent");
+                Assert.That(System.Math.Abs(samples[samples.Length - 1]), Is.LessThan(0.001f), $"{m} {v} ends with a click");
+            }
+        }
+
+        [TestCaseSource(nameof(AllMedia))]
+        public void SignalsSoundDifferent(Medium m)
+        {
+            // Two values of one medium must never sound the same.
+            var sounds = Media.All(m).Select(v => SignalSound.Render(m, v)).ToList();
+            for (int a = 0; a < sounds.Count; a++)
+                for (int b = a + 1; b < sounds.Count; b++)
+                {
+                    bool same = sounds[a].Length == sounds[b].Length && sounds[a].Zip(sounds[b], (x, y) => System.Math.Abs(x - y)).Max() < 0.01f;
+                    Assert.That(same, Is.False, $"{m}: {Media.Describe(m, a)} and {Media.Describe(m, b)} sound the same");
+                }
+        }
+
+        [Test]
+        public void OneBeepsAndZeroBarelySounds()
+        {
+            Assert.That(Rms(SignalSound.Render(Medium.Binary, 0)), Is.LessThan(Rms(SignalSound.Render(Medium.Binary, 1)) * 0.2f));
+            Assert.That(SignalSound.Duration(Medium.Binary, 0), Is.EqualTo(SignalSound.Duration(Medium.Binary, 1)), "so sequences keep time");
+        }
+
+        [Test]
+        public void DigitsLastAsManyBeatsAsTheyCount()
+        {
+            for (int v = 2; v <= 9; v++)
+                Assert.That(SignalSound.Duration(Medium.Decimal, v) - SignalSound.Duration(Medium.Decimal, v - 1), Is.EqualTo(SignalSound.Beat).Within(0.0001f), v.ToString());
+            Assert.That(Rms(SignalSound.Render(Medium.Decimal, 0)), Is.LessThan(Rms(SignalSound.Render(Medium.Decimal, 1)) * 0.3f), "0 is only a tap");
+        }
+
+        [Test]
+        public void ShapesClickOncePerCorner()
+        {
+            // Count the clicks: places where the sound jumps up after having faded.
+            for (int form = 1; form < Shapes.Forms; form++)
+                foreach (bool solid in new[] { false, true })
+                {
+                    var samples = SignalSound.Render(Medium.Shape, Shapes.Make(form, solid));
+                    int window = SignalSound.SampleRate / 200, clicks = 0;
+                    float previous = 0f;
+                    for (int start = 0; start + window <= samples.Length; start += window)
+                    {
+                        float level = 0f;
+                        for (int i = start; i < start + window; i++) level = System.Math.Max(level, System.Math.Abs(samples[i]));
+                        if (level > previous * 1.5f && level > 0.05f) clicks++;
+                        previous = level;
+                    }
+                    Assert.That(clicks, Is.EqualTo(Shapes.Corners[form]), $"{Media.Describe(Medium.Shape, Shapes.Make(form, solid))}");
+                }
+        }
     }
 }

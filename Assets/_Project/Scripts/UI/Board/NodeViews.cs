@@ -23,7 +23,8 @@ namespace Blackbox.UI.Board
 
         public float Width { get; private set; }
 
-        public static TargetChip Create(Transform parent, string label, Medium medium, int want, float scale, string name = "Target")
+        /// <param name="host">If given, clicking the chip plays the wanted value.</param>
+        public static TargetChip Create(Transform parent, string label, Medium medium, int want, float scale, IBoardHost host = null, string name = "Target")
         {
             float valueSize = 20f * scale;
             float valueW = ValueView.WidthFor(medium, valueSize);
@@ -52,10 +53,14 @@ namespace Blackbox.UI.Board
             x += valueW + gap;
             chip._mark = UIKit.Glyph(rt, "cross", Palette.Dim, 1.6f, "Mark");
             chip._mark.rectTransform.Centered(x + markW * 0.5f, 0f, markW, markW);
+            if (host != null) chip._value.MakePlayable(host.PlayValue);
             chip.Restyle();
             chip._initialised = true;
             return chip;
         }
+
+        /// <summary>Lights the wanted value while it sounds.</summary>
+        public void Ping() => _value.Ping();
 
         public void SetMatched(bool matched)
         {
@@ -150,7 +155,7 @@ namespace Blackbox.UI.Board
 
             if (def.Target.HasValue)
             {
-                view.Target = TargetChip.Create(rt, "END AT", medium, def.Target.Value, s);
+                view.Target = TargetChip.Create(rt, "END AT", medium, def.Target.Value, s, host);
                 float y = -view.Reach - 22f * s;
                 view.Target.GetComponent<RectTransform>().Centered(0f, y, view.Target.Width, 30f * s);
                 view.Reach = -y + 15f * s;
@@ -172,6 +177,9 @@ namespace Blackbox.UI.Board
             c.HoverChanged = on => { g.Tint = on ? Palette.Text : Palette.Dim; };
             return g;
         }
+
+        /// <summary>Lights the input's value while it sounds.</summary>
+        public void Ping() => _value.Ping();
 
         public void SetValue(int value, bool bump)
         {
@@ -319,7 +327,7 @@ namespace Blackbox.UI.Board
 
             if (def.Target.HasValue)
             {
-                view.Target = TargetChip.Create(rt, "SENDS", medium, def.Target.Value, s);
+                view.Target = TargetChip.Create(rt, "SENDS", medium, def.Target.Value, s, host);
                 float y = h * 0.5f + 21f * s;
                 view.Target.GetComponent<RectTransform>().Centered(0f, y, view.Target.Width, 30f * s);
                 view.ReachUp = y + 15f * s;
@@ -434,7 +442,7 @@ namespace Blackbox.UI.Board
 
             view._now = ValueView.Create(rt, medium, valueSize, medium == Medium.Wave, "Now");
             view._now.GetComponent<RectTransform>().Centered(nowX, 0f, valueW, valueSize);
-            if (medium == Medium.Wave) AddPlayer(view._now, host);
+            view._now.MakePlayable(host.PlayValue);
 
             if (target)
             {
@@ -444,7 +452,7 @@ namespace Blackbox.UI.Board
                 view._want = ValueView.Create(rt, medium, valueSize, medium == Medium.Wave, "Want");
                 view._want.GetComponent<RectTransform>().Centered(wantX, 0f, valueW, valueSize);
                 view._want.Set(def.Target.Value, ValueLook.Target);
-                if (medium == Medium.Wave) AddPlayer(view._want, host);
+                view._want.MakePlayable(host.PlayValue);
                 view._wantLabel = UIKit.Text(rt, "TARGET", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.26f), TextAnchor.MiddleCenter, "Target label");
                 view._wantLabel.rectTransform.Centered(wantX, h * 0.5f + 15f * s, 120f, 18f);
             }
@@ -452,14 +460,11 @@ namespace Blackbox.UI.Board
             return view;
         }
 
-        static void AddPlayer(ValueView value, IBoardHost host)
+        /// <summary>Lights the value that is sounding: the target, or what arrives now.</summary>
+        public void Ping(bool target)
         {
-            var hit = UIKit.Hit(value.transform, "Play");
-            hit.rectTransform.Stretch();
-            var c = hit.gameObject.AddComponent<Clickable>();
-            c.HoverSound = false;
-            c.ClickSound = Sfx.Hover;
-            c.Clicked = () => host.PlayValue(value.Value);
+            if (target && _want != null) _want.Ping();
+            else _now.Ping();
         }
 
         public void SetValue(int value, bool matched, bool flash)

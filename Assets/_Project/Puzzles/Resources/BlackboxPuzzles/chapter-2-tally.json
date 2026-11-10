@@ -6,7 +6,7 @@
   "title": "Tally",
   "medium": "decimal",
   "tagline": "Count what changes.",
-  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0.",
+  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0. A digit sounds as a tone that many beats long.",
   "unlock": {"after": "first-light", "solved": 4},
   "circuits": [
     {

@@ -220,8 +220,8 @@ namespace Blackbox.UI.Board
 
     /// <summary>
     /// A probe: a ring on a wire and a small card above it reading the signal the
-    /// wire carries. Click it (or right-click) to take it off. In the wave chapter,
-    /// clicking the card plays the wave instead.
+    /// wire carries. Clicking the card plays the signal; clicking the ring, or
+    /// right-clicking either, takes the probe off.
     /// </summary>
     public sealed class ProbeView : MonoBehaviour
     {
@@ -260,10 +260,11 @@ namespace Blackbox.UI.Board
             var cardClick = cardRt.gameObject.AddComponent<Clickable>();
             cardClick.HoverSound = false;
             cardClick.ClickSound = Sfx.Hover;
+            // The card plays what the probe reads; the dot on the wire takes the probe off.
             cardClick.Clicked = () =>
             {
-                if (medium == Medium.Wave) host?.PlayValue(view._value.Value);
-                else host?.ProbeClicked(view.Index);
+                host?.PlayValue(view._value.Value);
+                view._value.Ping();
             };
             cardClick.RightClicked = () => host?.ProbeClicked(view.Index);
             cardClick.HoverChanged = on => { view._card.StrokeColor = on ? Palette.Dim : Palette.Faint; host?.Hover(BoardItem.Probe, view.Index, on); };
@@ -287,6 +288,9 @@ namespace Blackbox.UI.Board
             }
             return view;
         }
+
+        /// <summary>Lights the probe's value while it sounds.</summary>
+        public void Ping() => _value.Ping();
 
         public void SetValue(int value, bool flash)
         {

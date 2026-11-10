@@ -191,6 +191,7 @@ namespace Blackbox.Tests
             save.LastPuzzle = "b";
             save.Prefs.MusicVolume = 0.25f;
             save.Prefs.ReduceMotion = true;
+            save.Prefs.SignalSounds = false;
 
             var copy = SaveData.FromJson(save.ToJson());
             Assert.That(copy.Solved, Does.Contain("a"));
@@ -205,6 +206,8 @@ namespace Blackbox.Tests
             Assert.That(copy.LastPuzzle, Is.EqualTo("b"));
             Assert.That(copy.Prefs.MusicVolume, Is.EqualTo(0.25f).Within(0.0001f));
             Assert.That(copy.Prefs.ReduceMotion, Is.True);
+            Assert.That(copy.Prefs.SignalSounds, Is.False);
+            Assert.That(new SaveData().Prefs.SignalSounds, Is.True, "on by default");
         }
 
         [Test]

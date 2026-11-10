@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Blackbox.Components;
 using Blackbox.Game;
 using Blackbox.Puzzles;
+using Blackbox.UI.Board;
 using UnityEngine;
 
 namespace Blackbox.UI.Screens
@@ -93,7 +95,10 @@ namespace Blackbox.UI.Screens
             y += 22f;
             AddToggle("FULLSCREEN", y += step, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); });
             AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); });
-            y += 10f;
+            AddToggle("SIGNAL SOUNDS", y += step, prefs.SignalSounds, v => { prefs.SignalSounds = v; Game.MarkDirty(); });
+            var note = UIKit.Text(Root, "PLAYS EVERY OUTPUT A CHANGE REACHES", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            note.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
+            y += 40f;
             UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, y + 30f, Palette.Rule);
             AddAction("ERASE PROGRESS", y += step + 10f, true, () =>
                 Game.Confirm("Erase every solved circuit, every circuit in progress and every note you've written? Settings are kept.", "ERASE", true, () =>
@@ -296,10 +301,11 @@ namespace Blackbox.UI.Screens
                 "Each block keeps a hidden rule. Click it, or one of its dots, to change what it does. A padlock means it can't be changed.",
                 "Inputs with arrows can be changed; the rest are fixed. Sometimes an input has to end at a target of its own.",
                 "Wires hide their signals. Click a wire to put a probe on it and read what it carries. Each circuit has only so many.",
+                "Every signal has a sound. Click any value to hear it. HEAR GOAL plays the targets and HEAR NOW plays the outputs, so you can compare them by ear.",
                 "Use the pen to label blocks and note down what you learn. Notes stay with the circuit.",
             };
             if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
-            float y = 260f;
+            float y = 240f;
             foreach (var idea in ideas)
             {
                 var t = UIKit.Text(Root, idea, TextStyle.Body.WithSize(21), TextAnchor.UpperLeft);
@@ -308,7 +314,7 @@ namespace Blackbox.UI.Screens
                 var dot = UIKit.Shape(Root, "Dot", ShapeKind.Circle);
                 dot.rectTransform.At(226f, y + 15f, 6f, 6f);
                 dot.Style(Paint.Signal, Color.white, Paint.None, Color.clear);
-                y += 98f;
+                y += 92f;
             }
 
             string[] keys =
@@ -316,7 +322,9 @@ namespace Blackbox.UI.Screens
                 "CLICK  ·  SCROLL", "change a block or input",
                 "RIGHT-CLICK", "change it the other way",
                 "CLICK A WIRE", "place a probe",
-                "CLICK A PROBE", "take it off",
+                "CLICK A VALUE", "hear it",
+                "G  ·  N", "hear the goal, or the outputs now",
+                "CLICK A PROBE'S DOT", "take it off",
                 "D  ·  E", "pen  ·  eraser",
                 "RIGHT-DRAG", "rub out a note",
                 "Z  ·  BACKSPACE", "undo",
@@ -379,12 +387,13 @@ namespace Blackbox.UI.Screens
             if (!string.IsNullOrEmpty(Chapter.Signals))
             {
                 var signals = UIKit.Text(Root, Chapter.Signals, TextStyle.Body.WithSize(19).WithColor(Palette.Dim));
-                signals.rectTransform.At(cx, 640f, 1000f, 28f);
+                signals.horizontalOverflow = HorizontalWrapMode.Wrap;
+                signals.rectTransform.At(cx, 654f, 900f, 56f);
             }
 
             var line = UIKit.Add<PathGraphic>(Root, "Line");
             line.raycastTarget = false;
-            line.rectTransform.At(cx, 700f, 480f, 10f);
+            line.rectTransform.At(cx, 716f, 480f, 10f);
             line.BaseColor = Palette.Rule;
             line.BaseWidth = 1f;
             line.LitWidth = 1.6f;
@@ -393,6 +402,8 @@ namespace Blackbox.UI.Screens
             line.SetPoints(new List<Vector2> { new Vector2(-240f, 0f), new Vector2(240f, 0f) });
             line.SetLit(0f, 0.0001f);
             Tweener.Run(line, "draw", 1.6f, t => line.SetLit(0f, Mathf.Max(0.0001f, t)), Ease.InOutCubic, 0.35f);
+
+            BuildSamples(cx);
 
             _prompt = UIKit.Text(Root, "PRESS ANY KEY", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
             _prompt.rectTransform.At(cx, 960f, 400f, 18f);
@@ -406,6 +417,49 @@ namespace Blackbox.UI.Screens
 
             _shownAt = Time.unscaledTime;
             App.Sound(Sfx.Unlock, 0.75f, 0.8f);
+        }
+
+        /// <summary>A few of the chapter's signals, played in turn so the player hears what they sound like.</summary>
+        void BuildSamples(float cx)
+        {
+            var m = Chapter.Medium;
+            int[] values;
+            switch (m)
+            {
+                case Medium.Binary: values = new[] { 1, 0, 1, 1 }; break;
+                case Medium.Decimal: values = new[] { 1, 3, 5 }; break;
+                case Medium.Shape: values = new[] { Shapes.Make(0, true), Shapes.Make(1, false), Shapes.Make(2, true), Shapes.Make(3, false) }; break;
+                default: values = new[] { Waves.Make(Waves.Sine, 0), Waves.Make(Waves.SquareWave, 1), Waves.Make(Waves.Saw, 2) }; break;
+            }
+            float size = m == Medium.Wave ? 38f : 40f;
+            float pitch = ValueView.WidthFor(m, size) + 56f;
+            var row = UIKit.Rect(Root, "Samples").At(cx, 796f, 0f, 0f);
+            var views = new List<ValueView>();
+            for (int i = 0; i < values.Length; i++)
+            {
+                var v = ValueView.Create(row, m, size, m == Medium.Wave);
+                v.GetComponent<RectTransform>().Centered((i - (values.Length - 1) * 0.5f) * pitch, 0f, ValueView.WidthFor(m, size), size);
+                v.Set(values[i], ValueLook.Live);
+                v.MakePlayable(value => App.Audio?.PlaySignal(m, value));
+                views.Add(v);
+            }
+            var hint = UIKit.Text(Root, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
+            hint.rectTransform.At(cx, 862f, 600f, 16f);
+
+            var group = row.Group();
+            group.alpha = 0f;
+            Tweener.Run(row, "show", 0.6f, t => group.alpha = t, Ease.OutQuad, 1.2f);
+            Tweener.After(this, "samples", 1.9f, () =>
+            {
+                if (App.Audio != null) App.Audio.PlaySignals(m, values, i => { if (views[i] != null) views[i].Ping(); });
+            });
+        }
+
+        public override void OnClosing()
+        {
+            Tweener.Kill(this);
+            App.Audio?.StopSignals();
+            base.OnClosing();
         }
 
         void TryDismiss()
