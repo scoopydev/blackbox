@@ -187,6 +187,9 @@ namespace Blackbox.Tests
             var stroke = new InkStroke { Color = 2 };
             stroke.Points.AddRange(new[] { 100, 200, 104, 207, 110, 215 });
             save.InkFor("b").Add(stroke);
+            const string typed = "B2 is \"and\" when 0\nthen or? \u00e9\u2192\\ done";
+            save.NotesFor("b").Add(new TextNote { X = 640, Y = 300, Color = 1, Text = typed });
+            save.NotesFor("b").Add(new TextNote { X = 10, Y = 10, Text = "   " });
             save.SeenIntros.Add("first-light");
             save.LastPuzzle = "b";
             save.Prefs.MusicVolume = 0.25f;
@@ -202,6 +205,11 @@ namespace Blackbox.Tests
             Assert.That(copy.Ink["b"].Count, Is.EqualTo(1));
             Assert.That(copy.Ink["b"][0].Color, Is.EqualTo(2));
             Assert.That(copy.Ink["b"][0].Points, Is.EqualTo(stroke.Points));
+            Assert.That(copy.Notes["b"].Count, Is.EqualTo(1), "blank notes aren't kept");
+            Assert.That(copy.Notes["b"][0].Text, Is.EqualTo(typed));
+            Assert.That(copy.Notes["b"][0].X, Is.EqualTo(640));
+            Assert.That(copy.Notes["b"][0].Y, Is.EqualTo(300));
+            Assert.That(copy.Notes["b"][0].Color, Is.EqualTo(1));
             Assert.That(copy.SeenIntros, Does.Contain("first-light"));
             Assert.That(copy.LastPuzzle, Is.EqualTo("b"));
             Assert.That(copy.Prefs.MusicVolume, Is.EqualTo(0.25f).Within(0.0001f));
@@ -213,10 +221,11 @@ namespace Blackbox.Tests
         [Test]
         public void DamagedSaveFallsBackToDefaults()
         {
-            var save = SaveData.FromJson(@"{ ""version"": 2, ""solved"": 5, ""circuits"": { ""a"": 3 }, ""ink"": { ""a"": [""x"", ""1:"", 7] }, ""preferences"": { ""masterVolume"": 9 } }");
+            var save = SaveData.FromJson(@"{ ""version"": 2, ""solved"": 5, ""circuits"": { ""a"": 3 }, ""ink"": { ""a"": [""x"", ""1:"", 7] }, ""notes"": { ""a"": [3, { ""t"": 4 }, { ""t"": "" "" }], ""b"": 7 }, ""preferences"": { ""masterVolume"": 9 } }");
             Assert.That(save.Solved, Is.Empty);
             Assert.That(save.Circuits, Is.Empty);
             Assert.That(save.Ink, Is.Empty);
+            Assert.That(save.Notes, Is.Empty);
             Assert.That(save.Prefs.MasterVolume, Is.EqualTo(1f));
         }
 

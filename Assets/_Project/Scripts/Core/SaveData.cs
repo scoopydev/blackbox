@@ -69,6 +69,14 @@ namespace Blackbox.Core
         }
     }
 
+    /// <summary>A typed note: its text, its colour, and where its top-left corner sits, in frame coordinates (y down).</summary>
+    public sealed class TextNote
+    {
+        public int X, Y;
+        public int Color;
+        public string Text = string.Empty;
+    }
+
     /// <summary>
     /// Everything that persists between sessions. Plain C#, written as JSON by
     /// <see cref="ToJson"/> so the format is readable and survives renames.
@@ -85,6 +93,8 @@ namespace Blackbox.Core
         public readonly Dictionary<string, CircuitState> Circuits = new Dictionary<string, CircuitState>();
         /// <summary>The player's pen notes on each circuit.</summary>
         public readonly Dictionary<string, List<InkStroke>> Ink = new Dictionary<string, List<InkStroke>>();
+        /// <summary>The player's typed notes on each circuit.</summary>
+        public readonly Dictionary<string, List<TextNote>> Notes = new Dictionary<string, List<TextNote>>();
         /// <summary>Chapters whose title card has been shown.</summary>
         public readonly HashSet<string> SeenIntros = new HashSet<string>();
         public string LastPuzzle;
@@ -102,6 +112,12 @@ namespace Blackbox.Core
             return list;
         }
 
+        public List<TextNote> NotesFor(string puzzleId)
+        {
+            if (!Notes.TryGetValue(puzzleId, out var list)) Notes[puzzleId] = list = new List<TextNote>();
+            return list;
+        }
+
         /// <summary>Clears progress, circuits and notes but keeps preferences.</summary>
         public void ResetProgress()
         {
@@ -109,6 +125,7 @@ namespace Blackbox.Core
             BestMoves.Clear();
             Circuits.Clear();
             Ink.Clear();
+            Notes.Clear();
             SeenIntros.Clear();
             LastPuzzle = null;
         }
@@ -155,6 +172,24 @@ namespace Blackbox.Core
                 ink.Set(id, arr);
             }
             root.Set("ink", ink);
+
+            var notes = JsonValue.NewObject();
+            foreach (var id in Sorted(Notes.Keys))
+            {
+                var arr = JsonValue.NewArray();
+                foreach (var note in Notes[id])
+                {
+                    if (string.IsNullOrWhiteSpace(note.Text)) continue;
+                    var obj = JsonValue.NewObject();
+                    obj.Set("x", note.X);
+                    obj.Set("y", note.Y);
+                    obj.Set("c", note.Color);
+                    obj.Set("t", JsonValue.From(note.Text));
+                    arr.Add(obj);
+                }
+                if (arr.Count > 0) notes.Set(id, arr);
+            }
+            root.Set("notes", notes);
 
             var intros = JsonValue.NewArray();
             foreach (var id in Sorted(SeenIntros)) intros.Add(JsonValue.From(id));
@@ -210,6 +245,16 @@ namespace Blackbox.Core
                         if (stroke != null) list.Add(stroke);
                     }
                     if (list.Count > 0) data.Ink[m.Key] = list;
+                }
+                foreach (var m in root["notes"].Members)
+                {
+                    var list = new List<TextNote>();
+                    foreach (var n in m.Value.Items)
+                    {
+                        if (!n.IsObject || !n["t"].IsString || string.IsNullOrWhiteSpace(n["t"].AsString())) continue;
+                        list.Add(new TextNote { X = n["x"].AsInt(), Y = n["y"].AsInt(), Color = n["c"].AsInt(), Text = n["t"].AsString() });
+                    }
+                    if (list.Count > 0) data.Notes[m.Key] = list;
                 }
                 foreach (var v in root["seenIntros"].Items) if (v.IsString) data.SeenIntros.Add(v.AsString());
                 data.LastPuzzle = root["lastPuzzle"].AsString();

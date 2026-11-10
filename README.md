@@ -10,7 +10,7 @@ The core loop is experimentation:
 
 1. **Change** – switch a block to another state, or change an input that isn't fixed.
 2. **Probe** – place one of a few probes on a wire to read the signal inside.
-3. **Deduce** – form a theory about each block's hidden rule, and write it on the circuit with the pen.
+3. **Deduce** – form a theory about each block's hidden rule, and write it on the circuit with the pen or the text tool.
 4. **Solve** – use what you've learned to meet every target.
 
 Each chapter uses a different kind of signal: bits, digits, shapes, and sounds. Every signal can be heard as well as seen, including the goal.
@@ -36,11 +36,12 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | Click any value | Hear it: every signal has a sound |
 | G, N | Hear the goal, or hear what the outputs give now |
 | D, E | Pen and eraser. Right-drag rubs out while the pen is on |
-| Z or Backspace | Undo (with the pen on, undo the last stroke) |
+| T | Text tool: click anywhere and type a note. Enter finishes it, Shift+Enter starts a new line, and dragging a note moves it |
+| Z or Backspace | Undo (with a note tool on, take away the last note) |
 | Tab, then Left and Right | Choose a block or input, then change it, without the mouse |
 | Enter | Next circuit, once solved |
 | H | How to play |
-| Esc | Put the pen down, or open the menu |
+| Esc | Finish typing, put the pen down, or open the menu |
 
 There are four chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes) and *Resonance* (sounds). See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
@@ -56,7 +57,7 @@ Assets/
       Puzzles/             Loader, auto layout, solver, goal sentences, progress, play session (Blackbox.Core)
       Game/                BlackboxApp (startup, screens, saving), input, audio, tweens
       UI/Void/             The visual kit: glowing wires, shapes, glyphs, type, buttons
-      UI/Board/            The circuit on screen: nodes, targets, wires, probes, the pen
+      UI/Board/            The circuit on screen: nodes, targets, wires, probes, pen and typed notes
       UI/Screens/          Title, chapter map, circuit screen, overlays
       Editor/              The BLACKBOX menu
     Puzzles/Resources/BlackboxPuzzles/   The circuits, as JSON

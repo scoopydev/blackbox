@@ -11,7 +11,7 @@ Every circuit has **inputs** on the left, **outputs** on the right, and **blocks
 2. **Change things.** Clicking a block steps it to its next state, clicking one of its dots jumps to that state, and right-clicking or scrolling goes the other way. Inputs with arrows can be changed the same way. Fixed inputs are drawn dashed, and a locked block has a padlock and a dashed outline: neither can be changed.
 3. **Probe.** Wires hide their signals. Clicking a wire puts a probe on it, which reads the signal there and keeps reading it live as things change. Each circuit allows a set number of probes, from none to two. Clicking a probe takes it off.
 4. **Listen.** Every signal has a sound as well as a look (see below). Clicking any value on the board plays it. **HEAR GOAL** (G) plays every target in the order the goal names them, lighting each one as it sounds, and **HEAR NOW** (N) plays what the outputs give now, so the two can be compared by ear. While playing, each change sounds out the input that was set and every output it reached.
-5. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks, and the eraser (E) or a right-drag rubs notes out. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
+5. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike, and undo takes away the newest. Notes are kept with the circuit, so a player can label blocks and write down what they've learned.
 6. **Solve.** The moment every target is met, the whole circuit lights up and the next circuit is offered.
 
 Every change sends a pulse of light along the wires downstream of what changed, so the player can see what it reaches, though not what it carries.
@@ -154,7 +154,7 @@ Tests/EditMode/ NUnit tests for everything in Core, Components, Circuit and Puzz
 * **No scene setup is needed.** If the open scene has no `BlackboxApp`, one is created when it loads, so pressing Play in any scene starts the game. **BLACKBOX → Create Main Scene** makes a proper scene for builds.
 * **Screens** live on a stack. Opening a screen replaces the stack with a fade. Overlays (pause, settings, confirm, help, a chapter's title card) sit on top, behind a dark veil. Only the top screen gets keys.
 * **Input** works with either backend: the Input System package or the old Input Manager.
-* **Saving** writes `blackbox-save.json` to `Application.persistentDataPath`. It goes through a temporary file, so a crash can't leave half a save. It stores solved circuits and best move counts, where the player left each circuit (inputs, block states and probes), their pen notes, which chapter cards have been seen, and preferences. Saves from before the redesign keep only their preferences.
+* **Saving** writes `blackbox-save.json` to `Application.persistentDataPath`. It goes through a temporary file, so a crash can't leave half a save. It stores solved circuits and best move counts, where the player left each circuit (inputs, block states and probes), their notes (pen strokes and typed text), which chapter cards have been seen, and preferences. Saves from before the redesign keep only their preferences.
 
 ### Evaluation
 

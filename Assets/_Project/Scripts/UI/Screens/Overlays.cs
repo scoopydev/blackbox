@@ -302,7 +302,7 @@ namespace Blackbox.UI.Screens
                 "Inputs with arrows can be changed; the rest are fixed. Sometimes an input has to end at a target of its own.",
                 "Wires hide their signals. Click a wire to put a probe on it and read what it carries. Each circuit has only so many.",
                 "Every signal has a sound. Click any value to hear it. HEAR GOAL plays the targets and HEAR NOW plays the outputs, so you can compare them by ear.",
-                "Use the pen to label blocks and note down what you learn. Notes stay with the circuit.",
+                "Draw with the pen, or type with the text tool, to label blocks and note down what you learn. Notes stay with the circuit.",
             };
             if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
             float y = 240f;
@@ -325,7 +325,7 @@ namespace Blackbox.UI.Screens
                 "CLICK A VALUE", "hear it",
                 "G  ·  N", "hear the goal, or the outputs now",
                 "CLICK A PROBE'S DOT", "take it off",
-                "D  ·  E", "pen  ·  eraser",
+                "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
                 "RIGHT-DRAG", "rub out a note",
                 "Z  ·  BACKSPACE", "undo",
                 "TAB  ·  LEFT RIGHT", "choose something, change it",

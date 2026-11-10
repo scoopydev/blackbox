@@ -26,7 +26,7 @@ namespace Blackbox.UI.Screens
 
         VoidText _title, _record, _status, _moves;
         VoidText _goal, _matchedValue, _matchedLabel;
-        PillButton _pen, _eraser, _undo, _reset;
+        PillButton _pen, _eraser, _textTool, _undo, _reset;
         readonly List<ShapeGraphic> _swatches = new List<ShapeGraphic>();
         RectTransform _probeRow;
         readonly List<ShapeGraphic> _probeDots = new List<ShapeGraphic>();
@@ -77,8 +77,14 @@ namespace Blackbox.UI.Screens
             _board = BoardView.Create(Root, _session, this);
             _lastOutputs = CurrentOutputs();
 
-            _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
+            _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
+            _ink.TypingChanged = typing =>
+            {
+                if (typing) Say("Typing a note. Enter finishes it, Shift+Enter starts a new line.", 600f);
+                else if (_ink.Tool == InkTool.Text) Say("Click anywhere to start another note, or drag a note to move it.", 3f);
+                else Hush();
+            };
 
             _hint = p.Hint ?? "";
             _status = UIKit.Text(Root, _hint, TextStyle.Body.WithSize(19), TextAnchor.MiddleCenter, "Status");
@@ -152,11 +158,14 @@ namespace Blackbox.UI.Screens
             _eraser = PillButton.Create(Root, "ERASE", Left + 132f + 14f + 75f, ToolsY, 150f, 46f, false, "eraser");
             _eraser.Click.ClickSound = Sfx.Hover;
             _eraser.Click.Clicked = () => SetTool(_ink.Tool == InkTool.Eraser ? InkTool.Off : InkTool.Eraser);
+            _textTool = PillButton.Create(Root, "TEXT", Left + 132f + 14f + 150f + 14f + 66f, ToolsY, 132f, 46f, false, "text");
+            _textTool.Click.ClickSound = Sfx.Hover;
+            _textTool.Click.Clicked = () => SetTool(_ink.Tool == InkTool.Text ? InkTool.Off : InkTool.Text);
 
             for (int i = 0; i < InkLayer.Inks.Length; i++)
             {
                 int index = i;
-                var rt = UIKit.Rect(Root, "Swatch " + i).At(Left + 346f + i * 36f, ToolsY, 32f, 46f);
+                var rt = UIKit.Rect(Root, "Swatch " + i).At(Left + 492f + i * 36f, ToolsY, 32f, 46f);
                 var dot = UIKit.Shape(rt, "Dot", ShapeKind.Circle);
                 dot.rectTransform.Centered(0f, 0f, 18f, 18f);
                 _swatches.Add(dot);
@@ -167,18 +176,20 @@ namespace Blackbox.UI.Screens
                 c.Clicked = () =>
                 {
                     _ink.Colour = index;
-                    if (_ink.Tool != InkTool.Pen) SetTool(InkTool.Pen);
+                    // A swatch picks up the pen, unless the text tool is out: then it colours the text.
+                    if (_ink.Tool != InkTool.Pen && _ink.Tool != InkTool.Text) SetTool(InkTool.Pen);
                     RefreshTools();
                 };
             }
 
-            Chrome.TextButton(Root, "CLEAR NOTES", Left + 464f, ToolsY, false, () =>
+            Chrome.TextButton(Root, "CLEAR NOTES", Left + 610f, ToolsY, false, () =>
             {
-                if (_ink.StrokeCount == 0) { Say("There are no notes on this circuit yet. Press D for the pen.", 3f); return; }
+                _ink.FinishTyping();
+                if (_ink.ItemCount == 0) { Say("There are no notes on this circuit yet. Press D for the pen, or T to type.", 3f); return; }
                 Game.Confirm("Rub out every note on this circuit?", "CLEAR", true, () => { _ink.Clear(); Say("Notes cleared.", 2.5f); });
             });
 
-            Chrome.KeyHints(Root, Left, HintsY, false, "D", "PEN", "E", "ERASE", "RIGHT-DRAG", "RUB OUT");
+            Chrome.KeyHints(Root, Left, HintsY, false, "D", "PEN", "E", "ERASE", "T", "TEXT", "RIGHT-DRAG", "RUB OUT");
         }
 
         /// <summary>How many probes the circuit has, and how many are placed: one dot each, lit when in use.</summary>
@@ -186,7 +197,7 @@ namespace Blackbox.UI.Screens
         {
             int n = Puzzle.Probes;
             _probeRow = UIKit.Rect(parent, "Probes").At(VoidFrame.Width * 0.5f, ToolsY, 0f, 0f);
-            var label = UIKit.Text(_probeRow, n == 0 ? "NO PROBES ON THIS CIRCUIT" : "PROBES", TextStyle.Label.WithSize(13).WithColor(n == 0 ? Palette.Faint : Palette.Dim), TextAnchor.MiddleLeft, "Label");
+            var label = UIKit.Text(_probeRow, n == 0 ? "NO PROBES" : "PROBES", TextStyle.Label.WithSize(13).WithColor(n == 0 ? Palette.Faint : Palette.Dim), TextAnchor.MiddleLeft, "Label");
             float labelWidth = label.MeasureWidth();
             const float gap = 18f, pitch = 26f, dot = 14f;
             float total = labelWidth + (n > 0 ? gap + (n - 1) * pitch + dot : 0f);
@@ -255,6 +266,7 @@ namespace Blackbox.UI.Screens
         {
             _pen.Active = _ink.Tool == InkTool.Pen;
             _eraser.Active = _ink.Tool == InkTool.Eraser;
+            _textTool.Active = _ink.Tool == InkTool.Text;
             for (int i = 0; i < _swatches.Count; i++)
             {
                 bool chosen = i == _ink.Colour;
@@ -288,6 +300,14 @@ namespace Blackbox.UI.Screens
                 _solved.alpha = Mathf.Lerp(fromA, on ? 1f : 0f, t);
                 _controls.alpha = Mathf.Lerp(fromB, on ? 0f : 1f, t);
             }, Ease.OutCubic, on && !quiet ? 0.3f : 0f);
+        }
+
+        /// <summary>Puts the circuit's hint back in the status line at once.</summary>
+        void Hush()
+        {
+            Tweener.Kill(this, "say");
+            _status.text = _hint;
+            _status.color = TextStyle.Body.Color;
         }
 
         void Say(string message, float seconds = 4.5f)
@@ -444,6 +464,7 @@ namespace Blackbox.UI.Screens
             App.Sound(tool == InkTool.Off ? Sfx.Close : Sfx.Open, 1.5f, 0.5f);
             if (tool == InkTool.Pen) Say("Pen: draw and write anywhere on the circuit. Right-drag rubs out. Press D or Esc to put it down.", 4.5f);
             else if (tool == InkTool.Eraser) Say("Eraser: drag over a note to rub it out. Press E or Esc to put it down.", 4f);
+            else if (tool == InkTool.Text) Say("Text: click anywhere on the circuit and type. Drag a note to move it. Press T or Esc to put it down.", 5f);
         }
 
         string NameOfInput(int i) => Puzzle.Inputs[i].Id;
@@ -650,6 +671,12 @@ namespace Blackbox.UI.Screens
 
         public override void HandleInput()
         {
+            // While a note is being typed, every key belongs to the note.
+            if (_ink.Typing)
+            {
+                _ink.HandleTyping();
+                return;
+            }
             if (GameInput.Down(Key.Escape))
             {
                 if (_ink.Tool != InkTool.Off) SetTool(InkTool.Off);
@@ -665,11 +692,14 @@ namespace Blackbox.UI.Screens
             }
             if (GameInput.Down(Key.D)) SetTool(_ink.Tool == InkTool.Pen ? InkTool.Off : InkTool.Pen);
             if (GameInput.Down(Key.E)) SetTool(_ink.Tool == InkTool.Eraser ? InkTool.Off : InkTool.Eraser);
+            if (GameInput.Down(Key.T)) SetTool(_ink.Tool == InkTool.Text ? InkTool.Off : InkTool.Text);
+            // Backspace straight after finishing a note carries on editing it.
+            if (GameInput.Down(Key.Backspace) && _ink.ResumeTyping()) return;
             if (GameInput.Down(Key.Backspace) || GameInput.Down(Key.Z))
             {
                 if (_ink.Tool != InkTool.Off)
                 {
-                    if (_ink.UndoStroke()) App.Sound(Sfx.Close, 1.6f, 0.4f);
+                    if (_ink.UndoLast()) App.Sound(Sfx.Close, 1.6f, 0.4f);
                 }
                 else Undo();
             }
@@ -684,6 +714,7 @@ namespace Blackbox.UI.Screens
         void OpenPause()
         {
             StopListening();
+            _ink.FinishTyping();
             var pause = Game.Screens.Create<PauseOverlay>();
             pause.Owner = this;
             Game.Screens.Push(pause);
@@ -691,6 +722,7 @@ namespace Blackbox.UI.Screens
 
         void OpenHelp()
         {
+            _ink.FinishTyping();
             var help = Game.Screens.Create<HelpOverlay>();
             help.Chapter = Puzzle.Chapter;
             Game.Screens.Push(help);
