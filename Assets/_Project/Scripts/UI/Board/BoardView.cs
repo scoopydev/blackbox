@@ -210,6 +210,12 @@ namespace Blackbox.UI.Board
             return newlyMatched;
         }
 
+        /// <summary>Debug: writes what every block does under it, or takes the words away.</summary>
+        public void SetShowRules(bool on)
+        {
+            foreach (var b in Blocks) b.ShowRule = on;
+        }
+
         /// <summary>Hides every output, probe reading and target mark, for the start of a run.</summary>
         public void Conceal()
         {

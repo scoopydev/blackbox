@@ -79,6 +79,7 @@ namespace Blackbox.UI.Screens
             BuildHeader();
             BuildGoal();
             _board = BoardView.Create(Root, _session, this, hideUntilRun: true);
+            _board.SetShowRules(Game.Save.Prefs.DebugRules);
 
             _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
@@ -792,6 +793,8 @@ namespace Blackbox.UI.Screens
 
         public override void OnUncovered()
         {
+            // Settings may have changed while the menu was open.
+            _board.SetShowRules(Game.Save.Prefs.DebugRules);
             _hoverIndex = -1;
             RefreshCounters();
         }

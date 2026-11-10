@@ -214,6 +214,7 @@ namespace Blackbox.Tests
             save.Prefs.MusicVolume = 0.25f;
             save.Prefs.ReduceMotion = true;
             save.Prefs.SignalSounds = false;
+            save.Prefs.DebugRules = true;
 
             var copy = SaveData.FromJson(save.ToJson());
             Assert.That(copy.Solved, Does.Contain("a"));
@@ -235,6 +236,8 @@ namespace Blackbox.Tests
             Assert.That(copy.Prefs.ReduceMotion, Is.True);
             Assert.That(copy.Prefs.SignalSounds, Is.False);
             Assert.That(new SaveData().Prefs.SignalSounds, Is.True, "on by default");
+            Assert.That(copy.Prefs.DebugRules, Is.True);
+            Assert.That(new SaveData().Prefs.DebugRules, Is.False, "off by default");
         }
 
         [Test]

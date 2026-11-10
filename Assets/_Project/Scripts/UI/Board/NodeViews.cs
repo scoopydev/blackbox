@@ -234,7 +234,7 @@ namespace Blackbox.UI.Board
         readonly List<Vector2> _inPorts = new List<Vector2>();
 
         ShapeGraphic _outline;
-        VoidText _code, _id;
+        VoidText _code, _id, _rule;
         GlyphGraphic _lock;
         readonly List<ShapeGraphic> _pips = new List<ShapeGraphic>();
         readonly List<ShapeGraphic> _ports = new List<ShapeGraphic>();
@@ -328,6 +328,13 @@ namespace Blackbox.UI.Board
             view.ReachUp = h * 0.5f;
             view.ReachDown = h * 0.5f + 24f * s;
 
+            // Debug only: the rule of the current state, under the state dots.
+            view._rule = UIKit.Text(rt, "", TextStyle.Body.WithSize(Mathf.Max(11, Mathf.RoundToInt(14 * s))).WithColor(Palette.Dim), TextAnchor.UpperCenter, "Rule");
+            view._rule.horizontalOverflow = HorizontalWrapMode.Wrap;
+            view._rule.LineHeight = 1.25f;
+            view._rule.rectTransform.Centered(0f, -h * 0.5f - 30f * s - 22f, Mathf.Max(w + 70f, 230f * s), 44f);
+            view._rule.enabled = false;
+
             if (def.Target.HasValue)
             {
                 view.Target = TargetChip.Create(rt, "SENDS", medium, def.Target.Value, s, host);
@@ -343,9 +350,30 @@ namespace Blackbox.UI.Board
         public void SetState(int state, bool bump)
         {
             _state = state;
+            if (_rule.enabled) _rule.text = RuleText;
             Restyle();
             if (bump && !App.ReduceMotion)
                 Tweener.Run(this, "bump", 0.28f, t => { _bump = 1f - t; Restyle(); }, Ease.OutQuad);
+        }
+
+        /// <summary>Debug: writes what the block does in its current state under it.</summary>
+        public bool ShowRule
+        {
+            get => _rule.enabled;
+            set
+            {
+                _rule.enabled = value;
+                if (value) _rule.text = RuleText;
+            }
+        }
+
+        string RuleText
+        {
+            get
+            {
+                var spoilers = Def.Kind.Spoilers;
+                return _state >= 0 && _state < spoilers.Count ? spoilers[_state] : "";
+            }
         }
 
         /// <summary>The signal passing through on a run: the outline lights and fades.</summary>

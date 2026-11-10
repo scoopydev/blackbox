@@ -173,7 +173,7 @@ New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTes
 
 ## Spoilers: the rules
 
-The game shows only a block's kind code, its ports and its state dots. Port 0 is the top input.
+The game shows only a block's kind code, its ports and its state dots. Port 0 is the top input. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes the current state's rule from this table under every block on the circuit screen.
 
 | Kind | Inputs | States, in order |
 |---|---|---|

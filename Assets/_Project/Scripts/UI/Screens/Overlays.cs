@@ -99,6 +99,10 @@ namespace Blackbox.UI.Screens
             var note = UIKit.Text(Root, "PLAYS SIGNALS AS YOU SET INPUTS AND RUN", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
             note.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
             y += 40f;
+            AddToggle("DEBUG: BLOCK RULES", y += step, prefs.DebugRules, v => { prefs.DebugRules = v; Game.MarkDirty(); });
+            var debugNote = UIKit.Text(Root, "WRITES WHAT EVERY BLOCK DOES UNDER IT", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            debugNote.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
+            y += 40f;
             UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, y + 30f, Palette.Rule);
             AddAction("ERASE PROGRESS", y += step + 10f, true, () =>
                 Game.Confirm("Erase every solved circuit, every circuit in progress and every note you've written? Settings are kept.", "ERASE", true, () =>
