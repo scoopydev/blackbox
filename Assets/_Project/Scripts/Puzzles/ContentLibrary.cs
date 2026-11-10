@@ -63,6 +63,18 @@ namespace Blackbox.Puzzles
                     foreach (var p in c.Puzzles) yield return p;
             }
         }
+
+        /// <summary>
+        /// The check the game runs at startup: every pre-wired circuit must compile
+        /// with all its wires in place. Wired circuits are skipped. They start with
+        /// no wires, and wiring every block input is the player's job, checked when
+        /// they press RUN. Throws on the first circuit that fails.
+        /// </summary>
+        public void CheckCircuits()
+        {
+            foreach (var p in AllPuzzles)
+                if (!p.Wiring) new Circuits.CompiledCircuit(p);
+        }
     }
 
     /// <summary>

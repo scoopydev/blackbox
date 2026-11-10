@@ -101,7 +101,7 @@ namespace Blackbox.Game
                     var asset = Resources.Load<TextAsset>("BlackboxPuzzles/" + name);
                     return asset != null ? asset.text : null;
                 });
-                foreach (var p in Library.AllPuzzles) new Circuits.CompiledCircuit(p);
+                Library.CheckCircuits();
             }
             catch (Exception e)
             {

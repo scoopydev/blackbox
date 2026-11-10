@@ -56,6 +56,15 @@ namespace Blackbox.Tests
                 Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter is open from the start");
         }
 
+        [Test]
+        public void TheStartupCheckPasses()
+        {
+            // What BlackboxApp runs when the game starts. Wired circuits start with
+            // no wires, so it must not ask them to have every block input wired.
+            Assert.DoesNotThrow(() => TestContent.Library.CheckCircuits());
+            Assert.That(TestContent.Library.AllPuzzles.Any(p => p.Wiring), Is.True, "the check meets wired circuits");
+        }
+
         [TestCaseSource(nameof(AllPuzzles))]
         public void CircuitIsSolvable(PuzzleDef puzzle)
         {
