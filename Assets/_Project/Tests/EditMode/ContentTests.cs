@@ -14,21 +14,44 @@ namespace Blackbox.Tests
     /// </summary>
     public class ContentTests
     {
-        static IEnumerable<PuzzleDef> AllPuzzles() => TestContent.Library.AllPuzzles;
+        /// <summary>The circuits of Part One, where the player changes inputs and blocks.</summary>
+        static IEnumerable<PuzzleDef> AllPuzzles() => TestContent.Library.AllPuzzles.Where(p => !p.Wiring);
+
+        /// <summary>The chapters of Part One.</summary>
+        static IEnumerable<ChapterDef> LearnChapters => TestContent.Library.Parts[0].Chapters;
 
         [Test]
         public void ChaptersLoad()
         {
             var library = TestContent.Library;
-            Assert.That(library.Chapters.Count, Is.EqualTo(5));
-            foreach (var chapter in library.Chapters)
+            Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
+            Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
+            Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
+            Assert.That(library.Chapters.Count, Is.EqualTo(9));
+            Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
+            foreach (var part in library.Parts)
             {
+                Assert.That(part.Title, Is.Not.Empty);
+                Assert.That(part.Tagline, Is.Not.Empty);
+                foreach (var chapter in part.Chapters) Assert.That(chapter.Part, Is.SameAs(part), chapter.Title);
+            }
+            foreach (var chapter in library.Parts[1].Chapters.Concat(library.Parts[2].Chapters))
+            {
+                Assert.That(chapter.Wiring, Is.True, chapter.Title);
+                Assert.That(chapter.Puzzles.All(p => p.Wiring), Is.True, chapter.Title);
+                Assert.That(chapter.Puzzles.All(p => p.Marked == (chapter.Part.Id == "combine")), Is.True, $"{chapter.Title}: blocks are named in Combine, unnamed in Build");
+                Assert.That(chapter.Tagline, Is.Not.Empty, chapter.Title);
+                Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
+            }
+            foreach (var chapter in LearnChapters)
+            {
+                Assert.That(chapter.Wiring, Is.False, chapter.Title);
                 Assert.That(chapter.Puzzles.Count, Is.EqualTo(6), chapter.Title);
                 Assert.That(chapter.Tagline, Is.Not.Empty, chapter.Title);
                 Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
                 Assert.That(chapter.Puzzles.All(p => p.Medium == chapter.Medium), Is.True, chapter.Title);
             }
-            Assert.That(library.Chapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(5), "one chapter for each medium");
+            Assert.That(LearnChapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(5), "one chapter for each medium");
             foreach (var chapter in library.Chapters)
                 Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter is open from the start");
         }
@@ -86,7 +109,7 @@ namespace Blackbox.Tests
         [Test]
         public void EveryChapterEndsOnAUniqueSolution()
         {
-            foreach (var chapter in TestContent.Library.Chapters)
+            foreach (var chapter in LearnChapters)
             {
                 var report = PuzzleSolver.Analyse(chapter.Puzzles.Last());
                 Assert.That(report.SolutionCount, Is.EqualTo(1), report.ToString());
@@ -98,7 +121,7 @@ namespace Blackbox.Tests
         {
             // Within a chapter the number of combinations should broadly grow, so the
             // last circuit can't be brute forced as easily as the first.
-            foreach (var chapter in TestContent.Library.Chapters)
+            foreach (var chapter in LearnChapters)
             {
                 var spaces = chapter.Puzzles.Select(p => PuzzleSolver.Analyse(p).SearchSpace).ToList();
                 Assert.That(spaces.Last(), Is.GreaterThan(spaces.First() * 8), $"{chapter.Title}: {string.Join(", ", spaces)}");
@@ -112,7 +135,7 @@ namespace Blackbox.Tests
             // some other way: by having changed one of its kind before, or by changing
             // an input that reaches it and watching what comes out.
             var seenFree = new HashSet<string>();
-            foreach (var p in TestContent.Library.AllPuzzles)
+            foreach (var p in AllPuzzles())
             {
                 var circuit = new Blackbox.Circuits.CompiledCircuit(p);
                 foreach (var block in p.Blocks.Where(b => b.Locked))
@@ -131,7 +154,7 @@ namespace Blackbox.Tests
         {
             // The first circuit of a chapter shows the new signals with one kind of
             // block, nothing locked and no probes to think about.
-            foreach (var chapter in TestContent.Library.Chapters)
+            foreach (var chapter in LearnChapters)
             {
                 var first = chapter.Puzzles[0];
                 Assert.That(first.Blocks.Select(b => b.Kind.Id).Distinct().Count(), Is.EqualTo(1), chapter.Title);
@@ -147,7 +170,7 @@ namespace Blackbox.Tests
             var library = TestContent.Library;
             var save = new SaveData();
             var progress = new Progress(library, save);
-            foreach (var chapter in library.Chapters)
+            foreach (var chapter in LearnChapters)
             {
                 Assert.That(progress.IsUnlocked(chapter), Is.True, chapter.Title);
                 Assert.That(progress.IsUnlocked(chapter.Puzzles[0]), Is.True, chapter.Title);
@@ -161,6 +184,52 @@ namespace Blackbox.Tests
             Assert.That(progress.IsUnlocked(first.Puzzles[2]), Is.True, "one spare");
             Assert.That(progress.IsUnlocked(first.Puzzles[3]), Is.False);
             Assert.That(progress.IsUnlocked(library.Chapters[1].Puzzles[1]), Is.False, "solving in one chapter opens nothing in another");
+
+            foreach (var part in library.Parts.Skip(1))
+            {
+                Assert.That(progress.IsUnlocked(part), Is.False, $"{part.Title} waits for the part before it");
+                foreach (var chapter in part.Chapters)
+                {
+                    Assert.That(progress.IsUnlocked(chapter), Is.False, chapter.Title);
+                    Assert.That(progress.IsUnlocked(chapter.Puzzles[0]), Is.False, chapter.Title);
+                }
+            }
+        }
+
+        [Test]
+        public void APartOpensWhenThePartBeforeItIsFinished()
+        {
+            var library = TestContent.Library;
+            var save = new SaveData();
+            var progress = new Progress(library, save);
+            var learn = library.Parts[0];
+            var combine = library.Parts[1];
+            var all = learn.Chapters.SelectMany(c => c.Puzzles).ToList();
+            foreach (var p in all.Take(all.Count - 1)) save.RecordSolve(p.Id, 3);
+            Assert.That(progress.IsComplete(learn), Is.False);
+            Assert.That(progress.IsUnlocked(combine), Is.False, "one circuit still to go");
+            save.RecordSolve(all.Last().Id, 3);
+            Assert.That(progress.IsComplete(learn), Is.True);
+            Assert.That(progress.IsUnlocked(combine), Is.True);
+            Assert.That(progress.PartBefore(combine), Is.SameAs(learn));
+            Assert.That(progress.IsUnlocked(combine.Chapters[0].Puzzles[0]), Is.True, "the first circuit of the new part is open");
+            Assert.That(progress.IsUnlocked(combine.Chapters[1]), Is.True, "every chapter of an open part is open");
+            Assert.That(progress.IsUnlocked(combine.Chapters[1].Puzzles[0]), Is.True);
+            Assert.That(progress.IsUnlocked(library.Parts[2]), Is.False);
+        }
+
+        [Test]
+        public void OpenEverythingOpensEveryCircuit()
+        {
+            var library = TestContent.Library;
+            var save = new SaveData();
+            save.Prefs.DebugOpenAll = true;
+            var progress = new Progress(library, save);
+            foreach (var part in library.Parts) Assert.That(progress.IsUnlocked(part), Is.True, part.Title);
+            foreach (var chapter in library.Chapters) Assert.That(progress.IsUnlocked(chapter), Is.True, chapter.Title);
+            foreach (var p in library.AllPuzzles) Assert.That(progress.IsUnlocked(p), Is.True, p.Id);
+            save.Prefs.DebugOpenAll = false;
+            Assert.That(progress.IsUnlocked(library.Parts[1]), Is.False, "turning it off locks them again");
         }
 
         [Test]
@@ -205,6 +274,19 @@ namespace Blackbox.Tests
                 Assert.That(progress.IsSolved(target), Is.False, $"Continue chose {target.Id}, which is already solved");
                 save.LastPuzzle = target.Id;
 
+                if (target.Wiring)
+                {
+                    var wiring = new WiringSession(target, save.Circuits.TryGetValue(target.Id, out var saved) ? saved.Wires : null);
+                    foreach (var w in target.Solution)
+                        Assert.That(wiring.Connect(wiring.NodeOf(w.From), wiring.NodeOf(w.To), w.ToPort), Is.True, $"{target.Id}: {w.From.Id} -> {w.To.Id}");
+                    Assert.That(wiring.Run(), Is.True, target.Id);
+                    save.RecordSolve(target.Id, wiring.Moves);
+                    var state = new CircuitState();
+                    state.Wires.AddRange(wiring.Snapshot());
+                    save.Circuits[target.Id] = state;
+                    continue;
+                }
+
                 var report = PuzzleSolver.Analyse(target, 1);
                 var solution = report.Solutions[0];
                 var session = new PuzzleSession(target, save.Circuits.TryGetValue(target.Id, out var resume) ? resume : null);
@@ -221,6 +303,7 @@ namespace Blackbox.Tests
 
             Assert.That(progress.TotalSolved, Is.EqualTo(total));
             foreach (var chapter in library.Chapters) Assert.That(progress.IsUnlocked(chapter), Is.True, chapter.Title);
+            foreach (var part in library.Parts) Assert.That(progress.IsComplete(part), Is.True, part.Title);
         }
 
         [Test]
@@ -233,6 +316,9 @@ namespace Blackbox.Tests
             var circuit = new CircuitState { Inputs = new[] { 1, 0 }, States = new[] { 2, 0, 1 } };
             circuit.Probes.Add((3, 250));
             save.Circuits["b"] = circuit;
+            var wired = new CircuitState();
+            wired.Wires.AddRange(new[] { "A -> g.0", "g -> X" });
+            save.Circuits["w"] = wired;
             var stroke = new InkStroke { Color = 2 };
             stroke.Points.AddRange(new[] { 100, 200, 104, 207, 110, 215 });
             save.InkFor("b").Add(stroke);
@@ -245,6 +331,7 @@ namespace Blackbox.Tests
             save.Prefs.ReduceMotion = true;
             save.Prefs.SignalSounds = false;
             save.Prefs.DebugRules = true;
+            save.Prefs.DebugOpenAll = true;
 
             var copy = SaveData.FromJson(save.ToJson());
             Assert.That(copy.Solved, Does.Contain("a"));
@@ -268,6 +355,10 @@ namespace Blackbox.Tests
             Assert.That(new SaveData().Prefs.SignalSounds, Is.True, "on by default");
             Assert.That(copy.Prefs.DebugRules, Is.True);
             Assert.That(new SaveData().Prefs.DebugRules, Is.False, "off by default");
+            Assert.That(copy.Prefs.DebugOpenAll, Is.True);
+            Assert.That(new SaveData().Prefs.DebugOpenAll, Is.False, "off by default");
+            Assert.That(copy.Circuits["w"].Wires, Is.EqualTo(new[] { "A -> g.0", "g -> X" }));
+            Assert.That(copy.Circuits["b"].Wires, Is.Empty);
         }
 
         [Test]

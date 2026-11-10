@@ -16,6 +16,8 @@ The core loop is experimentation:
 
 Each chapter uses a different kind of signal: bits, digits, shapes, analog waves and sampled waves, and the first circuit of every chapter is open from the start. Every signal can be heard as well as seen.
 
+That is **Part One: Learn**. Once it's done, the game turns round. In **Part Two: Combine** every circuit starts with no wires: the player gets fixed inputs, fixed blocks and outputs, and **draws the wires** so the outputs do what their targets show. Every block must be used, and every block input must be connected. Outputs are devices now (displays, lights, speakers, digit displays, fans and servos), signals of different kinds mix, and eight new mixing blocks add, flip, delay, sample, gate, count, speed up and compare them. **Part Three: Build** is the main game: bigger circuits with every kind of signal, and blocks that no longer say what kind they are.
+
 There is no tutorial text explaining the parts. Understanding *is* the puzzle.
 
 ## Design pillars
@@ -44,7 +46,18 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | H | How to play |
 | Esc | Finish typing, put the pen down, or open the menu |
 
-There are five chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes), *Resonance* (analog waves) and *Grain* (sampled waves). See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
+On a wired circuit (Parts Two and Three):
+
+| Control | Does |
+|---|---|
+| Drag from a dot to a dot, or click one and then the other | Draw a wire. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each |
+| Drag from a port that has a wire | Pick that wire up and move it |
+| Click a wire, or right-click a dot | Take wires off |
+| RUN, or Space | Run it: every block shows what it sends, and each output works its device beside its target |
+| Click a signal or a target | Hear it |
+| Z or Backspace, CLEAR | Undo a wire change, or take every wire off |
+
+Part One has five chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes), *Resonance* (analog waves) and *Grain* (sampled waves). Part Two has *Patch* (7 circuits) and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
 ## Project layout
 
@@ -55,11 +68,11 @@ Assets/
       Core/                JSON and the save format (assembly Blackbox.Core, no engine code)
       Components/          The signal media and the block kinds' hidden rules (Blackbox.Core)
       Circuit/             Compiles and evaluates circuits (Blackbox.Core)
-      Puzzles/             Loader, auto layout, solver, goal sentences, progress, play session (Blackbox.Core)
+      Puzzles/             Loader, auto layout, solvers, goal sentences, progress, play and wiring sessions (Blackbox.Core)
       Game/                BlackboxApp (startup, screens, saving), input, audio, tweens
       UI/Void/             The visual kit: glowing wires, shapes, glyphs, type, buttons
-      UI/Board/            The circuit on screen: nodes, targets, wires, probes, pen and typed notes
-      UI/Screens/          Title, chapter map, circuit screen, overlays
+      UI/Board/            The circuit on screen: nodes, targets, wires, probes, pen and typed notes; the wiring board and devices
+      UI/Screens/          Title, chapter map, circuit and wiring screens, overlays
       Editor/              The BLACKBOX menu
     Puzzles/Resources/BlackboxPuzzles/   The circuits, as JSON
     Fonts/Resources/BlackboxFonts/       Sora (SIL Open Font License)
@@ -74,7 +87,7 @@ Everything on screen is built in code from procedural meshes, and every sound is
 
 ## Making circuits
 
-Circuits are JSON files. [Docs/PuzzleFormat.md](Docs/PuzzleFormat.md) describes the format. After changing one, run **BLACKBOX → Validate Puzzles**. It solves every circuit by brute force and reports any that can't be solved, are solved at the start, have no targets, or have unwired parts. The same checks run in the EditMode tests (**Window → General → Test Runner**). The tests only compile when the **Test Framework** package is installed, so a project without it still plays.
+Circuits are JSON files. [Docs/PuzzleFormat.md](Docs/PuzzleFormat.md) describes the format. After changing one, run **BLACKBOX → Validate Puzzles**. It solves every circuit by brute force and reports any that can't be solved, are solved at the start, have no targets, or have unwired parts. Wired circuits are checked by trying every way to wire them. The same checks run in the EditMode tests (**Window → General → Test Runner**). The tests only compile when the **Test Framework** package is installed, so a project without it still plays.
 
 **BLACKBOX → Save** has tools for testing: show the save file, erase it, or mark every circuit solved.
 

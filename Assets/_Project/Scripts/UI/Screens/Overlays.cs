@@ -11,7 +11,11 @@ namespace Blackbox.UI.Screens
     /// <summary>Esc during a circuit.</summary>
     public sealed class PauseOverlay : Overlay
     {
-        public PuzzleScreen Owner;
+        public PuzzleDef Puzzle;
+        /// <summary>Puts the circuit back where it started.</summary>
+        public Action Reset;
+        /// <summary>The question asked before resetting.</summary>
+        public string ResetQuestion = "Put every input and block back where it started? Probes and notes stay.";
         MenuList _menu;
 
         protected override float VeilAlpha => 0.88f;
@@ -22,7 +26,7 @@ namespace Blackbox.UI.Screens
             float cx = VoidFrame.Width * 0.5f;
             var label = UIKit.Text(Root, "PAUSED", TextStyle.Label.WithSize(14).WithTracking(0.42f).WithColor(Palette.Dim));
             label.rectTransform.At(cx, 300f, 400f, 20f);
-            var p = Owner.Puzzle;
+            var p = Puzzle;
             var name = UIKit.Text(Root, p.Name, TextStyle.Heading.WithSize(40).WithWeight(200));
             name.rectTransform.At(cx, 350f, 900f, 56f);
             var where = UIKit.Text(Root, $"CHAPTER {p.Chapter.Numeral}  ·  CIRCUIT {p.Label}", TextStyle.Label.WithSize(12).WithColor(Palette.Faint));
@@ -33,12 +37,12 @@ namespace Blackbox.UI.Screens
             const float step = 58f;
             _menu.Add(MenuItem.Create(Root, "RESUME", cx, y), () => { App.Sound(Sfx.Close); Close(); });
             _menu.Add(MenuItem.Create(Root, "RESET CIRCUIT", cx, y += step), () =>
-                Game.Confirm("Put every input and block back where it started? Probes and notes stay.", "RESET", false, () =>
+                Game.Confirm(ResetQuestion, "RESET", false, () =>
                 {
                     Close();
-                    Owner.ResetCircuit();
+                    Reset?.Invoke();
                 }));
-            _menu.Add(MenuItem.Create(Root, "CIRCUITS", cx, y += step), () => Game.GoChapters(Owner.Puzzle.Chapter));
+            _menu.Add(MenuItem.Create(Root, "CIRCUITS", cx, y += step), () => Game.GoChapters(Puzzle.Chapter));
             _menu.Add(MenuItem.Create(Root, "SETTINGS", cx, y += step), Game.OpenSettings);
             _menu.Add(MenuItem.Create(Root, "TITLE", cx, y += step), Game.GoTitle);
 
@@ -87,12 +91,12 @@ namespace Blackbox.UI.Screens
             UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, 262f, Palette.Rule);
 
             var prefs = Game.Save.Prefs;
-            float y = 320f;
+            float y = 296f;
             const float step = 62f;
             AddSlider("MASTER VOLUME", y, prefs.MasterVolume, v => { prefs.MasterVolume = v; Game.ApplyPrefs(); });
             AddSlider("MUSIC", y += step, prefs.MusicVolume, v => { prefs.MusicVolume = v; Game.ApplyPrefs(); });
             AddSlider("EFFECTS", y += step, prefs.EffectsVolume, v => { prefs.EffectsVolume = v; Game.ApplyPrefs(); });
-            y += 22f;
+            y += 10f;
             AddToggle("FULLSCREEN", y += step, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); });
             AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); });
             AddToggle("SIGNAL SOUNDS", y += step, prefs.SignalSounds, v => { prefs.SignalSounds = v; Game.MarkDirty(); });
@@ -102,7 +106,11 @@ namespace Blackbox.UI.Screens
             AddToggle("DEBUG: BLOCK RULES", y += step, prefs.DebugRules, v => { prefs.DebugRules = v; Game.MarkDirty(); });
             var debugNote = UIKit.Text(Root, "WRITES WHAT EVERY BLOCK DOES UNDER IT", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
             debugNote.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
-            y += 40f;
+            y += 26f;
+            AddToggle("DEBUG: OPEN EVERYTHING", y += step, prefs.DebugOpenAll, v => { prefs.DebugOpenAll = v; Game.MarkDirty(); });
+            var openNote = UIKit.Text(Root, "EVERY PART, CHAPTER AND CIRCUIT CAN BE PLAYED", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            openNote.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
+            y += 26f;
             UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, y + 30f, Palette.Rule);
             AddAction("ERASE PROGRESS", y += step + 10f, true, () =>
                 Game.Confirm("Erase every solved circuit, every circuit in progress and every note you've written? Settings are kept.", "ERASE", true, () =>
@@ -292,6 +300,8 @@ namespace Blackbox.UI.Screens
     {
         /// <summary>The chapter being played, for a line about its signals. Optional.</summary>
         public ChapterDef Chapter;
+        /// <summary>Help for a circuit the player wires, rather than one they set.</summary>
+        public bool Wiring;
 
         protected internal override void Build()
         {
@@ -299,7 +309,15 @@ namespace Blackbox.UI.Screens
             var title = UIKit.Text(Root, "HOW IT WORKS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
             title.rectTransform.At(VoidFrame.Width * 0.5f, 170f, 400f, 22f);
 
-            var ideas = new List<string>
+            var ideas = Wiring ? new List<string>
+            {
+                "Wire the circuit so every output does what its target shows. Drag from a dot to a dot to run a wire; click a wire to take it off.",
+                "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
+                "Blocks keep hidden rules. Wire one between an input and an output, run it, and watch what it sends.",
+                "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
+                "Outputs are devices: lights glow, fans spin, servos swing, digit displays count, speakers play. A target is met when the device does the same thing.",
+                "Signals can change through the loop. Each one plays across its card, and clicking any signal plays it.",
+            } : new List<string>
             {
                 "The goal is written above the circuit. Press RUN to send the signals through: only then do the outputs show, and each target gets a tick or a cross.",
                 "Each block keeps a hidden rule. Click it, or one of its dots, to change what it does. A padlock means it can't be changed.",
@@ -321,7 +339,19 @@ namespace Blackbox.UI.Screens
                 y += 92f;
             }
 
-            string[] keys =
+            string[] keys = Wiring ? new[]
+            {
+                "SPACE", "run the circuit",
+                "DRAG DOT TO DOT", "run a wire",
+                "CLICK A DOT, THEN ANOTHER", "run a wire",
+                "DRAG A WIRE'S END", "move it, or drop it to take it off",
+                "CLICK A WIRE", "take it off",
+                "RIGHT-CLICK A DOT", "take its wires off",
+                "CLICK A SIGNAL", "hear it",
+                "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
+                "Z  ·  BACKSPACE", "undo",
+                "ESC", "put a wire down, or menu",
+            } : new[]
             {
                 "SPACE", "run the circuit",
                 "CLICK  ·  SCROLL", "change a block or input",
@@ -426,6 +456,11 @@ namespace Blackbox.UI.Screens
         /// <summary>A few of the chapter's signals, played in turn so the player hears what they sound like.</summary>
         void BuildSamples(float cx)
         {
+            if (Chapter.Wiring)
+            {
+                BuildMixedSamples(cx);
+                return;
+            }
             var m = Chapter.Medium;
             int[] values;
             switch (m)
@@ -458,6 +493,41 @@ namespace Blackbox.UI.Screens
             {
                 if (App.Audio != null) App.Audio.PlaySignals(m, values, i => { if (views[i] != null) views[i].Ping(); });
             });
+        }
+
+        /// <summary>One signal of every type, for chapters where they all meet.</summary>
+        void BuildMixedSamples(float cx)
+        {
+            var samples = new (Medium m, int v)[]
+            {
+                (Medium.Binary, 1),
+                (Medium.Decimal, 5),
+                (Medium.Shape, Shapes.Make(Shapes.Triangle, true)),
+                (Medium.Wave, Waves.Make(Waves.Sine, 1, 6)),
+                (Medium.Sampled, Sampled.Make(Waves.Sine, 1, 6, 1)),
+            };
+            const float size = 38f;
+            float total = 0f;
+            foreach (var (m, _) in samples) total += ValueView.WidthFor(m, size) + 56f;
+            float x = -total * 0.5f;
+            var row = UIKit.Rect(Root, "Samples").At(cx, 796f, 0f, 0f);
+            var views = new List<ValueView>();
+            foreach (var (m, v) in samples)
+            {
+                float w = ValueView.WidthFor(m, size);
+                var view = ValueView.Create(row, m, size, Media.IsWave(m));
+                view.GetComponent<RectTransform>().Centered(x + (w + 56f) * 0.5f, 0f, w, size);
+                view.Set(v, ValueLook.Live);
+                var medium = m;
+                view.MakePlayable(value => App.Audio?.PlaySignal(medium, value));
+                views.Add(view);
+                x += w + 56f;
+            }
+            var hint = UIKit.Text(Root, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
+            hint.rectTransform.At(cx, 862f, 600f, 16f);
+            var group = row.Group();
+            group.alpha = 0f;
+            Tweener.Run(row, "show", 0.6f, t => group.alpha = t, Ease.OutQuad, 1.2f);
         }
 
         public override void OnClosing()

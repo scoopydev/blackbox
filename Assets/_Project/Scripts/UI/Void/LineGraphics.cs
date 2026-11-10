@@ -121,6 +121,120 @@ namespace Blackbox.UI
     }
 
     /// <summary>
+    /// A signal over one whole loop, drawn left to right across its rect between
+    /// <see cref="Min"/> (bottom) and <see cref="Max"/> (top). Stepped traces
+    /// (bits, digits, shapes read as numbers, sampled waves) hold flat and jump;
+    /// analog waves are drawn smoothly. A playhead can mark where in the loop
+    /// the signal is now.
+    /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class TraceGraphic : VoidGraphic
+    {
+        float[] _levels;
+        float _min = -1f, _max = 1f;
+        bool _stepped;
+        float _width = 1.8f;
+        Paint _paint = Paint.Signal;
+        Color _tint = Color.white;
+        float _glow;
+        float _playhead = -1f;
+        float _reveal = 1f;
+        bool _midline;
+
+        public float Min { get => _min; set { if (_min != value) { _min = value; SetVerticesDirty(); } } }
+        public float Max { get => _max; set { if (_max != value) { _max = value; SetVerticesDirty(); } } }
+        public bool Stepped { get => _stepped; set { if (_stepped != value) { _stepped = value; SetVerticesDirty(); } } }
+        public float LineWidth { get => _width; set { if (_width != value) { _width = value; SetVerticesDirty(); } } }
+        public Paint Paint { get => _paint; set { if (_paint != value) { _paint = value; SetVerticesDirty(); } } }
+        public Color Tint { get => _tint; set { if (_tint != value) { _tint = value; SetVerticesDirty(); } } }
+        public float GlowAmount { get => _glow; set { if (_glow != value) { _glow = value; SetVerticesDirty(); } } }
+        /// <summary>Where in the loop the signal is now (0 to 1), or negative for no playhead.</summary>
+        public float Playhead { get => _playhead; set { if (_playhead != value) { _playhead = value; SetVerticesDirty(); } } }
+        /// <summary>How much of the loop is drawn, from the left (1 is all of it).</summary>
+        public float Reveal { get => _reveal; set { if (_reveal != value) { _reveal = value; SetVerticesDirty(); } } }
+        /// <summary>A faint line through the middle, for waves.</summary>
+        public bool Midline { get => _midline; set { if (_midline != value) { _midline = value; SetVerticesDirty(); } } }
+
+        public void SetLevels(float[] levels)
+        {
+            _levels = levels;
+            SetVerticesDirty();
+        }
+
+        readonly List<Vector2> _pts = new List<Vector2>(320);
+
+        Vector2 At(Rect r, float u, float level)
+        {
+            float span = Mathf.Max(1e-4f, _max - _min);
+            float v = Mathf.Clamp01((level - _min) / span);
+            float pad = _width;
+            return new Vector2(r.xMin + u * r.width, r.yMin + pad + v * (r.height - 2f * pad));
+        }
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            if (_levels == null || _levels.Length < 2) return;
+            PrepareGradient();
+            Rect r = rectTransform.rect;
+            int n = _levels.Length;
+            float reveal = Mathf.Clamp01(_reveal);
+            var colour = Colour(_paint, _tint);
+            float feather = Feather;
+
+            if (_midline)
+            {
+                _pts.Clear();
+                float mid = (_min + _max) * 0.5f;
+                _pts.Add(At(r, 0f, mid));
+                _pts.Add(At(r, 1f, mid));
+                MeshKit.Stroke(vh, _pts, false, 1f, feather, _ => Palette.Outline.WithAlpha(color.a));
+            }
+
+            _pts.Clear();
+            if (_stepped)
+            {
+                int start = 0;
+                for (int k = 1; k <= n; k++)
+                {
+                    if (k < n && Mathf.Abs(_levels[k] - _levels[start]) <= 1e-3f) continue;
+                    float u0 = (float)start / n, u1 = (float)k / n;
+                    if (u0 >= reveal) break;
+                    u1 = Mathf.Min(u1, reveal);
+                    _pts.Add(At(r, u0, _levels[start]));
+                    _pts.Add(At(r, u1, _levels[start]));
+                    start = k;
+                }
+            }
+            else
+            {
+                int last = Mathf.Max(1, Mathf.CeilToInt(reveal * n));
+                for (int k = 0; k <= last && k <= n; k++)
+                {
+                    float level = _levels[k % n];
+                    // The last point closes the loop at the right edge with the first level only if the wave runs on smoothly.
+                    if (k == n) level = _levels[n - 1] + (_levels[n - 1] - _levels[n - 2]);
+                    _pts.Add(At(r, Mathf.Min((float)k / n, reveal), level));
+                }
+            }
+            if (_pts.Count >= 2)
+            {
+                if (_glow > 0f) MeshKit.Glow(vh, _pts, false, _width * 5f, colour, _glow);
+                MeshKit.Stroke(vh, _pts, false, _width, feather, colour);
+            }
+
+            if (_playhead >= 0f)
+            {
+                float u = Mathf.Repeat(_playhead, 1f);
+                int k = Mathf.Clamp((int)(u * n), 0, n - 1);
+                Vector2 p = At(r, u, _levels[k]);
+                MeshKit.SoftDisc(vh, p, 10f, Palette.SignalAtX(FrameX(p)).WithAlpha(0.7f * color.a));
+                MeshKit.Disc(vh, p, 2.4f, feather, Color.white.WithAlpha(color.a));
+            }
+        }
+    }
+
+    /// <summary>
     /// One stroke of the pen: a polyline in one flat colour. Points are in the
     /// graphic's local space; give it a stretched rect.
     /// </summary>

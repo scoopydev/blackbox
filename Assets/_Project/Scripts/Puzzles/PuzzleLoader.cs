@@ -17,18 +17,57 @@ namespace Blackbox.Puzzles
     /// </summary>
     public static class PuzzleLoader
     {
-        /// <summary>Reads the chapter index: the ordered list of chapter file names.</summary>
+        /// <summary>Reads the chapter index: the ordered list of chapter file names, across every part.</summary>
         public static List<string> ReadIndex(string json)
         {
-            var root = JsonValue.Parse(json);
             var list = new List<string>();
-            foreach (var item in root["chapters"].Items)
+            foreach (var (_, files) in ReadParts(json)) list.AddRange(files);
+            return list;
+        }
+
+        /// <summary>
+        /// Reads the chapter index as parts, each with its chapter file names in
+        /// play order. An index that lists "chapters" without parts is one part.
+        /// </summary>
+        public static List<(PartDef part, List<string> files)> ReadParts(string json)
+        {
+            JsonValue root;
+            try { root = JsonValue.Parse(json); }
+            catch (FormatException e) { throw new PuzzleFormatException($"chapters.json: {e.Message}"); }
+            var parts = new List<(PartDef, List<string>)>();
+            if (root["parts"].IsArray)
+            {
+                foreach (var item in root["parts"].Items)
+                {
+                    var part = new PartDef
+                    {
+                        Id = Required(item, "id", "chapters.json part"),
+                        Title = Required(item, "title", "chapters.json part"),
+                        Tagline = item["tagline"].AsString(string.Empty),
+                        Number = parts.Count,
+                        AfterPrevious = item["afterPrevious"].AsBool(false),
+                    };
+                    var files = ReadFileList(item["chapters"], $"chapters.json part '{part.Id}'");
+                    parts.Add((part, files));
+                }
+                if (parts.Count == 0) throw new PuzzleFormatException("chapters.json lists no parts.");
+                return parts;
+            }
+            var only = new PartDef { Id = "main", Title = "Circuits", Tagline = string.Empty };
+            parts.Add((only, ReadFileList(root["chapters"], "chapters.json")));
+            return parts;
+        }
+
+        static List<string> ReadFileList(JsonValue arr, string where)
+        {
+            var list = new List<string>();
+            foreach (var item in arr.Items)
             {
                 var name = item.AsString();
-                if (string.IsNullOrWhiteSpace(name)) throw new PuzzleFormatException("chapters.json: every entry must be a file name.");
+                if (string.IsNullOrWhiteSpace(name)) throw new PuzzleFormatException($"{where}: every chapter entry must be a file name.");
                 list.Add(name.Trim());
             }
-            if (list.Count == 0) throw new PuzzleFormatException("chapters.json lists no chapters.");
+            if (list.Count == 0) throw new PuzzleFormatException($"{where} lists no chapters.");
             return list;
         }
 
@@ -38,9 +77,15 @@ namespace Blackbox.Puzzles
             try { root = JsonValue.Parse(json); }
             catch (FormatException e) { throw new PuzzleFormatException($"{sourceName}: {e.Message}"); }
 
-            string mediumKey = Required(root, "medium", sourceName);
-            if (!Media.TryParseMedium(mediumKey, out var medium))
-                throw new PuzzleFormatException($"{sourceName}: unknown medium '{mediumKey}' (use binary, decimal, shape or wave).");
+            bool wiring = ReadMode(root, sourceName, false);
+            var medium = Medium.Binary;
+            if (!wiring || root.Has("medium"))
+            {
+                string mediumKey = Required(root, "medium", sourceName);
+                if (!Media.TryParseMedium(mediumKey, out medium))
+                    throw new PuzzleFormatException($"{sourceName}: unknown medium '{mediumKey}' (use binary, decimal, shape, wave or sampled).");
+            }
+            bool marked = root["marked"].AsBool(true);
 
             var chapter = new ChapterDef
             {
@@ -51,6 +96,7 @@ namespace Blackbox.Puzzles
                 Tagline = root["tagline"].AsString(string.Empty),
                 Signals = root["signals"].AsString(string.Empty),
                 Number = chapterNumber,
+                Wiring = wiring,
             };
 
             var unlock = root["unlock"];
@@ -68,7 +114,7 @@ namespace Blackbox.Puzzles
             int number = 0;
             foreach (var c in circuits.Items)
             {
-                var puzzle = ReadPuzzle(c, $"{sourceName} › circuit {number + 1}", medium);
+                var puzzle = ReadPuzzle(c, $"{sourceName} › circuit {number + 1}", medium, wiring, marked);
                 if (!ids.Add(puzzle.Id)) throw new PuzzleFormatException($"{sourceName}: two circuits use the id '{puzzle.Id}'.");
                 puzzle.Chapter = chapter;
                 puzzle.Number = number++;
@@ -77,8 +123,12 @@ namespace Blackbox.Puzzles
             return chapter;
         }
 
-        /// <summary>Reads one circuit. <paramref name="medium"/> applies unless the circuit names its own.</summary>
-        public static PuzzleDef ReadPuzzle(JsonValue c, string where, Medium medium)
+        /// <summary>
+        /// Reads one circuit. <paramref name="medium"/> applies unless the circuit
+        /// names its own; <paramref name="wiring"/> and <paramref name="marked"/>
+        /// come from the chapter unless the circuit says otherwise.
+        /// </summary>
+        public static PuzzleDef ReadPuzzle(JsonValue c, string where, Medium medium, bool wiring = false, bool marked = true)
         {
             var p = new PuzzleDef
             {
@@ -90,6 +140,9 @@ namespace Blackbox.Puzzles
                 Medium = medium,
             };
             where = $"{where} ({p.Id})";
+            p.Wiring = ReadMode(c, where, wiring);
+            p.Marked = c["marked"].AsBool(marked);
+            if (p.Wiring) return ReadWiredPuzzle(c, p, where);
             if (c.Has("medium"))
             {
                 if (!Media.TryParseMedium(c["medium"].AsString(), out var own))
@@ -115,8 +168,8 @@ namespace Blackbox.Puzzles
                 wire.Index = p.Wires.Count;
                 p.Wires.Add(wire);
             }
-            CheckDrivers(p, where);
-            CheckLoops(p, where);
+            CheckDrivers(p.Wires, p, where);
+            CheckLoops(p.Wires, p, where);
 
             foreach (var n in p.AllNodes)
                 if (n.Target.HasValue) p.Targets.Add(new TargetDef { Node = n, Want = n.Target.Value, Index = p.Targets.Count });
@@ -293,10 +346,10 @@ namespace Blackbox.Puzzles
             return new WireDef { From = source, To = target, ToPort = port };
         }
 
-        static void CheckDrivers(PuzzleDef p, string where)
+        static void CheckDrivers(List<WireDef> wires, PuzzleDef p, string where)
         {
             var driven = new HashSet<(NodeDef, int)>();
-            foreach (var w in p.Wires)
+            foreach (var w in wires)
                 if (!driven.Add((w.To, w.ToPort)))
                     throw new PuzzleFormatException($"{where}: {w.To.Id} port {w.ToPort} has two wires running into it.");
             foreach (var b in p.Blocks)
@@ -308,10 +361,10 @@ namespace Blackbox.Puzzles
                     throw new PuzzleFormatException($"{where}: output '{o.Id}' has nothing wired into it.");
         }
 
-        static void CheckLoops(PuzzleDef p, string where)
+        static void CheckLoops(List<WireDef> wires, PuzzleDef p, string where)
         {
             var next = new Dictionary<NodeDef, List<NodeDef>>();
-            foreach (var w in p.Wires)
+            foreach (var w in wires)
             {
                 if (!next.TryGetValue(w.From, out var list)) next[w.From] = list = new List<NodeDef>();
                 list.Add(w.To);
@@ -331,6 +384,124 @@ namespace Blackbox.Puzzles
             }
             foreach (var n in p.AllNodes)
                 if (!Visit(n)) throw new PuzzleFormatException($"{where}: the wires make a loop through '{n.Id}'. Signals must flow one way, from inputs to outputs.");
+        }
+
+        static bool ReadMode(JsonValue obj, string where, bool fallback)
+        {
+            if (!obj.Has("mode")) return fallback;
+            string mode = obj["mode"].AsString();
+            if (mode == "wiring") return true;
+            if (mode == "settings") return false;
+            throw new PuzzleFormatException($"{where}: \"mode\" must be \"wiring\" (the player draws the wires) or \"settings\" (the player changes inputs and blocks).");
+        }
+
+        /// <summary>
+        /// A circuit the player wires. Inputs carry signals of any type, blocks keep
+        /// their state, outputs have no targets of their own: what each must get is
+        /// worked out from <c>"solution"</c>, the designer's wiring, which the board
+        /// never shows. See Docs/PuzzleFormat.md.
+        /// </summary>
+        static PuzzleDef ReadWiredPuzzle(JsonValue c, PuzzleDef p, string where)
+        {
+            if (p.Probes != 0) throw new PuzzleFormatException($"{where}: a wired circuit has no probes; the player wires a block to an output to test it.");
+
+            var inputs = c["inputs"];
+            if (!inputs.IsObject) throw new PuzzleFormatException($"{where}: \"inputs\" must be an object of id: input.");
+            foreach (var m in inputs.Members)
+            {
+                var node = new InputDef { Id = m.Key, Role = NodeRole.Input, Index = p.Inputs.Count };
+                var v = m.Value;
+                string text = v.IsString ? v.AsString() : v.IsObject ? v["signal"].AsString() : null;
+                if (v.IsObject) ReadPosition(v["at"], node, where);
+                if (text == null) throw new PuzzleFormatException($"{where}: input '{m.Key}' needs a \"signal\", like \"binary 0110\" or \"wave sine f2 a7\".");
+                if (!Signals.TryParse(text, out node.Signal, out string error))
+                    throw new PuzzleFormatException($"{where}: input '{m.Key}': {error}.");
+                if (v.IsObject && (v.Has("adjustable") || v.Has("target") || v.Has("value")))
+                    throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs of a wired circuit are fixed signals, so they take no \"value\", \"adjustable\" or \"target\".");
+                p.Inputs.Add(node);
+            }
+
+            var blocks = c["blocks"];
+            if (!blocks.IsObject || blocks.Count == 0) throw new PuzzleFormatException($"{where}: a wired circuit needs at least one block.");
+            foreach (var m in blocks.Members)
+            {
+                var b = m.Value;
+                string kindId = b.IsString ? b.AsString() : b["kind"].AsString();
+                if (!KindCatalog.TryGet(kindId, out var kind))
+                    throw new PuzzleFormatException($"{where}: block '{m.Key}' has unknown kind '{kindId}'.");
+                if (!kind.Wireable)
+                    throw new PuzzleFormatException($"{where}: block '{m.Key}' is a {kind.Id}, which changes wave settings, so it can't go in a wired circuit.");
+                var block = new BlockDef
+                {
+                    Id = m.Key,
+                    Role = NodeRole.Block,
+                    Kind = kind,
+                    State = b.IsObject ? b["state"].AsInt(0) : 0,
+                    Locked = true,
+                    Index = p.Blocks.Count,
+                };
+                if (block.State < 0 || block.State >= kind.StateCount)
+                    throw new PuzzleFormatException($"{where}: block '{block.Id}' ({kind.Id}) has {kind.StateCount} states, so state {block.State} is out of range.");
+                if (b.IsObject)
+                {
+                    ReadPosition(b["at"], block, where);
+                    if (b.Has("target")) throw new PuzzleFormatException($"{where}: block '{block.Id}': in a wired circuit only outputs have targets.");
+                }
+                p.Blocks.Add(block);
+            }
+
+            var outputs = c["outputs"];
+            if (!outputs.IsObject) throw new PuzzleFormatException($"{where}: \"outputs\" must be an object of id: output.");
+            foreach (var m in outputs.Members)
+            {
+                var node = new OutputDef { Id = m.Key, Role = NodeRole.Output, Index = p.Outputs.Count };
+                var v = m.Value;
+                if (v.IsArray) ReadPosition(v, node, where);
+                else if (v.IsObject)
+                {
+                    ReadPosition(v["at"], node, where);
+                    if (v.Has("target")) throw new PuzzleFormatException($"{where}: output '{m.Key}': a wired circuit's targets come from its \"solution\".");
+                    if (v.Has("device") && !Devices.TryParse(v["device"].AsString(), out node.Device))
+                        throw new PuzzleFormatException($"{where}: output '{m.Key}' has unknown device '{v["device"].AsString()}' (use display, light, speaker, digits, fan or servo).");
+                }
+                else if (v.IsString)
+                {
+                    if (!Devices.TryParse(v.AsString(), out node.Device))
+                        throw new PuzzleFormatException($"{where}: output '{m.Key}' has unknown device '{v.AsString()}' (use display, light, speaker, digits, fan or servo).");
+                }
+                else if (!v.IsNull) throw new PuzzleFormatException($"{where}: output '{m.Key}' must be [column, row], a device name or an object.");
+                p.Outputs.Add(node);
+            }
+
+            if (p.Inputs.Count == 0) throw new PuzzleFormatException($"{where}: needs at least one input.");
+            if (p.Outputs.Count == 0) throw new PuzzleFormatException($"{where}: needs at least one output.");
+            var seen = new HashSet<string>();
+            foreach (var n in p.AllNodes)
+                if (!seen.Add(n.Id)) throw new PuzzleFormatException($"{where}: the id '{n.Id}' is used twice.");
+
+            if (c.Has("wires") && c["wires"].Count > 0)
+                throw new PuzzleFormatException($"{where}: a wired circuit starts with no wires. Put the intended wiring in \"solution\".");
+            if (!c["solution"].IsArray || c["solution"].Count == 0)
+                throw new PuzzleFormatException($"{where}: a wired circuit needs a \"solution\": the wiring its targets come from.");
+            foreach (var w in c["solution"].Items)
+            {
+                var wire = ReadWire(w, p, where);
+                wire.Index = p.Solution.Count;
+                p.Solution.Add(wire);
+            }
+            CheckDrivers(p.Solution, p, $"{where} solution");
+            CheckLoops(p.Solution, p, $"{where} solution");
+
+            var values = WiringSession.Evaluate(p, p.Solution);
+            foreach (var o in p.Outputs)
+                o.Want = values[p.Inputs.Count + p.Blocks.Count + o.Index]
+                    ?? throw new PuzzleFormatException($"{where}: the solution sends nothing to output '{o.Id}'.");
+            var unused = WiringSession.UnusedBlocks(p, p.Solution);
+            if (unused.Count > 0)
+                throw new PuzzleFormatException($"{where}: the solution doesn't use block '{p.Blocks[unused[0]].Id}': every block must lead to an output.");
+
+            BoardLayout.ApplyWiring(p);
+            return p;
         }
 
         static string Required(JsonValue obj, string key, string where)

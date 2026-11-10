@@ -73,6 +73,67 @@ namespace Blackbox.Components
             return data;
         }
 
+        /// <summary>How long a whole signal plays for when it changes through the loop.</summary>
+        public const float PatternLength = 1.6f;
+
+        /// <summary>How long a signal over a loop sounds, in seconds.</summary>
+        public static float Duration(Trace t)
+        {
+            if (Media.IsWave(t.Medium)) return WaveLength;
+            if (t.IsFlat) return Duration(t.Medium, (int)Math.Round(t.First));
+            return PatternLength;
+        }
+
+        /// <summary>
+        /// The sound of a signal over one loop. A steady bit, digit or shape sounds
+        /// as its value. One that changes plays each value in turn, each for its
+        /// share of <see cref="PatternLength"/>, cut short as the next begins. A wave
+        /// (or anything a block turned into one) is played as a sound wave: the loop
+        /// repeats at <see cref="WaveBaseHz"/>, so it has the same pitch as the
+        /// waves of chapter IV, and two waves that cancel out are silent.
+        /// </summary>
+        public static float[] Render(Trace trace, int rate = SampleRate)
+        {
+            if (!Media.IsWave(trace.Medium) && trace.IsFlat) return Render(trace.Medium, (int)Math.Round(trace.First), rate);
+            int n = (int)Math.Ceiling(Duration(trace) * rate);
+            var data = new float[n];
+            if (Media.IsWave(trace.Medium))
+            {
+                bool held = trace.Medium == Medium.Sampled;
+                for (int i = 0; i < n; i++)
+                {
+                    float t = i / (float)rate;
+                    double phase = t * (double)WaveBaseHz;
+                    double at = (phase - Math.Floor(phase)) * Trace.Steps;
+                    int k = (int)at;
+                    float level = held ? trace[k % Trace.Steps] : Lerp(trace[k % Trace.Steps], trace[(k + 1) % Trace.Steps], (float)(at - k));
+                    data[i] = level / Trace.Peak * Gate(t, 0.02f, 0.45f, 0.11f) * 0.2f;
+                }
+            }
+            else
+            {
+                foreach (var (start, length, level) in trace.Runs())
+                {
+                    int from = (int)((long)start * n / Trace.Steps), to = (int)((long)(start + length) * n / Trace.Steps);
+                    int fade = Math.Min(rate / 200, (to - from) / 4);
+                    int v = (int)Math.Round(level);
+                    for (int i = from; i < to && i < n; i++)
+                    {
+                        float s = Sample(trace.Medium, v, (i - from) / (float)rate);
+                        int left = to - 1 - i;
+                        if (left < fade) s *= left / (float)Math.Max(1, fade);
+                        data[i] = s;
+                    }
+                }
+            }
+            for (int i = 0; i < n; i++) data[i] = data[i] < -1f ? -1f : data[i] > 1f ? 1f : data[i];
+            int end = Math.Min(n, rate / 200);
+            for (int i = 0; i < end; i++) data[n - 1 - i] *= i / (float)end;
+            return data;
+        }
+
+        static float Lerp(float a, float b, float t) => a + (b - a) * t;
+
         static float Sample(Medium m, int v, float t)
         {
             switch (m)

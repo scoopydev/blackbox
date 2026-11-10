@@ -52,6 +52,9 @@ namespace Blackbox.Puzzles
             if (Options != null) return System.Array.IndexOf(Options, value);
             return Media.IsValid(m, value) ? value : -1;
         }
+
+        /// <summary>In a circuit the player wires: the signal this input sends, of any type, steady or a pattern.</summary>
+        public SignalSpec Signal;
     }
 
     /// <summary>A block with a hidden rule. Its target, if any, is on the signal it sends.</summary>
@@ -65,7 +68,17 @@ namespace Blackbox.Puzzles
     }
 
     /// <summary>A readout on the right of the board.</summary>
-    public sealed class OutputDef : NodeDef { }
+    public sealed class OutputDef : NodeDef
+    {
+        /// <summary>In a circuit the player wires: the signal that must arrive, worked out from the designer's wiring.</summary>
+        public Trace Want;
+
+        /// <summary>
+        /// What the output is. A plain display unless the file says otherwise. The
+        /// target is met when the device does what it would with <see cref="Want"/>.
+        /// </summary>
+        public Device Device = Device.Display;
+    }
 
     public sealed class WireDef
     {
@@ -96,6 +109,20 @@ namespace Blackbox.Puzzles
         public Medium Medium;
         /// <summary>How many probes the player may place.</summary>
         public int Probes;
+
+        /// <summary>
+        /// The player wires this circuit: it starts with inputs, blocks and outputs
+        /// and no wires, and is solved when every output gets its wanted signal,
+        /// every block is used and every block input is connected. Inputs carry
+        /// signals of any type, and blocks keep the state the file gives them.
+        /// </summary>
+        public bool Wiring;
+
+        /// <summary>Blocks show their kind code. Off for unmarked blocks, which the player tells apart only by testing them.</summary>
+        public bool Marked = true;
+
+        /// <summary>A wired circuit's intended wiring, which its outputs' wanted signals come from. Never shown.</summary>
+        public readonly List<WireDef> Solution = new List<WireDef>();
 
         public readonly List<InputDef> Inputs = new List<InputDef>();
         public readonly List<BlockDef> Blocks = new List<BlockDef>();
@@ -167,6 +194,12 @@ namespace Blackbox.Puzzles
         /// <summary>Position in the game, from 0.</summary>
         public int Number;
 
+        /// <summary>The player wires this chapter's circuits, with signals of any type.</summary>
+        public bool Wiring;
+
+        /// <summary>The part of the game the chapter belongs to.</summary>
+        public PartDef Part;
+
         /// <summary>The chapter that must be played first, or null for the first chapter.</summary>
         public string UnlockAfter;
         /// <summary>How many circuits of <see cref="UnlockAfter"/> must be solved.</summary>
@@ -175,5 +208,26 @@ namespace Blackbox.Puzzles
         public readonly List<PuzzleDef> Puzzles = new List<PuzzleDef>();
 
         public override string ToString() => $"Chapter {Numeral} · {Title}";
+    }
+
+    /// <summary>
+    /// A part of the game: a run of chapters. The first part teaches each signal
+    /// and block, the second how signals combine, and the last is the main game.
+    /// A part can wait for the one before it to be finished.
+    /// </summary>
+    public sealed class PartDef
+    {
+        public string Id;
+        public string Title;
+        /// <summary>One line about what the part is for.</summary>
+        public string Tagline;
+        /// <summary>Position in the game, from 0.</summary>
+        public int Number;
+        /// <summary>The part opens only once every circuit in the part before it is solved.</summary>
+        public bool AfterPrevious;
+
+        public readonly List<ChapterDef> Chapters = new List<ChapterDef>();
+
+        public override string ToString() => $"Part {Number + 1} · {Title}";
     }
 }

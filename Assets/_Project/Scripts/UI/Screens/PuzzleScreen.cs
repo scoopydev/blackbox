@@ -778,7 +778,8 @@ namespace Blackbox.UI.Screens
             CancelRun();
             _ink.FinishTyping();
             var pause = Game.Screens.Create<PauseOverlay>();
-            pause.Owner = this;
+            pause.Puzzle = Puzzle;
+            pause.Reset = ResetCircuit;
             Game.Screens.Push(pause);
         }
 

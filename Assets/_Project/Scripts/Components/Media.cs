@@ -150,9 +150,11 @@ namespace Blackbox.Components
         /// </summary>
         public static int Reading(int form, int height, int steps, long index)
         {
-            double r = (height + 1) * Waves.Shape(form, (index + 0.5) / steps);
-            return (int)Math.Round(r + Math.Sign(r) * 1e-9, MidpointRounding.AwayFromZero);
+            return RoundLevel((height + 1) * Waves.Shape(form, (index + 0.5) / steps));
         }
+
+        /// <summary>A reading rounded to a whole level, halves away from the middle (see <see cref="Reading"/>).</summary>
+        public static int RoundLevel(double r) => (int)Math.Round(r + Math.Sign(r) * 1e-9, MidpointRounding.AwayFromZero);
 
         /// <summary>The level (-7 to 7) a fraction <paramref name="loop"/> of the way through a loop.</summary>
         public static int At(int v, double loop) =>

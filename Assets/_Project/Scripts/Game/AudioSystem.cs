@@ -187,6 +187,35 @@ namespace Blackbox.Game
             return clip.length;
         }
 
+        /// <summary>Sounds of whole signals over a loop, by trace key. Cleared when it grows large.</summary>
+        readonly Dictionary<string, AudioClip> _traces = new Dictionary<string, AudioClip>();
+
+        /// <summary>
+        /// Plays a signal over a whole loop (see <see cref="SignalSound.Render(Trace, int)"/>),
+        /// cutting off whatever signal was playing. Returns how long it lasts.
+        /// </summary>
+        public float PlayTrace(Trace trace)
+        {
+            StopSignals();
+            if (trace == null || _tone == null) return 0f;
+            if (!_traces.TryGetValue(trace.Key, out var clip))
+            {
+                if (_traces.Count >= 48)
+                {
+                    foreach (var old in _traces.Values) if (old != null && old != _tone.clip) Destroy(old);
+                    _traces.Clear();
+                }
+                var data = SignalSound.Render(trace, Rate);
+                clip = AudioClip.Create("bb_trace", Math.Max(1, data.Length), 1, Rate, false);
+                clip.SetData(data, 0);
+                _traces[trace.Key] = clip;
+            }
+            _tone.clip = clip;
+            _tone.volume = _master * _effects;
+            _tone.Play();
+            return clip.length;
+        }
+
         AudioClip SignalClip(Medium medium, int value)
         {
             if (!Media.IsValid(medium, value)) return null;

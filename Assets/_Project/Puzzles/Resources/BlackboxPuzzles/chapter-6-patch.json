@@ -1,0 +1,223 @@
+{
+  "id": "patch",
+  "title": "Patch",
+  "mode": "wiring",
+  "tagline": "Nothing is wired. Draw the wires yourself.",
+  "signals": "Every kind of signal meets here, and outputs are devices: lights, digit displays, fans, servos, speakers and displays.",
+  "circuits": [
+    {
+      "id": "patch-01",
+      "name": "Plug In",
+      "hint": "Drag from the dot on A to the dot on the left of g, then from g's right dot to X. Then press RUN.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "B1"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "patch-02",
+      "name": "Top and Bottom",
+      "hint": "A block with two inputs can care which wire goes in on top. Click a wire to take it off.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0011"
+        },
+        "B": {
+          "signal": "binary 0101"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "B4",
+          "state": 2
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "patch-03",
+      "name": "In Line",
+      "hint": "Every block has to be used, so put both of them in the signal's path.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 3"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "D1",
+          "state": 1
+        },
+        "h": {
+          "kind": "D3"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "patch-04",
+      "name": "Branch",
+      "hint": "One signal can feed many wires: drag from the same dot again. A digit display shows a shape's corners.",
+      "inputs": {
+        "A": {
+          "signal": "shape solid triangle"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "S1"
+        },
+        "h": {
+          "kind": "S2"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "A -> h",
+        "g -> X",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "patch-05",
+      "name": "Cross Talk",
+      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, and a shape is 1 when it's solid.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 0"
+        },
+        "B": {
+          "signal": "shape solid circle"
+        },
+        "C": {
+          "signal": "binary 0"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "B2"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        }
+      },
+      "solution": [
+        "B -> g.0",
+        "B -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "patch-06",
+      "name": "Blink",
+      "hint": "Some signals change as the loop plays. Watch the target light: when is it on?",
+      "inputs": {
+        "A": {
+          "signal": "binary 1100"
+        },
+        "B": {
+          "signal": "binary 0011"
+        },
+        "C": {
+          "signal": "binary 0101"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "B4"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        }
+      },
+      "solution": [
+        "B -> g.0",
+        "C -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "patch-07",
+      "name": "Moving Parts",
+      "hint": "A fan spins faster the bigger its signal. A servo swings its arm from left to right as its signal rises.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 9"
+        },
+        "B": {
+          "signal": "decimal 4"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "D2",
+          "state": 1
+        },
+        "h": {
+          "kind": "D3",
+          "state": 1
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "fan"
+        },
+        "Y": {
+          "device": "servo"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "g -> X",
+        "h -> Y"
+      ]
+    }
+  ]
+}

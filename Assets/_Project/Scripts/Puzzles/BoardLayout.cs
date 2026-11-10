@@ -76,6 +76,40 @@ namespace Blackbox.Puzzles
             }
         }
 
+        /// <summary>
+        /// Places a wired circuit, whose wires the player draws, so nothing about the
+        /// layout gives the wiring away: inputs in the first column, blocks in a
+        /// grid in the order the file lists them, outputs in the last column. Hand
+        /// placed positions still win.
+        /// </summary>
+        public static void ApplyWiring(PuzzleDef p)
+        {
+            if (p.AllNodes.All(n => n.HasPosition)) return;
+            int blocks = p.Blocks.Count;
+            int blockCols = blocks <= 3 ? 1 : blocks <= 8 ? 2 : 3;
+            int perCol = (blocks + blockCols - 1) / Math.Max(1, blockCols);
+            int tallest = Math.Max(Math.Max(p.Inputs.Count, p.Outputs.Count), perCol);
+
+            void Column(IList<NodeDef> nodes, float col, int count)
+            {
+                float offset = (tallest - count) * 0.5f;
+                for (int i = 0; i < nodes.Count; i++)
+                {
+                    if (nodes[i].HasPosition) continue;
+                    nodes[i].At = new GridPoint(col, offset + i);
+                    nodes[i].HasPosition = true;
+                }
+            }
+
+            Column(p.Inputs.Cast<NodeDef>().ToList(), 0f, p.Inputs.Count);
+            for (int c = 0; c < blockCols; c++)
+            {
+                var members = p.Blocks.Skip(c * perCol).Take(perCol).Cast<NodeDef>().ToList();
+                Column(members, 1f + c, members.Count);
+            }
+            Column(p.Outputs.Cast<NodeDef>().ToList(), blockCols + 1f, p.Outputs.Count);
+        }
+
         /// <summary>The extent of the board in grid units.</summary>
         public static void Bounds(PuzzleDef p, out float minCol, out float maxCol, out float minRow, out float maxRow)
         {

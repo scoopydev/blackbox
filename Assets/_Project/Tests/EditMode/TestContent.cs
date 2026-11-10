@@ -36,5 +36,11 @@ namespace Blackbox.Tests
         {
             return PuzzleLoader.ReadPuzzle(Blackbox.Core.JsonValue.Parse(circuitJson), "test", medium);
         }
+
+        /// <summary>Reads one wired circuit, as it would appear in a chapter with "mode": "wiring".</summary>
+        public static PuzzleDef ParseWired(string circuitJson, bool marked = true)
+        {
+            return PuzzleLoader.ReadPuzzle(Blackbox.Core.JsonValue.Parse(circuitJson), "test", Medium.Binary, true, marked);
+        }
     }
 }

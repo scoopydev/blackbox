@@ -1,0 +1,310 @@
+{
+  "id": "blackbox",
+  "title": "Blackbox",
+  "mode": "wiring",
+  "tagline": "Everything at once.",
+  "signals": "Bigger circuits with every kind of signal and block, none of them named. Make every output do what its target shows.",
+  "marked": false,
+  "circuits": [
+    {
+      "id": "blackbox-01",
+      "name": "Metronome",
+      "hint": "Count the blinks the target makes in one loop.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "decimal 6"
+        },
+        "C": {
+          "signal": "binary 1"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M7"
+        },
+        "h": {
+          "kind": "M7"
+        },
+        "k": {
+          "kind": "M8"
+        },
+        "m": {
+          "kind": "M6"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        },
+        "Y": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h",
+        "h -> k.0",
+        "B -> k.1",
+        "k -> X",
+        "k -> m",
+        "m -> Y"
+      ]
+    },
+    {
+      "id": "blackbox-02",
+      "name": "Mixing Desk",
+      "hint": "Listen to the target. Then listen to each input on its own.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f2 a4"
+        },
+        "B": {
+          "signal": "wave square f2 a3"
+        },
+        "C": {
+          "signal": "binary 0011"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M1"
+        },
+        "h": {
+          "kind": "M5"
+        },
+        "k": {
+          "kind": "M2"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "speaker"
+        },
+        "Y": {
+          "device": "fan"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h.0",
+        "C -> h.1",
+        "h -> X",
+        "C -> k",
+        "k -> Y"
+      ]
+    },
+    {
+      "id": "blackbox-03",
+      "name": "Stepper",
+      "hint": "A servo can move in steps as well as smoothly.",
+      "inputs": {
+        "A": {
+          "signal": "wave saw f1 a7"
+        },
+        "B": {
+          "signal": "binary 1"
+        },
+        "C": {
+          "signal": "decimal 5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M4"
+        },
+        "h": {
+          "kind": "M2"
+        },
+        "k": {
+          "kind": "D1",
+          "state": 2
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "servo"
+        },
+        "Y": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> h",
+        "h -> g",
+        "g -> X",
+        "C -> k",
+        "k -> Y"
+      ]
+    },
+    {
+      "id": "blackbox-04",
+      "name": "Signal Box",
+      "hint": "A shape read as a digit is its number of corners.",
+      "inputs": {
+        "A": {
+          "signal": "shape solid square"
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "decimal 3"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "S2"
+        },
+        "h": {
+          "kind": "B4",
+          "state": 2
+        },
+        "k": {
+          "kind": "D2"
+        },
+        "m": {
+          "kind": "M5"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        },
+        "Y": {
+          "device": "digits"
+        },
+        "Z": {
+          "device": "light"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> m.0",
+        "B -> m.1",
+        "m -> X",
+        "A -> h.0",
+        "B -> h.1",
+        "h -> Z",
+        "C -> k.0",
+        "A -> k.1",
+        "k -> Y"
+      ]
+    },
+    {
+      "id": "blackbox-05",
+      "name": "Pulse Width",
+      "hint": "A light that's on for longer each blink is fed a lower threshold.",
+      "inputs": {
+        "A": {
+          "signal": "wave saw f2 a7"
+        },
+        "B": {
+          "signal": "decimal 6"
+        },
+        "C": {
+          "signal": "decimal 2"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M8"
+        },
+        "h": {
+          "kind": "D2",
+          "state": 1
+        },
+        "k": {
+          "kind": "M6"
+        },
+        "m": {
+          "kind": "B1"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        },
+        "Y": {
+          "device": "fan"
+        },
+        "Z": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "h -> g.1",
+        "B -> h.0",
+        "C -> h.1",
+        "g -> X",
+        "g -> m",
+        "m -> Y",
+        "g -> k",
+        "k -> Z"
+      ]
+    },
+    {
+      "id": "blackbox-06",
+      "name": "Black Box",
+      "hint": "Solve one output at a time. Every block still has to be used.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave sine f1 a7 p2"
+        },
+        "C": {
+          "signal": "shape hollow triangle"
+        },
+        "D": {
+          "signal": "binary 01"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M3"
+        },
+        "h": {
+          "kind": "M1"
+        },
+        "k": {
+          "kind": "S1"
+        },
+        "m": {
+          "kind": "M5"
+        },
+        "n": {
+          "kind": "M7"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "speaker"
+        },
+        "Y": {
+          "device": "light"
+        },
+        "Z": {
+          "device": "servo"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h.0",
+        "B -> h.1",
+        "C -> k",
+        "k -> m.0",
+        "D -> m.1",
+        "m -> Y",
+        "A -> n",
+        "n -> X",
+        "h -> Z"
+      ]
+    }
+  ]
+}

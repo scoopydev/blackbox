@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Blackbox.Components
@@ -96,6 +97,115 @@ namespace Blackbox.Components
                 if (Math.Abs(_levels[k] - other._levels[k]) > slack) return false;
             return true;
         }
+
+        /// <summary>
+        /// A pattern: each value held for an equal share of the loop, in turn. The
+        /// number of values must divide <see cref="Steps"/> (1, 2, 3, 4, 6, 8, 9, 12, 16, ...).
+        /// </summary>
+        public static Trace Pattern(Medium m, int[] values)
+        {
+            if (values == null || values.Length == 0) throw new ArgumentException("A pattern needs at least one value.", nameof(values));
+            if (Steps % values.Length != 0) throw new ArgumentException($"A pattern of {values.Length} values doesn't divide a loop of {Steps} steps evenly.", nameof(values));
+            if (values.Length == 1) return Of(m, values[0]);
+            foreach (int v in values)
+                if (!Media.IsValid(m, v) || Media.IsWave(m)) throw new ArgumentOutOfRangeException(nameof(values), $"{v} can't be part of a {Media.Key(m)} pattern.");
+            var levels = new float[Steps];
+            int each = Steps / values.Length;
+            for (int k = 0; k < Steps; k++) levels[k] = values[k / each];
+            return new Trace(m, levels);
+        }
+
+        /// <summary>True when a pattern of this many values fits the loop evenly.</summary>
+        public static bool FitsLoop(int count) => count > 0 && Steps % count == 0;
+
+        /// <summary>The steady level of a flat trace (its first level).</summary>
+        public float First => _levels[0];
+
+        /// <summary>
+        /// The trace as runs of one level: (first step, length, level), in order.
+        /// A wave has a run for almost every step; bits, digits and shapes few.
+        /// </summary>
+        public List<(int start, int length, float level)> Runs()
+        {
+            var runs = new List<(int, int, float)>();
+            int start = 0;
+            for (int k = 1; k <= Steps; k++)
+            {
+                if (k < Steps && Math.Abs(_levels[k] - _levels[start]) <= 0.001f) continue;
+                runs.Add((start, k - start, _levels[start]));
+                start = k;
+            }
+            return runs;
+        }
+
+        /// <summary>The lowest and highest levels.</summary>
+        public void Range(out float low, out float high)
+        {
+            low = high = _levels[0];
+            foreach (float v in _levels)
+            {
+                if (v < low) low = v;
+                if (v > high) high = v;
+            }
+        }
+
+        /// <summary>The same signal, <paramref name="steps"/> later (it wraps round the loop).</summary>
+        public Trace Later(int steps)
+        {
+            var levels = new float[Steps];
+            for (int k = 0; k < Steps; k++) levels[k] = _levels[((k - steps) % Steps + Steps) % Steps];
+            return new Trace(Medium, levels);
+        }
+
+        /// <summary>The same signal played <paramref name="times"/> times as fast, so it repeats that many times a loop.</summary>
+        public Trace Faster(int times)
+        {
+            var levels = new float[Steps];
+            for (int k = 0; k < Steps; k++) levels[k] = _levels[(k * times) % Steps];
+            return new Trace(Medium, levels);
+        }
+
+        /// <summary>Each level changed by <paramref name="f"/>, as a trace of <paramref name="medium"/>.</summary>
+        public Trace Map(Medium medium, Func<float, float> f)
+        {
+            var levels = new float[Steps];
+            for (int k = 0; k < Steps; k++) levels[k] = f(_levels[k]);
+            return new Trace(medium, levels);
+        }
+
+        /// <summary>Two traces combined step by step, as a trace of <paramref name="medium"/>.</summary>
+        public static Trace Zip(Medium medium, Trace a, Trace b, Func<float, float, float> f)
+        {
+            var levels = new float[Steps];
+            for (int k = 0; k < Steps; k++) levels[k] = f(a._levels[k], b._levels[k]);
+            return new Trace(medium, levels);
+        }
+
+        /// <summary>A key equal for traces that <see cref="Matches"/> would call the same (for caching and counting).</summary>
+        public string Key
+        {
+            get
+            {
+                if (_key != null) return _key;
+                var sb = new StringBuilder(Steps * 3 + 4);
+                sb.Append((int)Medium).Append(':');
+                // Waves to the nearest tenth: close enough to tell traces apart, and
+                // coarse enough that rounding noise doesn't split the same trace.
+                float scale = Medium == Medium.Wave ? 10f : 1f;
+                int last = int.MinValue, run = 0;
+                for (int k = 0; k <= Steps; k++)
+                {
+                    int q = k < Steps ? (int)Math.Round(_levels[k] * scale) : int.MinValue + 1;
+                    if (q == last) { run++; continue; }
+                    if (run > 0) sb.Append(last).Append('x').Append(run).Append(' ');
+                    last = q;
+                    run = 1;
+                }
+                return _key = sb.ToString();
+            }
+        }
+
+        string _key;
 
         // ------------------------------------------------------------------ mixing
 

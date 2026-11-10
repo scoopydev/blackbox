@@ -222,9 +222,18 @@ namespace Blackbox.Game
             }
             Save.LastPuzzle = puzzle.Id;
             MarkDirty();
-            var screen = Screens.Create<PuzzleScreen>();
-            screen.Puzzle = puzzle;
-            Screens.Replace(screen);
+            if (puzzle.Wiring)
+            {
+                var wiring = Screens.Create<WiringScreen>();
+                wiring.Puzzle = puzzle;
+                Screens.Replace(wiring);
+            }
+            else
+            {
+                var screen = Screens.Create<PuzzleScreen>();
+                screen.Puzzle = puzzle;
+                Screens.Replace(screen);
+            }
 
             // The first visit to a chapter opens with its title card.
             var chapter = puzzle.Chapter;

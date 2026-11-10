@@ -158,9 +158,18 @@ namespace Blackbox.UI.Screens
             public bool Solved, Open, Current;
         }
 
+        sealed class PartTab
+        {
+            public PartDef Part;
+            public VoidText Label;
+            public Clickable Click;
+        }
+
         readonly List<Tab> _tabs = new List<Tab>();
+        readonly List<PartTab> _partTabs = new List<PartTab>();
         readonly List<Node> _nodes = new List<Node>();
-        RectTransform _page;
+        RectTransform _page, _tabRoot;
+        PartDef _part;
         int _focus;
         float _pulse;
         VoidText _infoNumber, _infoName, _infoStatus;
@@ -172,24 +181,82 @@ namespace Blackbox.UI.Screens
         {
             if (Chapter == null) Chapter = Game.Progress.CurrentChapter();
             Chrome.Wordmark(Root, 90f, 62f, 22, Game.GoTitle);
-            var title = UIKit.Text(Root, "CIRCUITS", TextStyle.Label.WithSize(13).WithTracking(0.4f).WithColor(Palette.Dim));
-            title.rectTransform.At(VoidFrame.Width * 0.5f, 62f, 400f, 20f);
+            BuildPartTabs();
             Chrome.TextButton(Root, "BACK", 1830f, 62f, true, Game.GoTitle, "back");
             UIKit.Rule(Root, 90f, 1830f, 122f, Palette.Rule);
 
-            BuildTabs();
             Chrome.KeyHints(Root, VoidFrame.Width * 0.5f - 330f, 1032f, false, "ARROWS", "MOVE", "ENTER", "PLAY", "TAB", "CHAPTER", "ESC", "BACK");
             ShowChapter(Chapter, false);
         }
 
+        /// <summary>The parts of the game along the top: the tutorials, then the main game. A locked part shows a padlock.</summary>
+        void BuildPartTabs()
+        {
+            var parts = Game.Library.Parts;
+            if (parts.Count <= 1)
+            {
+                var title = UIKit.Text(Root, "CIRCUITS", TextStyle.Label.WithSize(13).WithTracking(0.4f).WithColor(Palette.Dim));
+                title.rectTransform.At(VoidFrame.Width * 0.5f, 62f, 400f, 20f);
+                return;
+            }
+            var style = TextStyle.Label.WithSize(13).WithTracking(0.4f);
+            const float pitch = 230f;
+            float x0 = VoidFrame.Width * 0.5f - pitch * (parts.Count - 1) * 0.5f;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var part = parts[i];
+                bool open = Game.Progress.IsUnlocked(part);
+                var rt = UIKit.Rect(Root, "Part " + part.Id).At(x0 + i * pitch, 62f, 210f, 40f);
+                var tab = new PartTab { Part = part };
+                tab.Label = UIKit.Text(rt, part.Title, style);
+                tab.Label.rectTransform.Centered(open ? 0f : 10f, 0f, 200f, 20f);
+                if (!open)
+                {
+                    var lockGlyph = UIKit.Glyph(rt, "lock", Palette.Faint, 1.2f);
+                    float w = tab.Label.MeasureWidth();
+                    lockGlyph.rectTransform.Centered(10f - w * 0.5f - 14f, 1f, 12f, 12f);
+                }
+                UIKit.Hit(rt).rectTransform.Stretch();
+                tab.Click = rt.gameObject.AddComponent<Clickable>();
+                tab.Click.Clicked = () => ShowPart(part);
+                tab.Click.HoverChanged = _ => StylePartTabs();
+                _partTabs.Add(tab);
+            }
+        }
+
+        void StylePartTabs()
+        {
+            foreach (var tab in _partTabs)
+            {
+                bool active = tab.Part == _part;
+                bool open = Game.Progress.IsUnlocked(tab.Part);
+                tab.Label.color = active ? Palette.Text : tab.Click.Hovered ? Palette.Dim : open ? Palette.Dim : Palette.Faint;
+                tab.Label.SignalFill = active && open;
+            }
+        }
+
+        void ShowPart(PartDef part)
+        {
+            if (part == _part || part.Chapters.Count == 0) return;
+            App.Sound(Sfx.Click);
+            ChapterDef target = null;
+            foreach (var c in part.Chapters)
+                if (Game.Progress.CurrentIn(c) != null) { target = c; break; }
+            ShowChapter(target ?? part.Chapters[0], true);
+        }
+
         void BuildTabs()
         {
+            if (_tabRoot != null) Destroy(_tabRoot.gameObject);
+            _tabs.Clear();
+            _tabRoot = UIKit.Rect(Root, "Chapter tabs").Stretch();
             var style = TextStyle.Label.WithSize(14).WithTracking(0.32f);
             float total = 0f;
             var widths = new List<float>();
-            foreach (var c in Game.Library.Chapters)
+            var chapters = _part != null ? _part.Chapters : Game.Library.Chapters;
+            foreach (var c in chapters)
             {
-                var probe = UIKit.Text(Root, $"{c.Numeral}    {c.Title}", style);
+                var probe = UIKit.Text(_tabRoot, $"{c.Numeral}    {c.Title}", style);
                 probe.enabled = false;
                 float w = probe.MeasureWidth() + (Game.Progress.IsUnlocked(c) ? 0f : 26f);
                 Destroy(probe.gameObject);
@@ -199,11 +266,11 @@ namespace Blackbox.UI.Screens
             const float gap = 84f;
             total += gap * (widths.Count - 1);
             float x = VoidFrame.Width * 0.5f - total * 0.5f;
-            for (int i = 0; i < Game.Library.Chapters.Count; i++)
+            for (int i = 0; i < chapters.Count; i++)
             {
-                var c = Game.Library.Chapters[i];
+                var c = chapters[i];
                 float w = widths[i];
-                var rt = UIKit.Rect(Root, "Tab " + c.Numeral).At(x + w * 0.5f, 176f, w + 30f, 48f);
+                var rt = UIKit.Rect(_tabRoot, "Tab " + c.Numeral).At(x + w * 0.5f, 176f, w + 30f, 48f);
                 var tab = new Tab { Chapter = c };
                 bool open = Game.Progress.IsUnlocked(c);
                 tab.Label = UIKit.Text(rt, $"{c.Numeral}    {c.Title}", style);
@@ -247,6 +314,12 @@ namespace Blackbox.UI.Screens
             if (chapter == null) return;
             if (animate && chapter == Chapter && _page != null) return;
             Chapter = chapter;
+            if (chapter.Part != _part || _tabRoot == null)
+            {
+                _part = chapter.Part;
+                BuildTabs();
+                StylePartTabs();
+            }
             StyleTabs();
             if (_page != null)
             {
@@ -265,14 +338,26 @@ namespace Blackbox.UI.Screens
             int solved = Game.Progress.SolvedIn(chapter);
             float cx = VoidFrame.Width * 0.5f;
 
+            if (Game.Library.Parts.Count > 1 && chapter.Part != null && !string.IsNullOrEmpty(chapter.Part.Tagline))
+            {
+                var partLine = UIKit.Text(_page, chapter.Part.Tagline, TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
+                partLine.rectTransform.At(cx, 244f, 1200f, 16f);
+            }
             var name = UIKit.Text(_page, chapter.Title, TextStyle.Heading.WithSize(58).WithWeight(200).WithColor(open ? Palette.Text : Palette.Dim));
             name.rectTransform.At(cx, 296f, 1200f, 80f);
             var tagline = UIKit.Text(_page, chapter.Tagline, TextStyle.Body.WithSize(22).WithColor(open ? Palette.Dim : Palette.Faint));
             tagline.rectTransform.At(cx, 356f, 1200f, 32f);
 
-            string signals = $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
+            string signals = chapter.Wiring ? "WIRE IT YOURSELF  ·  EVERY KIND OF SIGNAL" : $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
             string countText;
             if (open) countText = $"{signals}  ·  {solved} OF {chapter.Puzzles.Count} SOLVED";
+            else if (!Game.Progress.IsUnlocked(chapter.Part))
+            {
+                var before = Game.Progress.PartBefore(chapter.Part);
+                countText = before != null
+                    ? $"OPENS WHEN EVERY CIRCUIT IN {before.Title.ToUpperInvariant()} IS SOLVED  ·  {Game.Progress.SolvedIn(before)} OF {Progress.CountIn(before)} SO FAR"
+                    : "LOCKED";
+            }
             else
             {
                 var before = Game.Library.FindChapter(chapter.UnlockAfter);
@@ -469,6 +554,11 @@ namespace Blackbox.UI.Screens
             {
                 _infoStatus.text = "NOT YET SOLVED";
                 _infoStatus.color = Palette.Dim;
+            }
+            else if (!Game.Progress.IsUnlocked(Chapter.Part))
+            {
+                _infoStatus.text = $"{Chapter.Part.Title.ToUpperInvariant()} IS LOCKED";
+                _infoStatus.color = Palette.Faint;
             }
             else if (!Game.Progress.IsUnlocked(Chapter))
             {

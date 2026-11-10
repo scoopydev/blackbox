@@ -29,6 +29,7 @@ namespace Blackbox.EditorTools
         /// <summary>
         /// Solves every circuit by brute force and reports anything wrong: no
         /// solution, already solved at the start, unwired nodes, repeated rows.
+        /// Wired circuits are checked by trying every way to wire them.
         /// </summary>
         [MenuItem("BLACKBOX/Validate Puzzles", priority = 1)]
         static void ValidatePuzzles()
@@ -56,6 +57,11 @@ namespace Blackbox.EditorTools
                 {
                     circuits++;
                     EditorUtility.DisplayProgressBar("BLACKBOX", "Solving " + p.Name, (float)circuits / Math.Max(1, total));
+                    if (p.Wiring)
+                    {
+                        ValidateWired(p, summary, ref errors, ref warnings);
+                        continue;
+                    }
                     PuzzleReport report;
                     try
                     {
@@ -84,6 +90,43 @@ namespace Blackbox.EditorTools
             string result = $"{circuits} circuits, {errors} error(s), {warnings} warning(s).";
             if (errors == 0) Debug.Log($"BLACKBOX: {result}\n{summary}");
             EditorUtility.DisplayDialog("BLACKBOX", result + (errors + warnings > 0 ? "\n\nDetails are in the Console." : ""), "OK");
+        }
+
+        static void ValidateWired(PuzzleDef p, StringBuilder summary, ref int errors, ref int warnings)
+        {
+            WiringAnalysis analysis;
+            try
+            {
+                analysis = WiringSolver.Analyse(p);
+            }
+            catch (Exception e)
+            {
+                errors++;
+                Debug.LogError($"BLACKBOX: {p.Id}: {e.Message}");
+                return;
+            }
+            var problems = new List<string>();
+            if (!analysis.SolutionWorks) problems.Add("its solution doesn't solve it");
+            if (!analysis.StartsUnsolved) problems.Add("it starts solved");
+            if (problems.Count > 0)
+            {
+                errors += problems.Count;
+                Debug.LogError($"BLACKBOX: {p.Id}: {string.Join("; ", problems)}\n{analysis}");
+            }
+            var notes = new List<string>();
+            if (!analysis.Searched) notes.Add($"too many wirings to check them all ({analysis.Space})");
+            foreach (var o in p.Outputs)
+                foreach (var i in p.Inputs)
+                    if (Blackbox.Components.Devices.Same(o.Device, i.Signal.Trace, o.Want))
+                        notes.Add($"wiring {i.Id} straight to {o.Id} already matches its target");
+            if (notes.Count > 0)
+            {
+                warnings += notes.Count;
+                Debug.LogWarning($"BLACKBOX: {p.Id}: {string.Join("; ", notes)}");
+            }
+            summary.AppendLine(analysis.Searched
+                ? $"  {p.Label} {p.Name}: {analysis.Solutions} wiring(s) solve it, of {analysis.Space} ways to wire its blocks"
+                : $"  {p.Label} {p.Name}: {analysis.Space} ways to wire its blocks, too many to search");
         }
 
         /// <summary>Makes the scene the game runs in: a black camera and the BLACKBOX object.</summary>
@@ -143,7 +186,16 @@ namespace Blackbox.EditorTools
             bool live = Application.isPlaying && BlackboxApp.Instance != null;
             var save = live ? BlackboxApp.Instance.Save : SaveStore.Load();
             foreach (var p in library.AllPuzzles)
+            {
                 if (!save.Solved.Contains(p.Id)) save.RecordSolve(p.Id, 99);
+                if (p.Wiring && !save.Circuits.ContainsKey(p.Id))
+                {
+                    var wired = new CircuitState();
+                    foreach (var w in p.Solution)
+                        wired.Wires.Add(w.To is BlockDef b && b.Kind.InputCount > 1 ? $"{w.From.Id} -> {w.To.Id}.{w.ToPort}" : $"{w.From.Id} -> {w.To.Id}");
+                    save.Circuits[p.Id] = wired;
+                }
+            }
             foreach (var c in library.Chapters) save.SeenIntros.Add(c.Id);
             if (live)
             {

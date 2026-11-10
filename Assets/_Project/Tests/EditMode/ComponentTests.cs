@@ -8,7 +8,8 @@ namespace Blackbox.Tests
     /// <summary>The block kinds, the five signal media, their traces over a run, and their sounds.</summary>
     public class ComponentTests
     {
-        static IEnumerable<BlockKind> AllKinds() => KindCatalog.All;
+        /// <summary>The kinds with a rule for single values: every kind but the mixing ones.</summary>
+        static IEnumerable<BlockKind> AllKinds() => KindCatalog.All.Where(k => !k.Mixing);
 
         static int Apply(string kind, int state, params int[] inputs) => KindCatalog.Get(kind).Apply(inputs, state);
 
@@ -27,7 +28,24 @@ namespace Blackbox.Tests
         public void EachMediumHasFourKinds()
         {
             foreach (Medium m in AllMedia())
-                Assert.That(KindCatalog.All.Count(k => k.Medium == m), Is.EqualTo(4), m.ToString());
+                Assert.That(KindCatalog.All.Count(k => !k.Mixing && k.Medium == m), Is.EqualTo(4), m.ToString());
+        }
+
+        [Test]
+        public void MixingKindsAreWellFormed()
+        {
+            var mixing = KindCatalog.All.Where(k => k.Mixing).ToList();
+            Assert.That(mixing.Count, Is.EqualTo(8));
+            foreach (var kind in mixing)
+            {
+                Assert.That(kind.Id, Does.StartWith("M"));
+                Assert.That(kind.InputCount, Is.InRange(1, 2), kind.Id);
+                Assert.That(kind.StateCount, Is.EqualTo(1), kind.Id);
+                Assert.That(kind.Wireable, Is.True, kind.Id);
+                Assert.Throws<System.InvalidOperationException>(() => kind.Apply(new int[kind.InputCount], 0), kind.Id);
+            }
+            foreach (var kind in KindCatalog.All.Where(k => !k.Mixing))
+                Assert.That(kind.Wireable, Is.EqualTo(!Media.IsWave(kind.Medium)), kind.Id);
         }
 
         [TestCaseSource(nameof(AllKinds))]

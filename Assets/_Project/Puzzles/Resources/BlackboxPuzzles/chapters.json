@@ -1,10 +1,39 @@
 {
-  // Chapter files in play order. Each name is a JSON file in this folder.
-  "chapters": [
-    "chapter-1-first-light",
-    "chapter-2-tally",
-    "chapter-3-forms",
-    "chapter-4-resonance",
-    "chapter-5-grain"
+  // The game in three parts, each a list of chapter files in play order.
+  // Each name is a JSON file in this folder. A part with "afterPrevious"
+  // opens once every circuit of the part before it is solved.
+  "parts": [
+    {
+      "id": "learn",
+      "title": "Learn",
+      "tagline": "PART ONE  ·  WHAT EACH SIGNAL AND BLOCK DOES",
+      "chapters": [
+        "chapter-1-first-light",
+        "chapter-2-tally",
+        "chapter-3-forms",
+        "chapter-4-resonance",
+        "chapter-5-grain"
+      ]
+    },
+    {
+      "id": "combine",
+      "title": "Combine",
+      "tagline": "PART TWO  ·  WIRING, AND HOW SIGNALS COMBINE",
+      "afterPrevious": true,
+      "chapters": [
+        "chapter-6-patch",
+        "chapter-7-blend"
+      ]
+    },
+    {
+      "id": "build",
+      "title": "Build",
+      "tagline": "PART THREE  ·  UNMARKED BLOCKS, EVERY SIGNAL",
+      "afterPrevious": true,
+      "chapters": [
+        "chapter-8-unmarked",
+        "chapter-9-blackbox"
+      ]
+    }
   ]
 }

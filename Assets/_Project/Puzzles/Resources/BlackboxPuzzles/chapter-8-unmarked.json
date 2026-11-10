@@ -1,0 +1,213 @@
+{
+  "id": "unmarked",
+  "title": "Unmarked",
+  "mode": "wiring",
+  "tagline": "The blocks have lost their names.",
+  "signals": "From here on, blocks don't say what kind they are. Every kind of signal and every block you've met can turn up, so try things and watch what each block sends.",
+  "marked": false,
+  "circuits": [
+    {
+      "id": "unmarked-01",
+      "name": "Nameless",
+      "hint": "Without names, the only way to learn a block is to wire it up and press RUN.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 4"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "D3"
+        },
+        "h": {
+          "kind": "D1"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "unmarked-02",
+      "name": "Dim",
+      "hint": "A light glows brighter for a bigger digit. A shape lights it in the shape's own colour, at half strength when it's hollow.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 2"
+        },
+        "B": {
+          "signal": "shape solid hexagon"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "D3",
+          "state": 2
+        },
+        "h": {
+          "kind": "S1"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        },
+        "Y": {
+          "device": "light"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "B -> h",
+        "g -> X",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "unmarked-03",
+      "name": "Sweep",
+      "hint": "A servo's arm follows a wave: left at the bottom, right at the top.",
+      "inputs": {
+        "A": {
+          "signal": "wave saw f1 a7"
+        },
+        "B": {
+          "signal": "binary 0101"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M3"
+        },
+        "h": {
+          "kind": "M7"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "servo"
+        }
+      },
+      "solution": [
+        "A -> h",
+        "h -> g",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "unmarked-04",
+      "name": "Strobe",
+      "hint": "Two outputs, two blocks. Each block has to lead to an output, through other blocks or straight there.",
+      "inputs": {
+        "A": {
+          "signal": "binary 1"
+        },
+        "B": {
+          "signal": "wave sine f4 a7"
+        },
+        "C": {
+          "signal": "decimal 0"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "B2"
+        },
+        "h": {
+          "kind": "B1"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        },
+        "Y": {
+          "device": "fan"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "h -> X",
+        "g -> Y"
+      ]
+    },
+    {
+      "id": "unmarked-05",
+      "name": "Countdown",
+      "hint": "Watch the target's digits change through the loop.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f3 a7"
+        },
+        "B": {
+          "signal": "decimal 9"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "M6"
+        },
+        "h": {
+          "kind": "D3",
+          "state": 2
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "unmarked-06",
+      "name": "Colours",
+      "hint": "A light takes a shape's colour and its fill. A digit display counts its corners.",
+      "inputs": {
+        "A": {
+          "signal": "shape solid triangle"
+        },
+        "B": {
+          "signal": "shape hollow square"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "S3"
+        },
+        "h": {
+          "kind": "S2",
+          "state": 1
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "light"
+        },
+        "Y": {
+          "device": "digits"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "g -> X",
+        "h -> Y"
+      ]
+    }
+  ]
+}

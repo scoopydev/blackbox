@@ -7,7 +7,9 @@ namespace Blackbox.Puzzles
     /// <summary>All chapters in play order.</summary>
     public sealed class ContentLibrary
     {
+        /// <summary>Every chapter in play order, across all parts.</summary>
         public readonly List<ChapterDef> Chapters = new List<ChapterDef>();
+        public readonly List<PartDef> Parts = new List<PartDef>();
         readonly Dictionary<string, PuzzleDef> _puzzles = new Dictionary<string, PuzzleDef>();
 
         /// <summary>
@@ -17,17 +19,30 @@ namespace Blackbox.Puzzles
         public static ContentLibrary Load(Func<string, string> readText)
         {
             var library = new ContentLibrary();
-            var index = PuzzleLoader.ReadIndex(readText("chapters") ?? throw new PuzzleFormatException("chapters.json is missing."));
-            foreach (var name in index)
+            var parts = PuzzleLoader.ReadParts(readText("chapters") ?? throw new PuzzleFormatException("chapters.json is missing."));
+            foreach (var (part, files) in parts)
             {
-                string text = readText(name) ?? throw new PuzzleFormatException($"{name}.json is listed in chapters.json but missing.");
-                library.Add(PuzzleLoader.ReadChapter(text, name + ".json", library.Chapters.Count));
+                library.Parts.Add(part);
+                foreach (var name in files)
+                {
+                    string text = readText(name) ?? throw new PuzzleFormatException($"{name}.json is listed in chapters.json but missing.");
+                    var chapter = PuzzleLoader.ReadChapter(text, name + ".json", library.Chapters.Count);
+                    chapter.Part = part;
+                    part.Chapters.Add(chapter);
+                    library.Add(chapter);
+                }
             }
             return library;
         }
 
         public void Add(ChapterDef chapter)
         {
+            if (chapter.Part == null)
+            {
+                if (Parts.Count == 0) Parts.Add(new PartDef { Id = "main", Title = "Circuits", Tagline = string.Empty });
+                chapter.Part = Parts[Parts.Count - 1];
+                chapter.Part.Chapters.Add(chapter);
+            }
             foreach (var p in chapter.Puzzles)
             {
                 if (_puzzles.ContainsKey(p.Id)) throw new PuzzleFormatException($"Two circuits use the id '{p.Id}'.");
@@ -55,7 +70,10 @@ namespace Blackbox.Puzzles
     /// a time after it, but once the first circuit of a chapter is solved there is
     /// always one spare open, so a player who is stuck can try the next one. A
     /// chapter can also be made to wait for enough circuits of an earlier one
-    /// (<c>unlock</c> in its file); the shipped chapters are all open from the start.
+    /// (<c>unlock</c> in its file). A part of the game can wait for every circuit
+    /// of the part before it (<c>afterPrevious</c> in chapters.json): the combining
+    /// tutorial waits for the first, and the main game for both. The debug setting
+    /// to open everything skips all of it.
     /// </summary>
     public sealed class Progress
     {
@@ -87,9 +105,43 @@ namespace Blackbox.Puzzles
             }
         }
 
+        /// <summary>Debug: every part, chapter and circuit is open.</summary>
+        bool OpenAll => _save.Prefs != null && _save.Prefs.DebugOpenAll;
+
+        public int SolvedIn(PartDef part)
+        {
+            int n = 0;
+            foreach (var c in part.Chapters) n += SolvedIn(c);
+            return n;
+        }
+
+        public static int CountIn(PartDef part)
+        {
+            int n = 0;
+            foreach (var c in part.Chapters) n += c.Puzzles.Count;
+            return n;
+        }
+
+        public bool IsComplete(PartDef part) => SolvedIn(part) >= CountIn(part);
+
+        /// <summary>The part before this one, or null for the first.</summary>
+        public PartDef PartBefore(PartDef part)
+        {
+            int i = _library.Parts.IndexOf(part);
+            return i > 0 ? _library.Parts[i - 1] : null;
+        }
+
+        public bool IsUnlocked(PartDef part)
+        {
+            if (part == null || OpenAll || !part.AfterPrevious) return true;
+            var before = PartBefore(part);
+            return before == null || (IsUnlocked(before) && IsComplete(before));
+        }
+
         public bool IsUnlocked(ChapterDef chapter)
         {
-            if (string.IsNullOrEmpty(chapter.UnlockAfter)) return true;
+            if (!IsUnlocked(chapter.Part)) return false;
+            if (OpenAll || string.IsNullOrEmpty(chapter.UnlockAfter)) return true;
             var before = _library.FindChapter(chapter.UnlockAfter);
             if (before == null) return true;
             return IsUnlocked(before) && SolvedIn(before) >= Math.Min(chapter.UnlockSolved, before.Puzzles.Count);
@@ -98,7 +150,7 @@ namespace Blackbox.Puzzles
         public bool IsUnlocked(PuzzleDef p)
         {
             if (!IsUnlocked(p.Chapter)) return false;
-            if (IsSolved(p) || p.Number == 0) return true;
+            if (OpenAll || IsSolved(p) || p.Number == 0) return true;
             // With k circuits solved, circuits up to number k are open, plus one spare.
             int solved = SolvedIn(p.Chapter);
             int spare = solved > 0 ? 1 : 0;

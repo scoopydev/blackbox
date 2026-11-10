@@ -17,15 +17,19 @@ namespace Blackbox.Core
         public bool SignalSounds = true;
         /// <summary>Debug: write what every block does, in its current state, under it.</summary>
         public bool DebugRules;
+        /// <summary>Debug: open every part, chapter and circuit, whatever has been solved.</summary>
+        public bool DebugOpenAll;
     }
 
-    /// <summary>Where the player left one circuit: input values, block states and probes.</summary>
+    /// <summary>Where the player left one circuit: input values, block states and probes, or the wires they drew.</summary>
     public sealed class CircuitState
     {
         public int[] Inputs = Array.Empty<int>();
         public int[] States = Array.Empty<int>();
         /// <summary>Each probe as (wire index, position along the wire in thousandths).</summary>
         public readonly List<(int wire, int at)> Probes = new List<(int, int)>();
+        /// <summary>A wired circuit's wires, like "A -> g.0".</summary>
+        public readonly List<string> Wires = new List<string>();
     }
 
     /// <summary>One pen stroke: a colour and points in frame coordinates (x, y, x, y, ...).</summary>
@@ -161,6 +165,12 @@ namespace Blackbox.Core
                     probes.Add(pair);
                 }
                 obj.Set("probes", probes);
+                if (c.Wires.Count > 0)
+                {
+                    var wires = JsonValue.NewArray();
+                    foreach (var w in c.Wires) wires.Add(JsonValue.From(w));
+                    obj.Set("wires", wires);
+                }
                 circuits.Set(id, obj);
             }
             root.Set("circuits", circuits);
@@ -207,6 +217,7 @@ namespace Blackbox.Core
             prefs.Set("fullscreen", Prefs.Fullscreen);
             prefs.Set("signalSounds", Prefs.SignalSounds);
             prefs.Set("debugRules", Prefs.DebugRules);
+            prefs.Set("debugOpenAll", Prefs.DebugOpenAll);
             root.Set("preferences", prefs);
 
             return JsonWriter.Write(root);
@@ -237,6 +248,8 @@ namespace Blackbox.Core
                     };
                     foreach (var pair in m.Value["probes"].Items)
                         if (pair.IsArray && pair.Count == 2) c.Probes.Add((pair[0].AsInt(), pair[1].AsInt()));
+                    foreach (var w in m.Value["wires"].Items)
+                        if (w.IsString) c.Wires.Add(w.AsString());
                     data.Circuits[m.Key] = c;
                 }
                 foreach (var m in root["ink"].Members)
@@ -274,6 +287,7 @@ namespace Blackbox.Core
                 Fullscreen = p["fullscreen"].AsBool(d.Fullscreen),
                 SignalSounds = p["signalSounds"].AsBool(d.SignalSounds),
                 DebugRules = p["debugRules"].AsBool(d.DebugRules),
+                DebugOpenAll = p["debugOpenAll"].AsBool(d.DebugOpenAll),
             };
             return data;
         }

@@ -62,6 +62,12 @@ namespace Blackbox.UI
             Add("text", Line(-0.66f, 0.72f, 0.66f, 0.72f), Line(0f, 0.72f, 0f, -0.78f), Line(-0.3f, -0.78f, 0.3f, -0.78f));
             Add("undo", Arc(0.08f, -0.18f, 0.62f, 180f, 0f), Poly(-0.82f, 0.08f, -0.54f, -0.2f, -0.24f, 0.08f));
             Add("reset", Arc(0f, 0f, 0.66f, 70f, 380f), Poly(0.04f, 0.92f, 0.24f, 0.62f, -0.08f, 0.44f));
+            // Output devices.
+            AddClosed("hub", Ellipse(0f, 0f, 0.14f, 0.14f, 16));
+            for (int b = 0; b < 3; b++) AddClosed("fan", Rotated(b * 120f, V(0.16f, 0.06f), V(0.5f, 0.3f), V(0.86f, 0.22f), V(0.9f, -0.04f), V(0.6f, -0.14f), V(0.16f, -0.08f)));
+            AddClosed("fan", Ellipse(0f, 0f, 0.14f, 0.14f, 16));
+            Add("servo", Arc(0f, -0.3f, 0.86f, 0f, 180f, 32), Line(-0.86f, -0.3f, 0.86f, -0.3f));
+            Add("tick", Line(0f, 0.8f, 0f, 1f));
             AddClosed("sound", new[] { V(-0.85f, 0.28f), V(-0.45f, 0.28f), V(-0.02f, 0.68f), V(-0.02f, -0.68f), V(-0.45f, -0.28f), V(-0.85f, -0.28f) });
             Add("sound", Arc(0.08f, 0f, 0.36f, -50f, 50f, 12), Arc(0.08f, 0f, 0.7f, -50f, 50f, 16));
         }
@@ -99,6 +105,15 @@ namespace Blackbox.UI
                 pts[i] = V(cx + Mathf.Cos(a) * r, cy + Mathf.Sin(a) * r);
             }
             return pts;
+        }
+
+        /// <summary>A closed outline turned <paramref name="degrees"/> about the centre.</summary>
+        static Vector2[] Rotated(float degrees, params Vector2[] pts)
+        {
+            float a = degrees * Mathf.Deg2Rad, c = Mathf.Cos(a), s = Mathf.Sin(a);
+            var result = new Vector2[pts.Length];
+            for (int i = 0; i < pts.Length; i++) result[i] = V(pts[i].x * c - pts[i].y * s, pts[i].x * s + pts[i].y * c);
+            return result;
         }
 
         static Glyph Get(string id)
