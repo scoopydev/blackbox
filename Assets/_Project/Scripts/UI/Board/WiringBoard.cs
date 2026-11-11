@@ -471,6 +471,31 @@ namespace Blackbox.UI.Board
             foreach (var o in Outputs) o.Conceal();
         }
 
+        /// <summary>
+        /// After a wiring change: hides the outputs, and every block not in
+        /// <paramref name="keep"/> (see <see cref="WiringSession.BlocksUnchanged"/>).
+        /// A kept block that was showing a signal keeps it until the next run, with
+        /// its note brought up to date from <paramref name="now"/>, so a block newly
+        /// wired on to an output is no longer NOT USED.
+        /// </summary>
+        public void ConcealChanged(bool[] keep, WiringReport now)
+        {
+            bool any = false;
+            for (int b = 0; b < Blocks.Count; b++)
+            {
+                var view = Blocks[b];
+                if (!view.Showing) continue;
+                if (keep[b])
+                {
+                    view.Renote(now.Values[Session.BlockNode(b)], now.EmptyBlocks.Contains(b), now.UnusedBlocks.Contains(b));
+                    any = true;
+                }
+                else view.Conceal();
+            }
+            foreach (var o in Outputs) o.Conceal();
+            _shown = any;
+        }
+
         /// <summary>Shows one block's result from a run.</summary>
         public void ShowBlock(int block, WiringReport report)
         {
@@ -924,6 +949,15 @@ namespace Blackbox.UI.Board
         {
             _readout.gameObject.SetActive(true);
             _readout.Set(sent, ValueLook.Live);
+            Renote(sent, emptyInput, unused);
+        }
+
+        /// <summary>A signal from a run is showing above the block.</summary>
+        public bool Showing => _readout.gameObject.activeSelf;
+
+        /// <summary>Brings the note under the signal up to date, leaving the signal as it is.</summary>
+        public void Renote(Trace sent, bool emptyInput, bool unused)
+        {
             _note.text = emptyInput ? "AN INPUT IS EMPTY" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
             _broken = emptyInput || unused;
             Restyle();

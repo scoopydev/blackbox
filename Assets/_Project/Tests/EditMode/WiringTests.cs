@@ -266,6 +266,32 @@ namespace Blackbox.Tests
         }";
 
         [Test]
+        public void BlocksKeepTheirSignalUntilTheirInputsChange()
+        {
+            // After a run, a block's signal stays shown until its own inputs are
+            // rewired, or a block feeding it changes. Where its signal goes doesn't matter.
+            var p = TestContent.ParseWired(Small);
+            var s = new WiringSession(p);
+            int a = 0, b = 1, g = s.BlockNode(0), h = s.BlockNode(1), x = s.OutputNode(0);
+            s.Connect(a, g, 0);
+            s.Connect(b, g, 1);
+            s.Connect(g, h, 0);
+            var ran = s.Drivers;
+
+            Assert.That(WiringSession.BlocksUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true, true }), "nothing changed");
+            s.Connect(h, x, 0);
+            Assert.That(WiringSession.BlocksUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true, true }), "wiring a block on to an output keeps it");
+            s.Connect(g, x, 0);
+            Assert.That(WiringSession.BlocksUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true, true }), "and so does moving where it goes");
+            s.Connect(a, g, 1);
+            Assert.That(WiringSession.BlocksUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { false, false }), "rewiring g's input changes g, and h, which g feeds");
+            s.Connect(b, g, 1);
+            Assert.That(WiringSession.BlocksUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true, true }), "put back as it ran, nothing has changed");
+            s.Disconnect(h, 0);
+            Assert.That(WiringSession.BlocksUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true, false }), "taking h's input off changes only h");
+        }
+
+        [Test]
         public void TheSessionKeepsTheRules()
         {
             var p = TestContent.ParseWired(Small);

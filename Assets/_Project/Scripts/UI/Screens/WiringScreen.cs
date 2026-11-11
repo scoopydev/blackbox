@@ -98,6 +98,7 @@ namespace Blackbox.UI.Screens
             if (Game.Progress.IsSolved(p) && _session.Check().Solved)
             {
                 _session.Run();
+                _ranWith = _session.Drivers;
                 _board.ShowAll(_session.LastRun);
                 SetSolvedShown(true, quiet: true);
             }
@@ -394,14 +395,29 @@ namespace Blackbox.UI.Screens
 
         void OnChanged()
         {
-            CancelRun();
+            CancelRun(conceal: false);
             _board.RebuildLinks();
-            _board.Conceal();
+            ConcealChanged();
             SaveWires();
             RefreshCounters();
             if (_solvedShown) SetSolvedShown(false);
             if (_session.Runs == 0 && !Game.Progress.IsSolved(Puzzle) && _session.WireCount >= 2)
                 Say("Press RUN, or Space, to send the signals through and see what comes out.", 4f);
+        }
+
+        /// <summary>The wiring the signals on show came from: the last run's, or null before any.</summary>
+        int[][] _ranWith;
+
+        /// <summary>
+        /// After a wiring change, each block keeps the signal its last run showed
+        /// until the next run, unless its own inputs were rewired or a block feeding
+        /// it changed. Rewiring where a block's signal goes leaves it showing. The
+        /// outputs always clear, since what reaches them is checked only by a run.
+        /// </summary>
+        void ConcealChanged()
+        {
+            if (_ranWith == null) { _board.Conceal(); return; }
+            _board.ConcealChanged(WiringSession.BlocksUnchanged(Puzzle, _ranWith, _session.Drivers), _session.Check());
         }
 
         public void BlocksMoved() => SavePlaces();
@@ -557,6 +573,7 @@ namespace Blackbox.UI.Screens
             _run.SetText("RUNNING");
             _run.Active = true;
             _board.Conceal();
+            _ranWith = _session.Drivers;
             RefreshCounters();
             Say("Running the circuit.", 30f);
 
@@ -678,14 +695,15 @@ namespace Blackbox.UI.Screens
             return $"{r.Met} of {total} outputs do what their targets show. Change the wiring and run it again.";
         }
 
-        void CancelRun()
+        /// <param name="conceal">Hide what the run has shown so far. A wiring change leaves that to <see cref="ConcealChanged"/>.</param>
+        void CancelRun(bool conceal = true)
         {
             if (!_running) return;
             _running = false;
             _runPlan.Clear();
             App.Audio?.StopSignals();
             RestoreRunButton();
-            _board.Conceal();
+            if (conceal) _board.Conceal();
             RefreshCounters();
             Hush();
         }

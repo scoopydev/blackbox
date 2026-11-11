@@ -440,6 +440,39 @@ namespace Blackbox.Puzzles
             return driver;
         }
 
+        /// <summary>
+        /// Which blocks still send what they sent when the circuit was wired as
+        /// <paramref name="before"/>, now that it is wired as <paramref name="now"/>.
+        /// A block whose own input wires are all as they were, fed only by inputs
+        /// and by blocks that are unchanged too, is unchanged. A block whose inputs
+        /// were rewired has changed, and so has every block it feeds. Rewiring where
+        /// a block's signal goes changes nothing about the block itself.
+        /// </summary>
+        public static bool[] BlocksUnchanged(PuzzleDef p, int[][] before, int[][] now)
+        {
+            int inputs = p.Inputs.Count, blocks = p.Blocks.Count;
+            var state = new int[blocks]; // 0 not yet known, 1 unchanged, 2 changed, 3 being worked out
+            bool Unchanged(int b)
+            {
+                if (state[b] == 1 || state[b] == 2) return state[b] == 1;
+                if (state[b] == 3) return false; // a loop, which wiring never allows; to be safe
+                state[b] = 3;
+                bool same = true;
+                var was = before[inputs + b];
+                var wired = now[inputs + b];
+                for (int k = 0; k < wired.Length && same; k++)
+                {
+                    if (k >= was.Length || was[k] != wired[k]) same = false;
+                    else if (wired[k] >= inputs && wired[k] < inputs + blocks) same = Unchanged(wired[k] - inputs);
+                }
+                state[b] = same ? 1 : 2;
+                return same;
+            }
+            var result = new bool[blocks];
+            for (int b = 0; b < blocks; b++) result[b] = Unchanged(b);
+            return result;
+        }
+
         /// <summary>A copy of the wiring, as the driver of every port.</summary>
         public int[][] Drivers
         {
