@@ -8,18 +8,24 @@
     {
       "id": "patch-01",
       "name": "Cross Talk",
-      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0.",
+      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, so 0505 reads as 0101. You don't have to use every input.",
       "inputs": {
         "A": {
-          "signal": "decimal 3"
+          "signal": "decimal 0505"
         },
         "B": {
-          "signal": "decimal 6"
+          "signal": "decimal 3"
+        },
+        "C": {
+          "signal": "binary 0011"
         }
       },
       "blocks": {
         "g": {
           "kind": "AND"
+        },
+        "h": {
+          "kind": "NOT"
         }
       },
       "outputs": {
@@ -29,20 +35,24 @@
       },
       "solution": [
         "A -> g.0",
-        "B -> g.1",
-        "g -> X"
+        "C -> g.1",
+        "g -> h",
+        "h -> X"
       ]
     },
     {
       "id": "patch-02",
       "name": "Reading",
-      "hint": "A digit block reads a bit as the digit 0 or 1, and a bit block reads a digit as 1 unless it's 0.",
+      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
-          "signal": "binary 0101"
+          "signal": "binary 0110"
         },
         "B": {
-          "signal": "decimal 0"
+          "signal": "decimal 4"
+        },
+        "C": {
+          "signal": "wave saw f1 a7"
         }
       },
       "blocks": {
@@ -50,92 +60,89 @@
           "kind": "MIRROR"
         },
         "h": {
-          "kind": "NOT"
+          "kind": "MIN"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
-        },
-        "Y": {
-          "device": "display"
         }
       },
       "solution": [
-        "A -> g",
-        "g -> X",
-        "B -> h",
-        "h -> Y"
+        "C -> g",
+        "g -> h.0",
+        "B -> h.1",
+        "h -> X"
       ]
     },
     {
       "id": "patch-03",
-      "name": "Height",
-      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
-      "inputs": {
-        "A": {
-          "signal": "wave saw f1 a7"
-        },
-        "B": {
-          "signal": "wave sine f1 a7"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "MIRROR"
-        },
-        "h": {
-          "kind": "MIRROR"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        },
-        "Y": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g",
-        "g -> X",
-        "B -> h",
-        "h -> Y"
-      ]
-    },
-    {
-      "id": "patch-04",
       "name": "Level",
-      "hint": "A wave block reads a digit as a level, 0 at the bottom up to 9 at the top, and a bit as the top for 1, the bottom for 0.",
+      "hint": "A wave block reads a digit as a level, 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
           "signal": "decimal 1357"
         },
         "B": {
-          "signal": "binary 0011"
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "decimal 9"
         }
       },
       "blocks": {
         "g": {
-          "kind": "LATER"
+          "kind": "FLIP"
         },
         "h": {
-          "kind": "FLIP"
+          "kind": "MIX"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h.0",
+        "C -> h.1",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "patch-04",
+      "name": "Top and Bottom",
+      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0110"
         },
-        "Y": {
+        "B": {
+          "signal": "wave saw f1 a7"
+        },
+        "C": {
+          "signal": "decimal 0369"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "FLIP"
+        },
+        "h": {
+          "kind": "MIX"
+        }
+      },
+      "outputs": {
+        "X": {
           "device": "display"
         }
       },
       "solution": [
         "A -> g",
-        "g -> X",
-        "B -> h",
-        "h -> Y"
+        "g -> h.0",
+        "B -> h.1",
+        "h -> X"
       ]
     },
     {
@@ -148,6 +155,9 @@
         },
         "B": {
           "signal": "binary 0101"
+        },
+        "C": {
+          "signal": "decimal 0660"
         }
       },
       "blocks": {
@@ -156,6 +166,9 @@
         },
         "h": {
           "kind": "MIRROR"
+        },
+        "k": {
+          "kind": "AND"
         }
       },
       "outputs": {
@@ -167,10 +180,12 @@
         }
       },
       "solution": [
-        "A -> g",
-        "g -> X",
-        "B -> h",
-        "h -> Y"
+        "A -> h",
+        "h -> X",
+        "B -> g",
+        "g -> k.0",
+        "C -> k.1",
+        "k -> Y"
       ]
     }
   ]

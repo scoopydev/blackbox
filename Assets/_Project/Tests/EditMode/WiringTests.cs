@@ -505,6 +505,29 @@ namespace Blackbox.Tests
             Assert.That(GoalText.For(TestContent.ParseWired(two)), Is.EqualTo("Make displays X and Y do what their targets show."), "one noun for outputs that are all alike");
         }
 
+        [Test]
+        public void SwappedWiresIntoAnAlikeBlockAreOneAnswer()
+        {
+            // A AND B or B AND A, a MAJORITY's three bits in any order, BETWEEN's two
+            // bounds either way round: each is one answer, not several.
+            string Circuit(string inputs, string kind, string solution) => @"{
+                ""id"": ""t"", ""name"": ""Test"",
+                ""inputs"": { " + inputs + @" },
+                ""blocks"": { ""g"": { ""kind"": """ + kind + @""" } },
+                ""outputs"": { ""X"": ""display"" },
+                ""solution"": [ " + solution + @", ""g -> X"" ]
+            }";
+            var and = TestContent.ParseWired(Circuit(@"""A"": ""binary 0011"", ""B"": ""binary 0101""", "AND", @"""A -> g.0"", ""B -> g.1"""));
+            Assert.That(WiringSolver.Analyse(and).Solutions, Is.EqualTo(1));
+            var majority = TestContent.ParseWired(Circuit(@"""A"": ""binary 0011"", ""B"": ""binary 0101"", ""C"": ""binary 0110""", "MAJORITY", @"""A -> g.0"", ""B -> g.1"", ""C -> g.2"""));
+            Assert.That(WiringSolver.Analyse(majority).Solutions, Is.EqualTo(1));
+            var between = TestContent.ParseWired(Circuit(@"""A"": ""wave sine f1 a7"", ""B"": ""decimal 3"", ""C"": ""decimal 6""", "BETWEEN", @"""A -> g.0"", ""B -> g.1"", ""C -> g.2"""));
+            Assert.That(WiringSolver.Analyse(between).Solutions, Is.EqualTo(1));
+            var compare = TestContent.ParseWired(Circuit(@"""A"": ""wave sine f1 a7"", ""B"": ""decimal 3""", "COMPARE", @"""A -> g.0"", ""B -> g.1"""));
+            Assert.That(WiringSolver.Analyse(compare).Solutions, Is.EqualTo(1), "COMPARE's inputs aren't alike: the other way round sends something else");
+            Assert.That(KindCatalog.Get("COMPARE").AlikeFrom, Is.EqualTo(-1));
+        }
+
         // ------------------------------------------------------------ shipped circuits
 
         [TestCaseSource(nameof(WiredPuzzles))]
@@ -549,21 +572,33 @@ namespace Blackbox.Tests
         [Test]
         public void EveryBlockIsTaughtBeforeBuild()
         {
-            // Build mixes everything: each kind it uses was met earlier, in Part One
-            // or Two, and every kind in play is met there at least once.
+            // Build mixes everything: each one- or two-input kind it uses was met earlier,
+            // in Part One or Two, and every such kind is met there at least once. The
+            // three-input kinds are new in Build, and only turn up in its later half.
             var met = new HashSet<string>();
+            var build = new List<PuzzleDef>();
             foreach (var chapter in TestContent.Library.Chapters)
                 foreach (var p in chapter.Puzzles.Where(p => p.Wiring))
                 {
-                    if (chapter.Part.Id != "build")
+                    if (chapter.Part.Id == "build") build.Add(p);
+                    else foreach (var b in p.Blocks) met.Add(b.Kind.Id);
+                }
+            var late = new HashSet<string>();
+            for (int i = 0; i < build.Count; i++)
+                foreach (var b in build[i].Blocks)
+                {
+                    if (b.Kind.InputCount == 3)
                     {
-                        foreach (var b in p.Blocks) met.Add(b.Kind.Id);
-                        continue;
+                        Assert.That(i, Is.GreaterThanOrEqualTo(build.Count / 2), $"{build[i].Id}: {b.Kind.Id} turns up early in Build");
+                        late.Add(b.Kind.Id);
                     }
-                    foreach (var b in p.Blocks) Assert.That(met, Does.Contain(b.Kind.Id), $"{p.Id}: {b.Kind.Id} turns up in Build before it was ever met");
+                    else Assert.That(met, Does.Contain(b.Kind.Id), $"{build[i].Id}: {b.Kind.Id} turns up in Build before it was ever met");
                 }
             foreach (var kind in KindCatalog.All.Where(k => !k.Shelved))
-                Assert.That(met, Does.Contain(kind.Id), $"{kind.Id} is never taught");
+            {
+                if (kind.InputCount == 3) Assert.That(late, Does.Contain(kind.Id), $"{kind.Id} never turns up late in Build");
+                else Assert.That(met, Does.Contain(kind.Id), $"{kind.Id} is never taught");
+            }
         }
 
         [Test]

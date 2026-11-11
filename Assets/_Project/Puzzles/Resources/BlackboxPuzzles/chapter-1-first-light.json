@@ -10,9 +10,12 @@
     {
       "id": "first-light-01",
       "name": "First Light",
-      "hint": "The wires are drawn, but X's wire comes straight from A, so {g} isn't used. Click the wire into X to take it off, drag from {g}'s right dot to X's dot, then press RUN.",
+      "hint": "The wires are drawn, but one starts at the wrong input. Click the wire into {g} to take it off, drag from B's dot to {g}'s left dot, then press RUN.",
       "inputs": {
         "A": {
+          "signal": "binary 1"
+        },
+        "B": {
           "signal": "binary 0"
         }
       },
@@ -28,10 +31,10 @@
       },
       "start": [
         "A -> g",
-        "A -> X"
+        "g -> X"
       ],
       "solution": [
-        "A -> g",
+        "B -> g",
         "g -> X"
       ]
     },

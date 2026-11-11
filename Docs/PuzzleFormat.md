@@ -172,9 +172,9 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 
 * every output's device does the same as its target does (see [Devices](#devices)),
 * every input port of every block has a wire, and
-* every block, and every input, leads to an output, through blocks or straight there.
+* every block leads to an output, through other blocks or straight there.
 
-No input may go unused, so a circuit has no spare inputs: the loader refuses a `solution` that leaves an input or a block leading nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. A block shows only its label and its ports.
+Inputs may go unused, so a circuit can hold spare inputs for the player to rule out; the loader refuses a `solution` that leaves a block leading nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. A block shows only its label and its ports.
 
 ```json
 {
@@ -260,6 +260,10 @@ The player never sees a kind, only the block's label (K1, K2...) and its ports. 
 | the top input's kind | GATE | 2 |
 | decimal | COUNT | 1 |
 | binary | COMPARE | 2 |
+| binary | MAJORITY | 3 |
+| decimal | MIDDLE | 3 |
+| binary | BETWEEN | 3 |
+| the top input's kind | SWITCH | 3 |
 | sampled | STEPS (set aside) | 1 |
 
 STEPS is set aside for now, with stepped waves: the loader refuses a circuit that holds it. The old kinds with settings (B1 to M8, Q1 to Q4) are gone, and a file that names one is refused.
@@ -268,7 +272,8 @@ STEPS is set aside for now, with stepped waves: the loader refuses a circuit tha
 
 * **The goal must be clear.** Every target is written into the goal sentence and shown on the board. If the sentence gets long, the circuit is probably asking too much at once.
 * **It must not be solved at the start.** The validator checks this.
-* **Prefer one solution**, especially in a chapter's last circuit. Targets on blocks are the tool for ruling out the routes you didn't mean.
+* **Prefer one solution**, especially in a chapter's last circuit. Targets on blocks are the tool for ruling out the routes you didn't mean. The checker counts swapped wires into a block that treats its inputs alike (AND, MIX, BETWEEN's two bounds...) as one answer.
+* **Give the player something to think about.** Past Part One, avoid circuits that are two inputs, one block and one output: chain two blocks or more, and add a spare input that looks useful. **BLACKBOX → Validate Puzzles** reports how many wirings solve each circuit.
 * **Make the player look inside.** If a circuit can be solved by trying every input, give it more blocks and fewer probes, or targets that depend on each other.
 * **Introduce one thing at a time.** A new kind should first appear where it is the only unknown, or where the player can change an input that reaches it.
 * **Keep the hint about controls.** The circuit itself should teach the rule.

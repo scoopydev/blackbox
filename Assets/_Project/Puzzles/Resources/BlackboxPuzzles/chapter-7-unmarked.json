@@ -80,6 +80,9 @@
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
+        },
+        "B": {
+          "signal": "binary 0101"
         }
       },
       "blocks": {
@@ -104,13 +107,16 @@
     {
       "id": "unmarked-04",
       "name": "Strobe",
-      "hint": "Two outputs, two blocks. Every input and every block has to lead to an output, through other blocks or straight there.",
+      "hint": "Two outputs, two blocks. Each block has to lead to an output, through other blocks or straight there.",
       "inputs": {
         "A": {
           "signal": "binary 1"
         },
         "B": {
           "signal": "wave sine f4 a7"
+        },
+        "C": {
+          "signal": "decimal 0"
         }
       },
       "blocks": {
@@ -144,6 +150,9 @@
       "inputs": {
         "A": {
           "signal": "wave sine f3 a7"
+        },
+        "B": {
+          "signal": "decimal 9"
         }
       },
       "blocks": {
@@ -199,6 +208,85 @@
         "g -> X",
         "g -> h",
         "h -> Y"
+      ]
+    },
+    {
+      "id": "unmarked-07",
+      "name": "Interference",
+      "hint": "Solve one output at a time. Every block still has to be used.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave sine f1 a7 p2"
+        },
+        "C": {
+          "signal": "decimal 4"
+        },
+        "D": {
+          "signal": "binary 01"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "LATER",
+          "at": [
+            1,
+            0
+          ]
+        },
+        "h": {
+          "kind": "MIX",
+          "at": [
+            2,
+            0.5
+          ]
+        },
+        "k": {
+          "kind": "MIRROR",
+          "at": [
+            1,
+            3
+          ]
+        },
+        "m": {
+          "kind": "GATE",
+          "at": [
+            2,
+            2.5
+          ]
+        },
+        "n": {
+          "kind": "FASTER",
+          "at": [
+            1,
+            1.5
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        },
+        "Z": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h.0",
+        "B -> h.1",
+        "C -> k",
+        "k -> m.0",
+        "D -> m.1",
+        "m -> Z",
+        "A -> n",
+        "n -> Y",
+        "h -> X"
       ]
     }
   ]

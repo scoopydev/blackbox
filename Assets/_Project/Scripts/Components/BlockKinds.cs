@@ -49,6 +49,14 @@ namespace Blackbox.Components
         public bool Shelved => KindCatalog.Shelved.Contains(Id);
 
         /// <summary>
+        /// The first input from which the block treats its inputs alike, so swapping
+        /// two of those wires changes nothing: 0 for AND, MAX, MIX ..., 1 for BETWEEN,
+        /// whose two bounds can come either way round; -1 when every input has its own
+        /// job. The solver counts such a swap as the same answer.
+        /// </summary>
+        public int AlikeFrom => KindCatalog.AlikeFrom.TryGetValue(Id, out int from) ? from : -1;
+
+        /// <summary>
         /// Always 1: a block has one fixed rule. Kept for the old settings screens
         /// (the title screen's demo), which never find a block to change.
         /// </summary>
@@ -150,6 +158,8 @@ namespace Blackbox.Components
     /// Each kind of signal has four blocks, and each set starts with a block that
     /// flips the signal (NOT, MIRROR, FILL, FLIP), so a player who has learned one
     /// set has a head start on the next. The three mixing blocks come in Blend.
+    /// Four blocks with three inputs (MAJORITY, MIDDLE, BETWEEN, SWITCH) come late
+    /// in Part Three.
     /// </summary>
     public static class KindCatalog
     {
@@ -239,6 +249,43 @@ namespace Blackbox.Components
 
             s_Kinds["COMPARE"].ReadingAs(Medium.Wave, Medium.Wave);
 
+            // ---- Three inputs: met late in Part Three ---------------------------------
+
+            Value("MAJORITY", Medium.Binary, 3, "1 while at least two of its three inputs are 1", "1 when at least two inputs are 1",
+                x => x[0] + x[1] + x[2] >= 2 ? 1 : 0);
+            Value("MIDDLE", Medium.Decimal, 3, "the middle one of the three digits: neither the largest nor the smallest", "the middle one of the three digits",
+                x => Math.Max(Math.Min(x[0], x[1]), Math.Min(Math.Max(x[0], x[1]), x[2])));
+
+            Whole("BETWEEN", Medium.Binary, 3, true, "1 while the top signal is between the other two, all read as waves; otherwise 0", "1 while the top is between the other two",
+                x =>
+                {
+                    var a = x[0].As(Medium.Wave);
+                    var b = x[1].As(Medium.Wave);
+                    var c = x[2].As(Medium.Wave);
+                    var levels = new float[Trace.Steps];
+                    for (int k = 0; k < Trace.Steps; k++)
+                    {
+                        float lo = Math.Min(b[k], c[k]), hi = Math.Max(b[k], c[k]);
+                        levels[k] = a[k] > lo + Trace.Tolerance && a[k] < hi - Trace.Tolerance ? 1f : 0f;
+                    }
+                    return new Trace(Medium.Binary, levels);
+                });
+
+            s_Kinds["BETWEEN"].ReadingAs(Medium.Wave, Medium.Wave, Medium.Wave);
+
+            Whole("SWITCH", Medium.Wave, 3, true, "sends the top signal while the bottom one is on, and the middle one, read as the top's kind, while it's off", "top while the bottom is on, else the middle",
+                x =>
+                {
+                    var top = x[0];
+                    var middle = x[1].As(top.Medium);
+                    var on = x[2].As(Medium.Binary);
+                    var levels = new float[Trace.Steps];
+                    for (int k = 0; k < Trace.Steps; k++) levels[k] = on[k] == 1f ? top[k] : middle[k];
+                    return new Trace(top.Medium, levels);
+                });
+
+            s_Kinds["SWITCH"].ReadingAs(null, null, Medium.Binary);
+
             // ---- Set aside: stepped waves ---------------------------------------------
 
             Whole("STEPS", Medium.Sampled, 1, true, "reads it as a wave 12 times a loop and holds each reading, rounded (a stepped wave)", "12 held steps a loop",
@@ -276,6 +323,13 @@ namespace Blackbox.Components
         }
 
         public static IReadOnlyList<BlockKind> All => s_Ordered;
+
+        /// <summary>Kinds whose inputs, from the given one on, can be swapped without changing what they send.</summary>
+        public static readonly Dictionary<string, int> AlikeFrom = new Dictionary<string, int>
+        {
+            ["AND"] = 0, ["OR"] = 0, ["XOR"] = 0, ["MAX"] = 0, ["MIN"] = 0, ["DIFF"] = 0, ["MIX"] = 0,
+            ["MAJORITY"] = 0, ["MIDDLE"] = 0, ["BETWEEN"] = 1,
+        };
 
         /// <summary>
         /// Kinds set aside for now. Their code and tests stay, and the loader

@@ -1079,7 +1079,8 @@ namespace Blackbox.UI.Board
 
             int node = board.NodeOf(def);
             int n = def.Kind.InputCount;
-            float spread = n == 1 ? 0f : 24f * s;
+            // Three inputs spread a little wider, so three wires can meet the card apart.
+            float spread = n == 1 ? 0f : n == 2 ? 24f * s : 30f * s;
             for (int p = 0; p < n; p++)
             {
                 float y = n == 1 ? 0f : spread - p * (2f * spread / (n - 1));

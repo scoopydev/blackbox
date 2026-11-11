@@ -10,10 +10,13 @@
     {
       "id": "resonance-01",
       "name": "Hum",
-      "hint": "These wires are drawn already, but X's comes straight from A. Listen to the target, run it, then move X's wire so it comes from {g}.",
+      "hint": "These wires are drawn already. Listen to the target, run it, then move {g}'s input to the other wave.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a5"
+        },
+        "B": {
+          "signal": "wave saw f3 a7"
         }
       },
       "blocks": {
@@ -27,8 +30,8 @@
         }
       },
       "start": [
-        "A -> g",
-        "A -> X"
+        "B -> g",
+        "g -> X"
       ],
       "solution": [
         "A -> g",
@@ -73,6 +76,9 @@
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
+          "signal": "wave sine f1 a6"
+        },
+        "B": {
           "signal": "wave saw f1 a3"
         }
       },
@@ -90,7 +96,7 @@
         }
       },
       "solution": [
-        "A -> h",
+        "B -> h",
         "h -> g",
         "g -> X"
       ]

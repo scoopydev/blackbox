@@ -8,18 +8,24 @@
     {
       "id": "junction-01",
       "name": "Both On",
-      "hint": "Two kinds of signal can meet in one block. A bit block reads a digit as 1 unless it's 0.",
+      "hint": "Two kinds of signal can meet in one block. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
           "signal": "decimal 0505"
         },
         "B": {
           "signal": "binary 0011"
+        },
+        "C": {
+          "signal": "wave square f1 a7"
         }
       },
       "blocks": {
         "g": {
           "kind": "AND"
+        },
+        "h": {
+          "kind": "XOR"
         }
       },
       "outputs": {
@@ -30,7 +36,9 @@
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> X"
+        "g -> h.0",
+        "C -> h.1",
+        "h -> X"
       ]
     },
     {
@@ -43,11 +51,17 @@
         },
         "B": {
           "signal": "binary 0011"
+        },
+        "C": {
+          "signal": "decimal 9"
         }
       },
       "blocks": {
         "g": {
           "kind": "DIFF"
+        },
+        "h": {
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -58,7 +72,8 @@
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> X"
+        "g -> h",
+        "h -> X"
       ]
     },
     {
@@ -71,11 +86,17 @@
         },
         "B": {
           "signal": "wave saw f2 a7"
+        },
+        "C": {
+          "signal": "binary 0011"
         }
       },
       "blocks": {
         "g": {
           "kind": "XOR"
+        },
+        "h": {
+          "kind": "OR"
         }
       },
       "outputs": {
@@ -86,24 +107,32 @@
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> X"
+        "g -> h.0",
+        "C -> h.1",
+        "h -> X"
       ]
     },
     {
       "id": "junction-04",
       "name": "Staircase",
-      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
+      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top. One input can feed two blocks.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
         },
         "B": {
           "signal": "decimal 3"
+        },
+        "C": {
+          "signal": "binary 1"
         }
       },
       "blocks": {
         "g": {
           "kind": "MAX"
+        },
+        "h": {
+          "kind": "DIFF"
         }
       },
       "outputs": {
@@ -114,7 +143,9 @@
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> X"
+        "g -> h.0",
+        "B -> h.1",
+        "h -> X"
       ]
     },
     {
@@ -123,15 +154,21 @@
       "hint": "A wave block reads a bit as the top for 1 and the bottom for 0.",
       "inputs": {
         "A": {
-          "signal": "wave sine f2 a4"
+          "signal": "wave sine f1 a4"
         },
         "B": {
-          "signal": "binary 1"
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "decimal 9"
         }
       },
       "blocks": {
         "g": {
           "kind": "MIX"
+        },
+        "h": {
+          "kind": "LATER"
         }
       },
       "outputs": {
@@ -142,7 +179,8 @@
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> X"
+        "g -> h",
+        "h -> X"
       ]
     },
     {

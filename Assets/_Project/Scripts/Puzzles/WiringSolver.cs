@@ -38,6 +38,8 @@ namespace Blackbox.Puzzles
     /// Each block input takes any input or other block, without loops; then each
     /// output takes any signal its device reads the way its target wants, and the
     /// wiring counts if every block ends up leading to an output. Inputs may go unused.
+    /// Swapping the wires into a block that treats its inputs alike (AND, MIX, the
+    /// two bounds of BETWEEN ...) is the same answer, so those are tried in one order only.
     /// </summary>
     public static class WiringSolver
     {
@@ -193,10 +195,12 @@ namespace Blackbox.Puzzles
                 }
                 var (b, k) = ports[i];
                 int node = inputs + b;
+                int alike = p.Blocks[b].Kind.AlikeFrom;
                 for (int s = 0; s < sources; s++)
                 {
                     if (s == node) continue;
                     if (s >= inputs && Reaches(node, s)) continue;
+                    if (alike >= 0 && k > alike && s < driver[node][k - 1]) continue;
                     driver[node][k] = s;
                     Assign(i + 1);
                     driver[node][k] = -1;

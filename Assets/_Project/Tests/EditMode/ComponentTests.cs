@@ -19,17 +19,47 @@ namespace Blackbox.Tests
             int size = Media.Size(kind.Medium);
             if (kind.InputCount == 1)
                 for (int a = 0; a < size; a++) yield return new[] { a };
-            else
+            else if (kind.InputCount == 2)
                 for (int a = 0; a < size; a++)
                     for (int b = 0; b < size; b++) yield return new[] { a, b };
+            else
+                for (int a = 0; a < size; a++)
+                    for (int b = 0; b < size; b++)
+                        for (int c = 0; c < size; c++) yield return new[] { a, b, c };
         }
 
         [Test]
         public void EachSignalKindHasFourBlocks()
         {
             foreach (Medium m in new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave })
-                Assert.That(KindCatalog.All.Count(k => !k.Mixing && k.Medium == m), Is.EqualTo(4), m.ToString());
+                Assert.That(KindCatalog.All.Count(k => !k.Mixing && k.Medium == m && k.InputCount < 3), Is.EqualTo(4), m.ToString());
             Assert.That(KindCatalog.All.Count(k => !k.Mixing && k.Medium == Medium.Sampled), Is.Zero, "stepped waves are set aside");
+        }
+
+        [Test]
+        public void ThreeInputBlocks()
+        {
+            var three = KindCatalog.All.Where(k => k.InputCount == 3).Select(k => k.Id);
+            Assert.That(three, Is.EquivalentTo(new[] { "MAJORITY", "MIDDLE", "BETWEEN", "SWITCH" }));
+
+            Assert.That(Apply("MAJORITY", 1, 1, 0), Is.EqualTo(1));
+            Assert.That(Apply("MAJORITY", 0, 1, 0), Is.EqualTo(0));
+            Assert.That(Apply("MIDDLE", 7, 2, 5), Is.EqualTo(5));
+            Assert.That(Apply("MIDDLE", 3, 3, 9), Is.EqualTo(3));
+            Assert.That(Apply("MIDDLE", 9, 0, 0), Is.EqualTo(0));
+
+            Trace T(string spec) => Signals.Parse(spec).Trace;
+            var between = KindCatalog.Get("BETWEEN");
+            Assert.That(between.Apply(new[] { T("decimal 5"), T("decimal 2"), T("decimal 8") }).First, Is.EqualTo(1f), "5 is between 2 and 8");
+            Assert.That(between.Apply(new[] { T("decimal 5"), T("decimal 8"), T("decimal 2") }).First, Is.EqualTo(1f), "either way round");
+            Assert.That(between.Apply(new[] { T("decimal 9"), T("decimal 2"), T("decimal 8") }).First, Is.EqualTo(0f));
+            Assert.That(between.Apply(new[] { T("wave sine f1 a7"), T("decimal 3"), T("decimal 6") }).IsFlat, Is.False, "a wave passes in and out of a band");
+
+            var sw = KindCatalog.Get("SWITCH");
+            var got = sw.Apply(new[] { T("decimal 7"), T("decimal 2"), T("binary 0011") });
+            Assert.That(got.Medium, Is.EqualTo(Medium.Decimal));
+            Assert.That(got.Key, Is.EqualTo(T("decimal 2277").Key), "the middle while the bottom is off, then the top");
+            Assert.That(sw.Apply(new[] { T("decimal 7"), T("binary 1"), T("binary 0") }).First, Is.EqualTo(1f), "the middle is read as the top's kind");
         }
 
         [Test]
@@ -38,7 +68,7 @@ namespace Blackbox.Tests
             foreach (var kind in KindCatalog.All)
             {
                 Assert.That(kind.StateCount, Is.EqualTo(1), kind.Id);
-                Assert.That(kind.InputCount, Is.InRange(1, 2), kind.Id);
+                Assert.That(kind.InputCount, Is.InRange(1, 3), kind.Id);
                 Assert.That(KindCatalog.Get(kind.Id), Is.SameAs(kind));
                 Assert.That(kind.Rule, Is.Not.Empty, kind.Id);
             }
@@ -59,7 +89,7 @@ namespace Blackbox.Tests
         public void MixingKindsAreWellFormed()
         {
             var mixing = KindCatalog.All.Where(k => k.Mixing).Select(k => k.Id).ToList();
-            Assert.That(mixing, Is.EquivalentTo(new[] { "GATE", "COUNT", "COMPARE", "STEPS" }));
+            Assert.That(mixing, Is.EquivalentTo(new[] { "GATE", "COUNT", "COMPARE", "BETWEEN", "SWITCH", "STEPS" }));
             foreach (string id in mixing)
             {
                 var kind = KindCatalog.Get(id);
@@ -117,6 +147,8 @@ namespace Blackbox.Tests
             Assert.That(KindCatalog.Get("COUNT").Reads(0), Is.EqualTo(Medium.Binary));
             Assert.That(KindCatalog.Get("COMPARE").Reads(0), Is.EqualTo(Medium.Wave));
             Assert.That(KindCatalog.Get("COMPARE").Reads(1), Is.EqualTo(Medium.Wave));
+            Assert.That(Enumerable.Range(0, 3).Select(p => KindCatalog.Get("BETWEEN").Reads(p)), Is.All.EqualTo(Medium.Wave));
+            Assert.That(KindCatalog.Get("SWITCH").Reads(2), Is.EqualTo(Medium.Binary), "SWITCH reads its bottom input as on or off");
 
             var kinds = new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave };
             foreach (var from in kinds)
