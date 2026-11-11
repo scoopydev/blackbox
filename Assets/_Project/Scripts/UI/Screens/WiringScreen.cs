@@ -33,7 +33,7 @@ namespace Blackbox.UI.Screens
         Vector2 _clearNotesAt;
         readonly List<ShapeGraphic> _swatches = new List<ShapeGraphic>();
         CanvasGroup _controls, _solved;
-        VoidText _solvedStats;
+        VoidText _solvedStats, _solvedLabel;
         PillButton _next, _circuits;
 
         bool _solvedShown;
@@ -84,7 +84,8 @@ namespace Blackbox.UI.Screens
             _hint = p.Hint ?? "";
             if (string.IsNullOrEmpty(_hint) && _session.AtStart) _hint = "Drag from a dot to a dot to run a wire. Click a wire to take it off.";
             _status = UIKit.Text(Root, _hint, TextStyle.Body.WithSize(19), TextAnchor.MiddleCenter, "Status");
-            _status.rectTransform.At(VoidFrame.Width * 0.5f, StatusY, 1500f, 30f);
+            _status.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _status.rectTransform.At(VoidFrame.Width * 0.5f, StatusY, 1600f, 30f);
             UIKit.Rule(Root, Left, Right, FooterRule, Palette.Rule);
 
             BuildTools();
@@ -182,20 +183,16 @@ namespace Blackbox.UI.Screens
         {
             var label = UIKit.Text(Root, "GOAL", TextStyle.Label.WithSize(13).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleLeft, "Goal label");
             label.SignalFill = true;
-            label.rectTransform.At(Left + 40f, GoalY, 80f, 20f);
+            label.rectTransform.At(Left + 40f, GoalY - 10f, 80f, 20f);
 
             string sentence = GoalText.For(Puzzle);
             int size = sentence.Length > 110 ? 20 : sentence.Length > 80 ? 22 : 24;
             _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(size).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
             _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
             _goal.LineHeight = 1.2f;
-            _goal.rectTransform.At(Left + 110f + 485f, GoalY - 10f, 970f, 34f);
+            _goal.rectTransform.At(Left + 110f + 640f, GoalY - 10f, 1280f, 34f);
             var rules = UIKit.Text(Root, GoalText.WiringRules, TextStyle.Label.WithSize(11).WithTracking(0.26f).WithColor(Palette.Faint), TextAnchor.MiddleLeft, "Rules");
-            rules.rectTransform.At(Left + 110f + 485f, GoalY + 20f, 970f, 16f);
-
-            _run = PillButton.Create(Root, "RUN", 1466f, GoalY, 184f, 46f, true, "play");
-            _run.Click.ClickSound = Sfx.Hover;
-            _run.Click.Clicked = StartRun;
+            rules.rectTransform.At(Left + 110f + 640f, GoalY + 20f, 1280f, 16f);
 
             _matchedValue = UIKit.Text(Root, "", TextStyle.Value.WithSize(34).WithWeight(200), TextAnchor.MiddleRight, "Matched");
             _matchedValue.rectTransform.At(Right - 100f, GoalY - 8f, 200f, 44f);
@@ -247,12 +244,20 @@ namespace Blackbox.UI.Screens
         {
             var rt = UIKit.Rect(Root, "Controls").Stretch();
             _controls = rt.Group();
-            _undo = PillButton.Create(rt, "UNDO", Right - 75f - 166f, ToolsY, 150f, 46f, false, "undo");
-            _undo.Click.ClickSound = Sfx.Hover;
-            _undo.Click.Clicked = Undo;
-            _clear = PillButton.Create(rt, "CLEAR", Right - 75f, ToolsY, 150f, 46f, false, "reset");
+            // Bottom right, right to left: RUN, then CLEAR and UNDO. Each is as wide as its label.
+            _run = PillButton.Create(rt, "RUNNING", Right - 100f, ToolsY, 200f, 50f, true, "play");
+            _run.Click.ClickSound = Sfx.Hover;
+            _run.Click.Clicked = StartRun;
+            float x = Fit(_run, Right, ToolsY, 50f, 200f) - 18f;
+            _run.SetText("RUN");
+            _clear = PillButton.Create(rt, "CLEAR", 0f, ToolsY, 150f, 46f, false, "reset");
             _clear.Click.ClickSound = Sfx.Hover;
             _clear.Click.Clicked = AskClear;
+            x = Fit(_clear, x, ToolsY) - 14f;
+            _undo = PillButton.Create(rt, "UNDO", 0f, ToolsY, 150f, 46f, false, "undo");
+            _undo.Click.ClickSound = Sfx.Hover;
+            _undo.Click.Clicked = Undo;
+            Fit(_undo, x, ToolsY);
             Chrome.KeyHints(rt, Right, HintsY, true, "SPACE", "RUN", "Z", "UNDO", "D", "PEN", "T", "TEXT");
         }
 
@@ -263,17 +268,38 @@ namespace Blackbox.UI.Screens
             _solved.alpha = 0f;
             _solved.blocksRaycasts = false;
 
-            var label = UIKit.Text(rt, "CIRCUIT COMPLETE", TextStyle.Label.WithSize(15).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleRight, "Solved");
-            label.SignalFill = true;
-            label.rectTransform.At(Right - 420f - 160f, ToolsY - 12f, 320f, 24f);
+            _solvedLabel = UIKit.Text(rt, "CIRCUIT COMPLETE", TextStyle.Label.WithSize(15).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleRight, "Solved");
+            _solvedLabel.SignalFill = true;
             _solvedStats = UIKit.Text(rt, "", TextStyle.Label.WithSize(12).WithColor(Palette.Dim), TextAnchor.MiddleRight, "Stats");
-            _solvedStats.rectTransform.At(Right - 420f - 160f, ToolsY + 16f, 320f, 18f);
 
-            _circuits = PillButton.Create(rt, "CIRCUITS", Right - 230f - 16f - 75f, ToolsY, 150f, 46f, false);
+            _circuits = PillButton.Create(rt, "ALL CIRCUITS", 0f, ToolsY, 150f, 46f, false);
             _circuits.Click.Clicked = () => Game.GoChapters(Puzzle.Chapter);
-            _next = PillButton.Create(rt, "NEXT", Right - 115f, ToolsY, 230f, 46f, true, "arrow");
+            _next = PillButton.Create(rt, "NEXT", 0f, ToolsY, 230f, 50f, true, "arrow");
             _next.Click.Clicked = GoNext;
+            LayOutSolved();
             Chrome.KeyHints(rt, Right, HintsY, true, "ENTER", "NEXT", "Z", "UNDO", "ESC", "MENU");
+        }
+
+        /// <summary>
+        /// Sizes a pill to its label and puts its right edge at <paramref name="right"/>.
+        /// Returns its left edge, for the next button along.
+        /// </summary>
+        static float Fit(PillButton b, float right, float y, float h = 46f, float min = 120f)
+        {
+            float w = Mathf.Max(min, b.Label.MeasureWidth() + (b.Icon != null ? 34f : 0f) + 60f);
+            ((RectTransform)b.transform).At(right - w * 0.5f, y, w, h);
+            if (b.Icon != null) b.SetText(b.Label.text);
+            return right - w;
+        }
+
+        /// <summary>NEXT at the bottom right, ALL CIRCUITS beside it, and the solved message left of both.</summary>
+        void LayOutSolved()
+        {
+            float x = Fit(_next, Right, ToolsY, 50f, 200f) - 14f;
+            if (_circuits.gameObject.activeSelf) x = Fit(_circuits, x, ToolsY) - 28f;
+            else x -= 14f;
+            _solvedLabel.rectTransform.At(x - 200f, ToolsY - 12f, 400f, 24f);
+            _solvedStats.rectTransform.At(x - 200f, ToolsY + 16f, 400f, 18f);
         }
 
         // ------------------------------------------------------------------ showing state
@@ -444,6 +470,7 @@ namespace Blackbox.UI.Screens
             _nextPuzzle = Game.Progress.NextAfter(Puzzle);
             _next.SetText(_nextPuzzle == null ? "CIRCUITS" : _nextPuzzle.Chapter != Puzzle.Chapter ? "NEXT CHAPTER" : "NEXT CIRCUIT");
             _circuits.gameObject.SetActive(_nextPuzzle != null);
+            LayOutSolved();
         }
 
         void GoNext()
