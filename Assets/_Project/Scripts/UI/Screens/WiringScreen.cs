@@ -27,7 +27,7 @@ namespace Blackbox.UI.Screens
         InkLayer _ink;
 
         VoidText _title, _record, _status, _moves;
-        VoidText _goal, _matchedValue, _matchedLabel;
+        VoidText _matchedValue, _matchedLabel;
         PillButton _pen, _eraser, _textTool, _undo, _clear;
         Clickable _clearNotes;
         readonly List<ShapeGraphic> _swatches = new List<ShapeGraphic>();
@@ -184,19 +184,9 @@ namespace Blackbox.UI.Screens
 
         void BuildGoal()
         {
-            var label = UIKit.Text(Root, "GOAL", TextStyle.Label.WithSize(13).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleLeft, "Goal label");
-            label.SignalFill = true;
-            label.rectTransform.At(Left + 40f, GoalY - 10f, 80f, 20f);
-
-            string sentence = GoalText.For(Puzzle);
-            _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(24).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
-            // One line: smaller type for a longer goal, so it never runs into the rules under it.
-            for (int size = 24; size > 16 && _goal.MeasureWidth() > 1270f; size--) _goal.fontSize = size - 1;
-            _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _goal.LineHeight = 1.2f;
-            _goal.rectTransform.At(Left + 110f + 640f, GoalY - 10f, 1280f, 34f);
-            var rules = UIKit.Text(Root, GoalText.WiringRules, TextStyle.Label.WithSize(11).WithTracking(0.26f).WithColor(Palette.Faint), TextAnchor.MiddleLeft, "Rules");
-            rules.rectTransform.At(Left + 110f + 640f, GoalY + 20f, 1280f, 16f);
+            // No goal sentence: the targets beside the outputs say it. Only the rules stay.
+            var rules = UIKit.Text(Root, GoalText.WiringRules, TextStyle.Label.WithSize(12).WithTracking(0.3f).WithColor(Palette.Faint), TextAnchor.MiddleLeft, "Rules");
+            rules.rectTransform.At(Left + 640f, GoalY, 1280f, 18f);
 
             _matchedValue = UIKit.Text(Root, "", TextStyle.Value.WithSize(34).WithWeight(200), TextAnchor.MiddleRight, "Matched");
             _matchedValue.rectTransform.At(Right - 100f, GoalY - 8f, 200f, 44f);
