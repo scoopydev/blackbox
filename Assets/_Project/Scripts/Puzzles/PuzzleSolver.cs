@@ -42,7 +42,7 @@ namespace Blackbox.Puzzles
             for (int b = 0; b < p.Blocks.Count; b++)
             {
                 var block = p.Blocks[b];
-                parts.Add($"{block.Id}={block.Kind.Spoilers[s.States[b]]}{(block.Locked ? " (locked)" : "")}");
+                parts.Add($"{block.Id}={block.Kind.Rule}{(block.Locked ? " (locked)" : "")}");
             }
             return string.Join(", ", parts);
         }

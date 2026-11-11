@@ -40,8 +40,7 @@ namespace Blackbox.Tests
                 Assert.That(chapter.Tagline, Is.Not.Empty, chapter.Title);
                 Assert.That(chapter.Signals, Is.Not.Empty, chapter.Title);
                 foreach (var text in new[] { chapter.Tagline, chapter.Signals })
-                    Assert.That(System.Text.RegularExpressions.Regex.IsMatch(text, @"\b[BDSWQM][1-8]\b|\bM blocks?\b"), Is.False, $"{chapter.Title} names a kind of block: {text}");
-                Assert.That(chapter.Puzzles.All(p => p.Marked == (chapter.Part.Id != "build")), Is.True, $"{chapter.Title}: blocks are named until Build");
+                    Assert.That(System.Text.RegularExpressions.Regex.IsMatch(text, @"\b(" + string.Join("|", KindCatalog.All.Select(k => k.Id)) + @"|[BDSWQM][1-8])\b|\bM blocks?\b"), Is.False, $"{chapter.Title} names a kind of block: {text}");
                 Assert.That(chapter.UnlockAfter, Is.Null.Or.Empty, $"{chapter.Title}: every chapter of an open part is open");
             }
             foreach (var chapter in LearnChapters)
@@ -71,8 +70,7 @@ namespace Blackbox.Tests
                 foreach (var t in WiringSession.Evaluate(p, p.Solution))
                     if (t != null) Assert.That(t.Medium, Is.Not.EqualTo(Medium.Sampled), $"{p.Id}: a stepped wave");
             }
-            foreach (var id in new[] { "Q1", "Q2", "Q3", "Q4", "M4" })
-                Assert.That(KindCatalog.Get(id).Shelved, Is.True, id);
+            Assert.That(KindCatalog.Get("STEPS").Shelved, Is.True);
         }
 
         [Test]

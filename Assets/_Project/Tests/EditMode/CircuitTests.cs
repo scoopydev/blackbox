@@ -9,9 +9,10 @@ namespace Blackbox.Tests
     /// <summary>Loading circuits, evaluating them, and playing them through a session.</summary>
     public class CircuitTests
     {
-        // A fixed input B and an adjustable input A feed an and/or block g, whose
-        // signal also passes through a locked inverter k. g must send 1 and X must
-        // show 0, so g has to be set to "or", or A set to 1.
+        // The old settings mode, which only the title screen's demo still uses. A
+        // fixed input B and an adjustable input A feed an AND block g, whose signal
+        // also passes through a NOT block k. g must send 1 and X must show 0, so A
+        // has to be set to 1. Blocks have no settings to change.
         const string Fork = @"{
             ""id"": ""fork"", ""name"": ""Fork"", ""probes"": 2,
             ""inputs"": {
@@ -19,8 +20,8 @@ namespace Blackbox.Tests
                 ""B"": { ""at"": [0, 1], ""value"": 1 }
             },
             ""blocks"": {
-                ""g"": { ""kind"": ""B2"", ""state"": 0, ""at"": [1, 0], ""target"": 1 },
-                ""k"": { ""kind"": ""B1"", ""state"": 0, ""locked"": true, ""at"": [2, 0] }
+                ""g"": { ""kind"": ""AND"", ""at"": [1, 0], ""target"": 1 },
+                ""k"": { ""kind"": ""NOT"", ""locked"": true, ""at"": [2, 0] }
             },
             ""outputs"": {
                 ""X"": { ""at"": [3, 0], ""target"": 0 },
@@ -44,7 +45,8 @@ namespace Blackbox.Tests
             Assert.That(p.Targets.Any(t => t.Node.Id == "g" && t.Want == 1), Is.True);
             Assert.That(p.InputChangeable(0), Is.True);
             Assert.That(p.InputChangeable(1), Is.False);
-            Assert.That(p.BlockChangeable(1), Is.False, "k is locked");
+            Assert.That(p.BlockChangeable(0), Is.False, "blocks have no settings");
+            Assert.That(p.BlockChangeable(1), Is.False, "k is locked as well");
         }
 
         [Test]
@@ -56,8 +58,8 @@ namespace Blackbox.Tests
             Assert.That(values[circuit.BlockNode(0)], Is.EqualTo(0), "0 and 1");
             Assert.That(values[circuit.OutputNode(0)], Is.EqualTo(1), "inverted");
             Assert.That(values[circuit.OutputNode(1)], Is.EqualTo(1), "B passes straight to Y");
-            values = circuit.Evaluate(new[] { 0, 1 }, new[] { 1, 0 });
-            Assert.That(values[circuit.OutputNode(0)], Is.EqualTo(0), "0 or 1, inverted");
+            values = circuit.Evaluate(new[] { 1, 1 }, new[] { 0, 0 });
+            Assert.That(values[circuit.OutputNode(0)], Is.EqualTo(0), "1 and 1, inverted");
         }
 
         [Test]
@@ -78,8 +80,9 @@ namespace Blackbox.Tests
             Assert.That(s.MatchedTargets, Is.EqualTo(0));
             Assert.That(s.AtStart, Is.True);
 
-            Assert.That(s.CycleState(0, 1), Is.True);
-            Assert.That(s.Solved, Is.True, "g on or: g sends 1, X shows 0");
+            Assert.That(s.CycleState(0, 1), Is.False, "blocks have no settings");
+            Assert.That(s.SetInput(0, 1), Is.True);
+            Assert.That(s.Solved, Is.True, "A at 1: g sends 1, X shows 0");
             Assert.That(s.Moves, Is.EqualTo(1));
             Assert.That(s.EverSolved, Is.False, "solving takes a run");
             Assert.That(s.Run(), Is.True);
@@ -87,10 +90,7 @@ namespace Blackbox.Tests
 
             Assert.That(s.Undo(), Is.True);
             Assert.That(s.Solved, Is.False);
-            Assert.That(s.State(0), Is.EqualTo(0));
-
-            Assert.That(s.SetInput(0, 1), Is.True);
-            Assert.That(s.Solved, Is.True, "A at 1: 1 and 1");
+            Assert.That(s.InputValue(0), Is.EqualTo(0));
         }
 
         [Test]
@@ -113,7 +113,7 @@ namespace Blackbox.Tests
             Assert.That(s.ProbeShown(1), Is.False, "a probe placed after the run has no reading yet");
             Assert.That(s.HasRun, Is.True, "placing a probe changes nothing in the circuit");
 
-            s.CycleState(0, 1);
+            s.SetInput(0, 1);
             Assert.That(s.HasRun, Is.False, "a change hides the results again");
             Assert.That(s.ProbeShown(0), Is.False);
             Assert.That(s.RunSolved, Is.False, "solved as it stands, but not run");
@@ -131,6 +131,7 @@ namespace Blackbox.Tests
         {
             var s = new PuzzleSession(Load());
             Assert.That(s.CycleInput(1, 1), Is.False, "B is fixed");
+            Assert.That(s.CycleState(0, 1), Is.False, "g has no settings");
             Assert.That(s.CycleState(1, 1), Is.False, "k is locked");
             Assert.That(s.SetState(1, 1), Is.False);
             Assert.That(s.Moves, Is.EqualTo(0));
@@ -142,18 +143,16 @@ namespace Blackbox.Tests
         {
             const string json = @"{
                 ""id"": ""count"", ""inputs"": { ""A"": { ""at"": [0, 0], ""value"": 9, ""adjustable"": true } },
-                ""blocks"": { ""b"": { ""kind"": ""D1"", ""at"": [1, 0] } },
+                ""blocks"": { ""b"": { ""kind"": ""MIRROR"", ""at"": [1, 0] } },
                 ""outputs"": { ""X"": { ""at"": [2, 0], ""target"": 5 } },
                 ""wires"": [""A -> b"", ""b -> X""]
             }";
             var s = new PuzzleSession(Load(json, Medium.Decimal));
-            Assert.That(s.ValueOf(s.Puzzle.Outputs[0]), Is.EqualTo(0), "9 + 1 wraps to 0");
+            Assert.That(s.ValueOf(s.Puzzle.Outputs[0]), Is.EqualTo(0), "9 mirrored is 0");
             s.CycleInput(0, 1);
             Assert.That(s.InputValue(0), Is.EqualTo(0));
             s.CycleInput(0, -1);
             Assert.That(s.InputValue(0), Is.EqualTo(9));
-            s.CycleState(0, -1);
-            Assert.That(s.State(0), Is.EqualTo(2), "states wrap too");
         }
 
         [Test]
@@ -163,7 +162,6 @@ namespace Blackbox.Tests
             int resets = 0;
             s.Reset += () => resets++;
             s.SetInput(0, 1);
-            s.SetState(0, 1);
             s.AddProbe(2, 0.5f);
             s.ResetToStart();
             Assert.That(resets, Is.EqualTo(1));
@@ -181,8 +179,8 @@ namespace Blackbox.Tests
             Assert.That(s.ProbesLeft, Is.EqualTo(2));
             Assert.That(s.AddProbe(2, 0.5f), Is.True, "on g -> k");
             Assert.That(s.ProbeValue(0), Is.EqualTo(0), "g sends 0 and 1 = 0");
-            s.SetState(0, 1);
-            Assert.That(s.ProbeValue(0), Is.EqualTo(1), "probes read live");
+            s.SetInput(0, 1);
+            Assert.That(s.ProbeValue(0), Is.EqualTo(1), "probes read live: 1 and 1");
             Assert.That(s.AddProbe(3, 2f), Is.True);
             Assert.That(s.Probes[1].At, Is.EqualTo(1f), "clamped onto the wire");
             Assert.That(s.AddProbe(0, 0.5f), Is.False, "only two probes");
@@ -199,13 +197,12 @@ namespace Blackbox.Tests
             var p = Load();
             var s = new PuzzleSession(p);
             s.SetInput(0, 1);
-            s.SetState(0, 1);
             s.AddProbe(3, 0.25f);
             var snap = s.Snapshot();
 
             var again = new PuzzleSession(p, snap);
             Assert.That(again.InputValue(0), Is.EqualTo(1));
-            Assert.That(again.State(0), Is.EqualTo(1));
+            Assert.That(again.State(0), Is.EqualTo(0));
             Assert.That(again.Probes.Count, Is.EqualTo(1));
             Assert.That(again.Probes[0].Wire, Is.EqualTo(3));
             Assert.That(again.Probes[0].At, Is.EqualTo(0.25f).Within(0.001f));
@@ -220,7 +217,8 @@ namespace Blackbox.Tests
             for (int i = 0; i < 5; i++) damaged.Probes.Add((0, 500));
             var s = new PuzzleSession(p, damaged);
             Assert.That(s.InputValue(1), Is.EqualTo(1), "B is fixed at 1");
-            Assert.That(s.State(1), Is.EqualTo(0), "k is locked on its first state");
+            Assert.That(s.State(0), Is.EqualTo(0), "blocks have one rule");
+            Assert.That(s.State(1), Is.EqualTo(0));
             Assert.That(s.Probes.Count, Is.EqualTo(2), "no more probes than the circuit allows, none on missing wires");
 
             var wrongShape = new CircuitState { Inputs = new[] { 1 }, States = new[] { 5, 0 } };
@@ -231,20 +229,23 @@ namespace Blackbox.Tests
         [Test]
         public void ReturnTargetsSitOnInputs()
         {
-            // A starts where it must end, so it has to be changed and put back.
+            // A starts where it must end, so it has to end back there.
             const string json = @"{
                 ""id"": ""return"",
-                ""inputs"": { ""A"": { ""at"": [0, 0], ""value"": 1, ""adjustable"": true, ""target"": 1 } },
-                ""blocks"": { ""b"": { ""kind"": ""B1"", ""at"": [1, 0] } },
+                ""inputs"": {
+                    ""A"": { ""at"": [0, 0], ""value"": 1, ""adjustable"": true, ""target"": 1 },
+                    ""C"": { ""at"": [0, 1], ""value"": 0, ""adjustable"": true }
+                },
+                ""blocks"": { ""b"": { ""kind"": ""OR"", ""at"": [1, 0] } },
                 ""outputs"": { ""X"": { ""at"": [2, 0], ""target"": 1 } },
-                ""wires"": [""A -> b"", ""b -> X""]
+                ""wires"": [""A -> b.0"", ""C -> b.1"", ""b -> X""]
             }";
             var s = new PuzzleSession(Load(json));
-            Assert.That(s.MatchedTargets, Is.EqualTo(1), "A is already where it must end");
+            Assert.That(s.MatchedTargets, Is.EqualTo(2), "A is already where it must end, and X shows 1");
             s.SetInput(0, 0);
+            s.SetInput(1, 1);
             Assert.That(s.Solved, Is.False, "X shows 1, but A is wrong");
             s.SetInput(0, 1);
-            s.SetState(0, 1);
             Assert.That(s.Solved, Is.True);
         }
 
@@ -258,7 +259,7 @@ namespace Blackbox.Tests
             const string json = @"{
                 ""id"": ""shapes"",
                 ""inputs"": { ""A"": { ""at"": [0, 0], ""value"": ""solid square"", ""adjustable"": true, ""target"": ""solid square"" } },
-                ""blocks"": { ""b"": { ""kind"": ""S1"", ""at"": [1, 0] } },
+                ""blocks"": { ""b"": { ""kind"": ""FILL"", ""at"": [1, 0] } },
                 ""outputs"": { ""X"": { ""at"": [2, 0], ""target"": ""hollow triangle"" } },
                 ""wires"": [""A -> b"", ""b -> X""]
             }";
@@ -277,7 +278,7 @@ namespace Blackbox.Tests
             string json = @"{
                 ""id"": ""broken"",
                 ""inputs"": { ""A"": [0, 0] },
-                ""blocks"": { ""b"": { ""kind"": ""B1"", ""at"": [1, 0] }, ""b2"": { ""kind"": ""B1"", ""at"": [1, 1] } },
+                ""blocks"": { ""b"": { ""kind"": ""NOT"", ""at"": [1, 0] }, ""b2"": { ""kind"": ""NOT"", ""at"": [1, 1] } },
                 ""outputs"": { ""X"": [2, 0] },
                 " + wires + @"
             }";
@@ -290,7 +291,7 @@ namespace Blackbox.Tests
         {
             const string wrongKind = @"{
                 ""id"": ""k"", ""inputs"": { ""A"": [0, 0] },
-                ""blocks"": { ""b"": { ""kind"": ""D1"", ""at"": [1, 0] } },
+                ""blocks"": { ""b"": { ""kind"": ""MIRROR"", ""at"": [1, 0] } },
                 ""outputs"": { ""X"": [2, 0] }, ""wires"": [""A -> b"", ""b -> X""]
             }";
             Assert.That(Assert.Throws<PuzzleFormatException>(() => Load(wrongKind)).Message, Does.Contain("decimal"));
@@ -303,7 +304,7 @@ namespace Blackbox.Tests
 
             const string wrongState = @"{
                 ""id"": ""s"", ""inputs"": { ""A"": [0, 0] },
-                ""blocks"": { ""b"": { ""kind"": ""B1"", ""state"": 2, ""at"": [1, 0] } },
+                ""blocks"": { ""b"": { ""kind"": ""NOT"", ""state"": 1, ""at"": [1, 0] } },
                 ""outputs"": { ""X"": [2, 0] }, ""wires"": [""A -> b"", ""b -> X""]
             }";
             Assert.That(Assert.Throws<PuzzleFormatException>(() => Load(wrongState)).Message, Does.Contain("out of range"));

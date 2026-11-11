@@ -19,7 +19,7 @@ namespace Blackbox.UI.Screens
         const string DemoJson = @"{
             ""id"": ""title"", ""name"": ""BLACKBOX"", ""probes"": 0,
             ""inputs"": { ""A"": { ""at"": [0, 0], ""value"": 0, ""adjustable"": true } },
-            ""blocks"": { ""k"": { ""kind"": ""B1"", ""state"": 0, ""at"": [1, 0] } },
+            ""blocks"": { ""k"": { ""kind"": ""NOT"", ""at"": [1, 0] } },
             ""outputs"": { ""X"": [2, 0] },
             ""wires"": [""A -> k"", ""k -> X""]
         }";

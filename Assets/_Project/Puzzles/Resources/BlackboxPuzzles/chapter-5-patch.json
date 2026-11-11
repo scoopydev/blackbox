@@ -22,7 +22,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "B2"
+          "kind": "AND"
         }
       },
       "outputs": {
@@ -53,7 +53,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "D1"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -73,14 +73,17 @@
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
+        },
+        "B": {
+          "signal": "decimal 5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "S1"
+          "kind": "FILL"
         },
         "h": {
-          "kind": "S2"
+          "kind": "DIFF"
         }
       },
       "outputs": {
@@ -93,8 +96,9 @@
       },
       "solution": [
         "A -> g",
-        "A -> h",
         "g -> X",
+        "A -> h.0",
+        "B -> h.1",
         "h -> Y"
       ]
     },
@@ -112,7 +116,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "S2"
+          "kind": "NEXT"
         }
       },
       "outputs": {
@@ -139,10 +143,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "S2"
+          "kind": "NEXT"
         },
         "h": {
-          "kind": "B1"
+          "kind": "NOT"
         }
       },
       "outputs": {

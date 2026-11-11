@@ -3,8 +3,7 @@
   "title": "Blackbox",
   "mode": "wiring",
   "tagline": "Everything at once.",
-  "signals": "Bigger circuits with every kind of signal and block, and no dots to go by. Make every output do what its target shows.",
-  "marked": false,
+  "signals": "Bigger circuits with every kind of signal and block. Make every output do what its target shows.",
   "circuits": [
     {
       "id": "blackbox-01",
@@ -23,16 +22,16 @@
       },
       "blocks": {
         "g": {
-          "kind": "M7"
+          "kind": "FASTER"
         },
         "h": {
-          "kind": "M7"
+          "kind": "FASTER"
         },
         "k": {
-          "kind": "M8"
+          "kind": "COMPARE"
         },
         "m": {
-          "kind": "M6"
+          "kind": "COUNT"
         }
       },
       "outputs": {
@@ -70,13 +69,13 @@
       },
       "blocks": {
         "g": {
-          "kind": "M1"
+          "kind": "MIX"
         },
         "h": {
-          "kind": "M5"
+          "kind": "GATE"
         },
         "k": {
-          "kind": "M2"
+          "kind": "FLIP"
         }
       },
       "outputs": {
@@ -114,14 +113,13 @@
       },
       "blocks": {
         "g": {
-          "kind": "M7"
+          "kind": "FASTER"
         },
         "h": {
-          "kind": "M2"
+          "kind": "FLIP"
         },
         "k": {
-          "kind": "D1",
-          "state": 2
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -152,22 +150,21 @@
           "signal": "binary 0110"
         },
         "C": {
-          "signal": "decimal 3"
+          "signal": "decimal 9"
         }
       },
       "blocks": {
         "g": {
-          "kind": "S2"
+          "kind": "NEXT"
         },
         "h": {
-          "kind": "B4",
-          "state": 2
+          "kind": "XOR"
         },
         "k": {
-          "kind": "D2"
+          "kind": "DIFF"
         },
         "m": {
-          "kind": "M5"
+          "kind": "TAKEFILL"
         }
       },
       "outputs": {
@@ -211,17 +208,16 @@
       },
       "blocks": {
         "g": {
-          "kind": "M8"
+          "kind": "COMPARE"
         },
         "h": {
-          "kind": "D2",
-          "state": 1
+          "kind": "DIFF"
         },
         "k": {
-          "kind": "M6"
+          "kind": "COUNT"
         },
         "m": {
-          "kind": "B1"
+          "kind": "NOT"
         }
       },
       "outputs": {
@@ -267,19 +263,19 @@
       },
       "blocks": {
         "g": {
-          "kind": "M3"
+          "kind": "LATER"
         },
         "h": {
-          "kind": "M1"
+          "kind": "MIX"
         },
         "k": {
-          "kind": "S1"
+          "kind": "FILL"
         },
         "m": {
-          "kind": "M5"
+          "kind": "GATE"
         },
         "n": {
-          "kind": "M7"
+          "kind": "FASTER"
         }
       },
       "outputs": {

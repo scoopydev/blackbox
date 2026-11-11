@@ -2,25 +2,27 @@
   "id": "unmarked",
   "title": "Unmarked",
   "mode": "wiring",
-  "tagline": "The blocks keep their secrets.",
-  "signals": "From here on, blocks don't show the dots for their settings. Every kind of signal and every block you've met can turn up, so try things and watch what each block sends.",
-  "marked": false,
+  "tagline": "Every block you've met, all mixed up.",
+  "signals": "From here on, any kind of signal and any block you've met can turn up anywhere, so try things and watch what each block sends.",
   "circuits": [
     {
       "id": "unmarked-01",
       "name": "Nameless",
-      "hint": "Without the dots, the only way to learn a block is to wire it up and press RUN.",
+      "hint": "The only way to learn a block is to wire it up and press RUN.",
       "inputs": {
         "A": {
           "signal": "decimal 4"
+        },
+        "B": {
+          "signal": "decimal 7"
         }
       },
       "blocks": {
         "g": {
-          "kind": "D3"
+          "kind": "MAX"
         },
         "h": {
-          "kind": "D1"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -29,7 +31,8 @@
         }
       },
       "solution": [
-        "A -> g",
+        "A -> g.0",
+        "B -> g.1",
         "g -> h",
         "h -> X"
       ]
@@ -48,12 +51,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "D3",
-          "state": 2
+          "kind": "MIRROR"
         },
         "h": {
-          "kind": "S2",
-          "state": 1
+          "kind": "NEXT"
         }
       },
       "outputs": {
@@ -85,10 +86,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "M3"
+          "kind": "LATER"
         },
         "h": {
-          "kind": "M7"
+          "kind": "FASTER"
         }
       },
       "outputs": {
@@ -119,10 +120,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "B2"
+          "kind": "AND"
         },
         "h": {
-          "kind": "B1"
+          "kind": "NOT"
         }
       },
       "outputs": {
@@ -155,11 +156,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "M6"
+          "kind": "COUNT"
         },
         "h": {
-          "kind": "D3",
-          "state": 2
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -187,12 +187,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "S4",
-          "state": 1
+          "kind": "TAKECOLOUR"
         },
         "h": {
-          "kind": "S2",
-          "state": 1
+          "kind": "NEXT"
         }
       },
       "outputs": {

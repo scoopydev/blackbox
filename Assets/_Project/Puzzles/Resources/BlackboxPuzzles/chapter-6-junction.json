@@ -22,7 +22,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "D2"
+          "kind": "DIFF"
         }
       },
       "outputs": {
@@ -53,7 +53,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "S3"
+          "kind": "TAKEFILL"
         }
       },
       "outputs": {
@@ -70,7 +70,7 @@
     {
       "id": "junction-03",
       "name": "Cut Off",
-      "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle. Which goes on top?",
+      "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
           "signal": "decimal 5"
@@ -84,8 +84,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "B4",
-          "state": 2
+          "kind": "XOR"
         }
       },
       "outputs": {
@@ -116,7 +115,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "D2"
+          "kind": "MAX"
         }
       },
       "outputs": {
@@ -147,8 +146,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "S3",
-          "state": 1
+          "kind": "TAKEFILL"
         }
       },
       "outputs": {
@@ -157,8 +155,8 @@
         }
       },
       "solution": [
-        "A -> g.0",
-        "B -> g.1",
+        "B -> g.0",
+        "A -> g.1",
         "g -> X"
       ]
     },
@@ -179,16 +177,13 @@
       },
       "blocks": {
         "g": {
-          "kind": "D2",
-          "state": 1
+          "kind": "DIFF"
         },
         "h": {
-          "kind": "S3",
-          "state": 1
+          "kind": "TAKEFILL"
         },
         "k": {
-          "kind": "D4",
-          "state": 1
+          "kind": "MIN"
         }
       },
       "outputs": {
@@ -206,8 +201,8 @@
         "B -> g.0",
         "A -> g.1",
         "g -> X",
-        "C -> h.0",
-        "A -> h.1",
+        "A -> h.0",
+        "C -> h.1",
         "h -> Y",
         "g -> k.0",
         "C -> k.1",

@@ -115,7 +115,7 @@ namespace Blackbox.Puzzles
                 if (!blockMemo.TryGetValue(memoKey, out int result))
                 {
                     var block = p.Blocks[b];
-                    result = Intern(block.Kind.Apply(traceIns, block.State));
+                    result = Intern(block.Kind.Apply(traceIns));
                     blockMemo[memoKey] = result;
                 }
                 value[node] = result;

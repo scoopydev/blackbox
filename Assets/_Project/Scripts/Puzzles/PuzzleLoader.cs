@@ -85,7 +85,6 @@ namespace Blackbox.Puzzles
                 if (!Media.TryParseMedium(mediumKey, out medium))
                     throw new PuzzleFormatException($"{sourceName}: unknown medium '{mediumKey}' (use binary, decimal, shape, wave or sampled).");
             }
-            bool marked = root["marked"].AsBool(true);
 
             var chapter = new ChapterDef
             {
@@ -115,7 +114,7 @@ namespace Blackbox.Puzzles
             int number = 0;
             foreach (var c in circuits.Items)
             {
-                var puzzle = ReadPuzzle(c, $"{sourceName} › circuit {number + 1}", medium, wiring, marked);
+                var puzzle = ReadPuzzle(c, $"{sourceName} › circuit {number + 1}", medium, wiring);
                 if (!ids.Add(puzzle.Id)) throw new PuzzleFormatException($"{sourceName}: two circuits use the id '{puzzle.Id}'.");
                 puzzle.Chapter = chapter;
                 puzzle.Number = number++;
@@ -126,10 +125,10 @@ namespace Blackbox.Puzzles
 
         /// <summary>
         /// Reads one circuit. <paramref name="medium"/> applies unless the circuit
-        /// names its own; <paramref name="wiring"/> and <paramref name="marked"/>
+        /// names its own; <paramref name="wiring"/>
         /// come from the chapter unless the circuit says otherwise.
         /// </summary>
-        public static PuzzleDef ReadPuzzle(JsonValue c, string where, Medium medium, bool wiring = false, bool marked = true)
+        public static PuzzleDef ReadPuzzle(JsonValue c, string where, Medium medium, bool wiring = false)
         {
             var p = new PuzzleDef
             {
@@ -142,7 +141,6 @@ namespace Blackbox.Puzzles
             };
             where = $"{where} ({p.Id})";
             p.Wiring = ReadMode(c, where, wiring);
-            p.Marked = c["marked"].AsBool(marked);
             if (p.Wiring) return ReadWiredPuzzle(c, p, where);
             if (c.Has("medium"))
             {
@@ -432,8 +430,8 @@ namespace Blackbox.Puzzles
                 string kindId = b.IsString ? b.AsString() : b["kind"].AsString();
                 if (!KindCatalog.TryGet(kindId, out var kind))
                     throw new PuzzleFormatException($"{where}: block '{m.Key}' has unknown kind '{kindId}'.");
-                if (!kind.Wireable)
-                    throw new PuzzleFormatException($"{where}: block '{m.Key}' is a {kind.Id}, which changes wave settings, so it can't go in a wired circuit.");
+                if (b.IsObject && b.Has("state"))
+                    throw new PuzzleFormatException($"{where}: block '{m.Key}' has a \"state\", but blocks have no settings: each kind does one thing.");
                 if (kind.Shelved)
                     throw new PuzzleFormatException($"{where}: block '{m.Key}' is a {kind.Id}, which is set aside for now, so no circuit may use it.");
                 var block = new BlockDef
@@ -441,12 +439,9 @@ namespace Blackbox.Puzzles
                     Id = m.Key,
                     Role = NodeRole.Block,
                     Kind = kind,
-                    State = b.IsObject ? b["state"].AsInt(0) : 0,
                     Locked = true,
                     Index = p.Blocks.Count,
                 };
-                if (block.State < 0 || block.State >= kind.StateCount)
-                    throw new PuzzleFormatException($"{where}: block '{block.Id}' ({kind.Id}) has {kind.StateCount} states, so state {block.State} is out of range.");
                 if (b.IsObject)
                 {
                     ReadPosition(b["at"], block, where);

@@ -17,121 +17,119 @@ namespace Blackbox.Tests
 
         static Trace T(string signal) => Signals.Parse(signal).Trace;
 
-        static Trace Mix(string kind, params Trace[] inputs) => KindCatalog.Get(kind).Apply(inputs, 0);
+        static Trace Mix(string kind, params Trace[] inputs) => KindCatalog.Get(kind).Apply(inputs);
 
         static int Pulses(Trace bits) => bits.Runs().Count(r => r.level > 0.5f);
 
-        // ------------------------------------------------------------ mixing blocks
+        // ------------------------------------------------------------ wave and mixing blocks
 
         [Test]
-        public void AWaveAndItsHalfLoopTwinCancel()
+        public void AWaveAndItsHalfLoopTwinMixToNothing()
         {
-            var sum = Mix("M1", T("wave sine f2 a7"), T("wave sine f2 a7 p2"));
-            Assert.That(sum.Medium, Is.EqualTo(Medium.Wave));
-            Assert.That(sum.Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "silence");
-            Assert.That(Mix("M1", T("wave sine f2 a7"), T("wave sine f2 a7 p1")).Matches(Trace.Flat(Medium.Wave, 0f)), Is.False, "a quarter apart they don't cancel");
+            var mixed = Mix("MIX", T("wave sine f2 a7"), T("wave sine f2 a7 p2"));
+            Assert.That(mixed.Medium, Is.EqualTo(Medium.Wave));
+            Assert.That(mixed.Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "silence");
+            Assert.That(Mix("MIX", T("wave sine f2 a7"), T("wave sine f2 a7 p1")).Matches(Trace.Flat(Medium.Wave, 0f)), Is.False, "a quarter apart they don't cancel");
         }
 
         [Test]
-        public void AddingClipsAtTheTopAndBottom()
+        public void MixIsHalfwayBetween()
         {
-            var sum = Mix("M1", T("wave sine f1 a7"), T("wave sine f1 a7"));
-            sum.Range(out float low, out float high);
-            Assert.That(high, Is.EqualTo(Trace.Peak).Within(0.001f));
-            Assert.That(low, Is.EqualTo(-Trace.Peak).Within(0.001f));
+            Assert.That(Mix("MIX", T("wave sine f1 a7"), T("wave sine f1 a7")).Matches(T("wave sine f1 a7")), Is.True, "a wave mixed with itself is unchanged");
+            Assert.That(Mix("MIX", T("binary 1"), T("binary 0")).Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "halfway between the top and the bottom is the middle");
+            Mix("MIX", T("wave square f1 a7"), T("wave saw f3 a7")).Range(out float low, out float high);
+            Assert.That(high, Is.LessThanOrEqualTo(Trace.Peak + 0.001f), "never past the top");
+            Assert.That(low, Is.GreaterThanOrEqualTo(-Trace.Peak - 0.001f), "or the bottom");
         }
 
         [Test]
-        public void FlipTurnsEachKindUpsideDown()
+        public void EachSetStartsWithAFlip()
         {
-            Assert.That(Mix("M2", T("binary 0110")).Matches(T("binary 1001")), Is.True);
-            Assert.That(Mix("M2", T("decimal 2")).Matches(T("decimal 7")), Is.True);
-            Assert.That(Mix("M2", T("shape solid triangle")).Matches(T("shape hollow triangle")), Is.True);
-            Assert.That(Mix("M2", T("wave sine f3 a5")).Matches(T("wave sine f3 a5 p2")), Is.True);
-            Assert.That(Mix("M1", T("wave saw f1 a7"), Mix("M2", T("wave saw f1 a7"))).Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "a signal and its flip add to nothing");
+            Assert.That(KindCatalog.Get("NOT").Apply(new[] { T("binary 0110") }).Matches(T("binary 1001")), Is.True);
+            Assert.That(KindCatalog.Get("MIRROR").Apply(new[] { T("decimal 2") }).Matches(T("decimal 7")), Is.True);
+            Assert.That(KindCatalog.Get("FILL").Apply(new[] { T("shape solid triangle") }).Matches(T("shape hollow triangle")), Is.True);
+            Assert.That(Mix("FLIP", T("wave sine f3 a5")).Matches(T("wave sine f3 a5 p2")), Is.True);
+            Assert.That(Mix("MIX", T("wave saw f1 a7"), Mix("FLIP", T("wave saw f1 a7"))).Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "a wave and its flip mix to nothing");
         }
 
         [Test]
         public void LaterIsAQuarterOfTheLoop()
         {
-            Assert.That(Mix("M3", T("wave sine f1 a7")).Matches(T("wave sine f1 a7 p1")), Is.True, "a quarter of a slow wave's cycle");
-            Assert.That(Mix("M3", T("wave sine f4 a7")).Matches(T("wave sine f4 a7")), Is.True, "a whole cycle of a wave that repeats four times");
-            Assert.That(Mix("M3", T("binary 1000")).Matches(T("binary 0100")), Is.True);
-        }
-
-        [Test]
-        public void SamplingHoldsTwelveReadingsALoop()
-        {
-            var sampled = Mix("M4", T("wave sine f1 a7"));
-            Assert.That(sampled.Medium, Is.EqualTo(Medium.Sampled));
-            Assert.That(sampled.Runs().Count, Is.LessThanOrEqualTo(12));
-            Assert.That(sampled.Matches(T("sampled sine f1 a7 s12")), Is.True, "the same steps as a sampled sine read 12 times a cycle");
-            foreach (var (_, _, level) in sampled.Runs()) Assert.That(level, Is.EqualTo(System.Math.Round(level)).Within(0.0001), "every step is a whole level");
-        }
-
-        [Test]
-        public void AGateLetsTheTopThroughWhileTheBottomIsOn()
-        {
-            var gated = Mix("M5", T("wave saw f3 a7"), T("binary 0110"));
-            for (int k = 0; k < Trace.Steps; k++)
-            {
-                bool on = k >= 72 && k < 216;
-                Assert.That(gated[k], Is.EqualTo(on ? T("wave saw f3 a7")[k] : 0f).Within(0.0001f), $"step {k}");
-            }
-            Assert.That(Mix("M5", T("decimal 6"), T("binary 0")).Matches(T("decimal 0")), Is.True, "nothing is 0 for a digit");
-        }
-
-        [Test]
-        public void CountingRises()
-        {
-            var count = Mix("M6", T("binary 01010101"));
-            Assert.That(count.Medium, Is.EqualTo(Medium.Decimal));
-            Assert.That(count[Trace.Steps - 1], Is.EqualTo(4f));
-            Assert.That(count.Runs().Select(r => r.level), Is.EqualTo(new[] { 0f, 1f, 2f, 3f, 4f }));
-            Assert.That(Mix("M6", T("binary 1")).Matches(T("decimal 0")) || Mix("M6", T("binary 1")).Matches(T("decimal 1")), Is.True, "a steady signal rises once at most");
+            Assert.That(Mix("LATER", T("wave sine f1 a7")).Matches(T("wave sine f1 a7 p1")), Is.True, "a quarter of a slow wave's cycle");
+            Assert.That(Mix("LATER", T("wave sine f4 a7")).Matches(T("wave sine f4 a7")), Is.True, "a whole cycle of a wave that repeats four times");
+            Assert.That(Mix("LATER", T("binary 1000")).As(Medium.Binary).Matches(T("binary 0100")), Is.True, "a bit read as a wave, moved along");
         }
 
         [Test]
         public void FasterRepeatsTwiceALoop()
         {
-            Assert.That(Mix("M7", T("wave sine f1 a7")).Matches(T("wave sine f2 a7")), Is.True);
-            Assert.That(Mix("M7", T("binary 01")).Matches(T("binary 0101")), Is.True);
+            Assert.That(Mix("FASTER", T("wave sine f1 a7")).Matches(T("wave sine f2 a7")), Is.True);
+            Assert.That(Mix("FASTER", T("binary 01")).As(Medium.Binary).Matches(T("binary 0101")), Is.True);
+            var twice = Mix("FASTER", Mix("FASTER", T("wave saw f1 a5")));
+            Assert.That(twice.Matches(T("wave saw f4 a5")), Is.True, "faster twice is four times as fast");
+        }
+
+        [Test]
+        public void WaveBlocksAcceptAnySignal()
+        {
+            // Wave blocks read every input as a wave and always send one, so they chain and never refuse.
+            var mixed = Mix("MIX", T("wave sine f1 a7"), T("wave saw f2 a3"));
+            Assert.That(Mix("FASTER", mixed).Medium, Is.EqualTo(Medium.Wave));
+            Assert.That(Mix("FLIP", T("binary 1")).Matches(Trace.Flat(Medium.Wave, -Trace.Peak)), Is.True, "a 1 is the top of a wave");
+            Assert.That(Mix("LATER", T("decimal 9")).Matches(Trace.Flat(Medium.Wave, Trace.Peak)), Is.True, "9 is the top too");
+            Assert.That(Mix("FASTER", T("shape solid circle")).Medium, Is.EqualTo(Medium.Wave));
+        }
+
+        [Test]
+        public void AGateLetsTheTopThroughWhileTheBottomIsOn()
+        {
+            var gated = Mix("GATE", T("wave saw f3 a7"), T("binary 0110"));
+            for (int k = 0; k < Trace.Steps; k++)
+            {
+                bool on = k >= 72 && k < 216;
+                Assert.That(gated[k], Is.EqualTo(on ? T("wave saw f3 a7")[k] : 0f).Within(0.0001f), $"step {k}");
+            }
+            Assert.That(Mix("GATE", T("decimal 6"), T("binary 0")).Matches(T("decimal 0")), Is.True, "off is 0 for a digit");
+            Assert.That(Mix("GATE", T("binary 1"), T("binary 0")).Matches(T("binary 0")), Is.True, "and for a bit");
+            Assert.That(Mix("GATE", T("shape solid pink square"), T("binary 0")).Matches(T("shape hollow circle")), Is.True, "and an empty circle for a shape");
+            Assert.That(Mix("GATE", T("shape solid pink square"), T("binary 1")).Matches(T("shape solid pink square")), Is.True);
+        }
+
+        [Test]
+        public void CountingRises()
+        {
+            var count = Mix("COUNT", T("binary 01010101"));
+            Assert.That(count.Medium, Is.EqualTo(Medium.Decimal));
+            Assert.That(count[Trace.Steps - 1], Is.EqualTo(4f));
+            Assert.That(count.Runs().Select(r => r.level), Is.EqualTo(new[] { 0f, 1f, 2f, 3f, 4f }));
+            Assert.That(Mix("COUNT", T("binary 1")).Matches(T("decimal 1")), Is.True, "a signal that's on from the start has switched on once");
+            Assert.That(Mix("COUNT", T("binary 0")).Matches(T("decimal 0")), Is.True);
+            var many = Mix("COUNT", T("wave square f7 a7"));
+            Assert.That(many[Trace.Steps - 1], Is.EqualTo(9f), "twelve switch-ons stop at 9");
         }
 
         [Test]
         public void CompareMakesBitsFromWaves()
         {
-            var bits = Mix("M8", T("wave sine f1 a7"), T("decimal 7"));
+            var bits = Mix("COMPARE", T("wave sine f1 a7"), T("decimal 7"));
             Assert.That(bits.Medium, Is.EqualTo(Medium.Binary));
             Assert.That(Pulses(bits), Is.EqualTo(1));
             int high = bits.Runs().Where(r => r.level > 0.5f).Sum(r => r.length);
-            int low = Mix("M8", T("wave sine f1 a7"), T("decimal 2")).Runs().Where(r => r.level > 0.5f).Sum(r => r.length);
-            Assert.That(low, Is.GreaterThan(high), "a lower threshold keeps the light on for longer");
+            int low = Mix("COMPARE", T("wave sine f1 a7"), T("decimal 2")).Runs().Where(r => r.level > 0.5f).Sum(r => r.length);
+            Assert.That(low, Is.GreaterThan(high), "a lower bottom input keeps it on for longer");
+            Assert.That(Mix("COMPARE", T("decimal 5"), T("decimal 5")).Matches(T("binary 0")), Is.True, "equal is not higher");
         }
 
         [Test]
         public void AWaveIntoAnAndBlockBlinks()
         {
             // The idea the Combine tutorial is built on: a wave read as a bit is 1
-            // above its middle, so an "and" with a steady 1 blinks at its frequency.
+            // above its middle, so an AND with a steady 1 blinks at its frequency.
             for (int f = 1; f <= 4; f++)
             {
-                var bits = KindCatalog.Get("B2").Apply(new[] { T("binary 1"), T($"wave sine f{f} a7") }, 0);
+                var bits = KindCatalog.Get("AND").Apply(new[] { T("binary 1"), T($"wave sine f{f} a7") });
                 Assert.That(Pulses(bits), Is.EqualTo(Waves.Cycles[f - 1]), $"sine f{f}");
             }
-        }
-
-        [Test]
-        public void WaveBlocksWorkOnPlainWaves()
-        {
-            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("wave sine f2 a5") }, 0).Matches(T("wave sine f3 a5")), Is.True, "one step faster");
-            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("wave sine f2 a5") }, 0).Value, Is.Not.Null, "and still a plain wave, so another wave block can read it");
-            Assert.That(KindCatalog.Get("W3").Apply(new[] { T("wave sine f3 a2"), T("wave square f1 a7") }, 0).Matches(T("wave sine f3 a7")), Is.True);
-            Assert.That(KindCatalog.Get("Q1").Apply(new[] { T("sampled sine f1 a7 s3") }, 0).Matches(T("sampled sine f1 a7 s6")), Is.True);
-            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("binary 1") }, 0), Is.Null, "a bit isn't a wave");
-            Assert.That(KindCatalog.Get("W1").Apply(new[] { T("sampled sine f1 a7 s3") }, 0), Is.Null, "a sampled wave isn't an analog one");
-            Assert.That(KindCatalog.Get("W1").Apply(new[] { Mix("M2", T("wave sine f2 a5")) }, 0), Is.Null, "a mixed wave has no settings to change");
-            Assert.That(KindCatalog.Get("W1").Reads(new[] { T("wave saw f1 a1") }), Is.True);
         }
 
         [Test]
@@ -145,11 +143,11 @@ namespace Blackbox.Tests
             Assert.That(Media.Describe(Medium.Shape, Shapes.Make(Shapes.Square, false)), Is.EqualTo("hollow square"), "cyan is the plain colour and goes unsaid");
             Assert.That(Media.Size(Medium.Shape), Is.EqualTo(32));
             // Shape blocks keep a shape's colour with its form.
-            Assert.That(KindCatalog.Get("S1").Apply(new[] { pink }, 0), Is.EqualTo(Shapes.Make(Shapes.Triangle, false, 1)));
-            Assert.That(KindCatalog.Get("S2").Apply(new[] { pink }, 0), Is.EqualTo(Shapes.Make(Shapes.Square, true, 1)));
+            Assert.That(KindCatalog.Get("FILL").Apply(new[] { pink }), Is.EqualTo(Shapes.Make(Shapes.Triangle, false, 1)));
+            Assert.That(KindCatalog.Get("NEXT").Apply(new[] { pink }), Is.EqualTo(Shapes.Make(Shapes.Square, true, 1)));
             int green = Shapes.Make(Shapes.Hexagon, false, 3);
-            Assert.That(KindCatalog.Get("S3").Apply(new[] { pink, green }, 0), Is.EqualTo(Shapes.Make(Shapes.Triangle, false, 1)), "form and colour of top, fill of bottom");
-            Assert.That(KindCatalog.Get("S4").Apply(new[] { pink, green }, 0), Is.EqualTo(green), "the one with more corners, whole");
+            Assert.That(KindCatalog.Get("TAKEFILL").Apply(new[] { pink, green }), Is.EqualTo(Shapes.Make(Shapes.Triangle, false, 1)), "form and colour of top, fill of bottom");
+            Assert.That(KindCatalog.Get("TAKECOLOUR").Apply(new[] { pink, green }), Is.EqualTo(Shapes.Make(Shapes.Triangle, true, 3)), "form and fill of top, colour of bottom");
         }
 
         [Test]
@@ -176,10 +174,11 @@ namespace Blackbox.Tests
         [Test]
         public void BlocksOfOneKindReadOtherKinds()
         {
-            Assert.That(KindCatalog.Get("B1").Apply(new[] { T("decimal 0") }, 0).Matches(T("binary 1")), Is.True, "a digit is 1 unless it's 0");
-            Assert.That(KindCatalog.Get("B1").Apply(new[] { T("shape hollow square") }, 0).Matches(T("binary 1")), Is.True, "a hollow shape is 0");
-            Assert.That(KindCatalog.Get("D1").Apply(new[] { T("shape solid triangle") }, 0).Matches(T("decimal 4")), Is.True, "a shape is its corners");
-            Assert.That(KindCatalog.Get("D1").Apply(new[] { T("binary 01") }, 0).Matches(T("decimal 12")), Is.True, "a bit is 0 or 1, step by step");
+            Assert.That(KindCatalog.Get("NOT").Apply(new[] { T("decimal 0") }).Matches(T("binary 1")), Is.True, "a digit is 1 unless it's 0");
+            Assert.That(KindCatalog.Get("NOT").Apply(new[] { T("shape hollow square") }).Matches(T("binary 1")), Is.True, "a hollow shape is 0");
+            Assert.That(KindCatalog.Get("MIRROR").Apply(new[] { T("shape solid triangle") }).Matches(T("decimal 6")), Is.True, "a shape is its corners");
+            Assert.That(KindCatalog.Get("MIRROR").Apply(new[] { T("binary 01") }).Matches(T("decimal 98")), Is.True, "a bit is 0 or 1, step by step");
+            Assert.That(KindCatalog.Get("NEXT").Apply(new[] { T("binary 1") }).Matches(T("shape solid triangle")), Is.True, "a bit is a circle, solid for 1");
         }
 
         // ------------------------------------------------------------ signals
@@ -261,7 +260,7 @@ namespace Blackbox.Tests
         const string Small = @"{
             ""id"": ""t"", ""name"": ""Test"",
             ""inputs"": { ""A"": ""binary 1"", ""B"": ""wave sine f1 a7"" },
-            ""blocks"": { ""g"": { ""kind"": ""B2"" }, ""h"": { ""kind"": ""B1"" } },
+            ""blocks"": { ""g"": { ""kind"": ""AND"" }, ""h"": { ""kind"": ""NOT"" } },
             ""outputs"": { ""X"": ""display"" },
             ""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]
         }";
@@ -354,7 +353,8 @@ namespace Blackbox.Tests
                 var ex = Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(json), reason);
                 Assert.That(ex.Message, Does.Contain(expect), reason);
             }
-            Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""W1"""), "a wave block fed a bit sends nothing", "sends nothing");
+            Refused(Small.Replace(@"""kind"": ""NOT""", @"""kind"": ""NOT"", ""state"": 1"), "blocks have no settings", "no settings");
+            Refused(Small.Replace(@"""kind"": ""NOT""", @"""kind"": ""B1"""), "the old kind codes are gone", "B1");
             Refused(Small.Replace(@"""g -> h"", ", ""), "the solution must use every block", "nothing wired into it");
             Refused(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""B -> g.1"", ""A -> h"", ""g -> X"" ]"), "a block that leads nowhere", "doesn't use block 'h'");
             Refused(Small.Replace(@"""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"""hint"": ""none"""), "no solution", "solution");
@@ -364,14 +364,13 @@ namespace Blackbox.Tests
                 Refused(Small.Replace(@"""X"": ""display""", $@"""X"": ""{d}"""), $"a {d} is set aside", "set aside");
             Refused(Small.Replace(@"""A"": ""binary 1""", @"""A"": ""binary 11011"""), "a pattern that doesn't fit", "doesn't fit");
             Refused(Small.Replace(@"""B"": ""wave sine f1 a7""", @"""B"": ""sampled sine f1 a7 s6"""), "stepped waves are set aside", "set aside");
-            Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""M4"""), "the sampler is set aside", "set aside");
+            Refused(Small.Replace(@"""kind"": ""NOT""", @"""kind"": ""STEPS"""), "the stepper is set aside", "set aside");
 
             var p = TestContent.ParseWired(Small);
             Assert.That(p.Wiring, Is.True);
             Assert.That(p.Blocks.All(b => b.Locked), Is.True, "the player wires blocks but never sets them");
             Assert.That(p.Outputs[0].Device, Is.EqualTo(Device.Display));
             Assert.That(p.Outputs[0].Want, Is.Not.Null, "the target comes from the solution");
-            Assert.That(TestContent.ParseWired(Small, marked: false).Marked, Is.False);
         }
 
         [Test]
@@ -414,9 +413,9 @@ namespace Blackbox.Tests
             Assert.That(puzzle.Blocks.Count, Is.InRange(1, 8), "the board fits at most eight blocks");
             Assert.That(puzzle.Inputs.Count, Is.InRange(1, 5));
             Assert.That(puzzle.Outputs.Count, Is.InRange(1, 4));
-            Assert.That(puzzle.Blocks.All(b => b.Kind.Wireable), Is.True);
+            Assert.That(puzzle.Blocks.All(b => !b.Kind.Shelved), Is.True);
             Assert.That(puzzle.Hint, Is.Not.Empty, puzzle.Id);
-            Assert.That(System.Text.RegularExpressions.Regex.IsMatch(puzzle.Hint, @"\b[BDSWQM][1-8]\b"), Is.False, $"{puzzle.Id}: the hint names a kind code: {puzzle.Hint}");
+            Assert.That(System.Text.RegularExpressions.Regex.IsMatch(puzzle.Hint, KindNames), Is.False, $"{puzzle.Id}: the hint names a kind code: {puzzle.Hint}");
             Assert.That(puzzle.Hint, Does.Not.Contain("{"), $"{puzzle.Id}: the hint names a block the loader didn't label");
             for (int b = 0; b < puzzle.Blocks.Count; b++)
                 Assert.That(puzzle.Blocks[b].Label, Is.EqualTo("K" + (b + 1)), $"{puzzle.Id}: blocks are numbered in order");
@@ -431,23 +430,27 @@ namespace Blackbox.Tests
             foreach (var o in puzzle.Outputs) Assert.That(goal, Does.Contain(o.Id), $"the goal names {o.Id}");
         }
 
+        /// <summary>Any block kind's id, as a whole word: hints must never name one.</summary>
+        static readonly string KindNames = @"\b(" + string.Join("|", KindCatalog.All.Select(k => k.Id)) + @"|[BDSWQM][1-8])\b";
+
         [Test]
-        public void BlocksAreNamedBeforeTheyLoseTheirNames()
+        public void EveryBlockIsTaughtBeforeBuild()
         {
-            // Every kind an unmarked circuit uses was met by name earlier: in Part
-            // One for the bit, digit and shape kinds, in Combine for the M kinds.
-            var named = new HashSet<string>();
-            foreach (var p in TestContent.Library.AllPuzzles)
-            {
-                if (!p.Wiring || p.Marked)
+            // Build mixes everything: each kind it uses was met earlier, in Part One
+            // or Two, and every kind in play is met there at least once.
+            var met = new HashSet<string>();
+            foreach (var chapter in TestContent.Library.Chapters)
+                foreach (var p in chapter.Puzzles.Where(p => p.Wiring))
                 {
-                    foreach (var b in p.Blocks) named.Add(b.Kind.Id);
-                    continue;
+                    if (chapter.Part.Id != "build")
+                    {
+                        foreach (var b in p.Blocks) met.Add(b.Kind.Id);
+                        continue;
+                    }
+                    foreach (var b in p.Blocks) Assert.That(met, Does.Contain(b.Kind.Id), $"{p.Id}: {b.Kind.Id} turns up in Build before it was ever met");
                 }
-                foreach (var b in p.Blocks) Assert.That(named, Does.Contain(b.Kind.Id), $"{p.Id}: {b.Kind.Id} turns up unnamed before it was ever named");
-            }
-            foreach (var kind in KindCatalog.All.Where(k => k.Mixing && !k.Shelved))
-                Assert.That(named, Does.Contain(kind.Id), $"{kind.Id} is taught in Combine");
+            foreach (var kind in KindCatalog.All.Where(k => !k.Shelved))
+                Assert.That(met, Does.Contain(kind.Id), $"{kind.Id} is never taught");
         }
 
         [Test]

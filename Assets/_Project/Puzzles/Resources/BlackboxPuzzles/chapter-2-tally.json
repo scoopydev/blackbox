@@ -5,11 +5,11 @@
   "mode": "wiring",
   "medium": "decimal",
   "tagline": "Count what changes.",
-  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0. A digit sounds as a short tone: the bigger the digit, the higher the tone.",
+  "signals": "Signals here are digits from 0 to 9. A digit sounds as a short tone: the bigger the digit, the higher the tone.",
   "circuits": [
     {
       "id": "tally-01",
-      "name": "Count",
+      "name": "Reflection",
       "hint": "These wires are drawn already. Run it, then move {g}'s input to the other digit.",
       "inputs": {
         "A": {
@@ -21,7 +21,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "D1"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -47,12 +47,12 @@
           "signal": "decimal 2"
         },
         "B": {
-          "signal": "decimal 5"
+          "signal": "decimal 7"
         }
       },
       "blocks": {
         "g": {
-          "kind": "D2"
+          "kind": "DIFF"
         }
       },
       "outputs": {
@@ -72,24 +72,22 @@
     },
     {
       "id": "tally-03",
-      "name": "Reflection",
+      "name": "Peak",
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
-          "signal": "decimal 3"
+          "signal": "decimal 2"
         },
         "B": {
-          "signal": "decimal 1"
+          "signal": "decimal 6"
         }
       },
       "blocks": {
         "g": {
-          "kind": "D3",
-          "state": 2
+          "kind": "MAX"
         },
         "h": {
-          "kind": "D1",
-          "state": 1
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -98,37 +96,33 @@
         }
       },
       "solution": [
-        "A -> g",
+        "A -> g.0",
+        "B -> g.1",
         "g -> h",
         "h -> X"
       ]
     },
     {
       "id": "tally-04",
-      "name": "Larger",
+      "name": "Fork",
       "hint": "Some signals are needed in two places.",
       "inputs": {
         "A": {
-          "signal": "decimal 8"
+          "signal": "decimal 7"
         },
         "B": {
-          "signal": "decimal 3"
-        },
-        "C": {
-          "signal": "decimal 6"
+          "signal": "decimal 4"
         }
       },
       "blocks": {
         "g": {
-          "kind": "D4"
+          "kind": "MIN"
         },
         "h": {
-          "kind": "D2",
-          "state": 1
+          "kind": "MIRROR"
         },
         "k": {
-          "kind": "D1",
-          "state": 2
+          "kind": "DIFF"
         }
       },
       "outputs": {
@@ -140,12 +134,12 @@
         }
       },
       "solution": [
-        "B -> g.0",
-        "C -> g.1",
-        "A -> h.0",
-        "g -> h.1",
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
         "h -> X",
-        "g -> k",
+        "A -> k.0",
+        "B -> k.1",
         "k -> Y"
       ]
     },
@@ -163,11 +157,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "D3",
-          "state": 2
+          "kind": "MIRROR"
         },
         "h": {
-          "kind": "D1"
+          "kind": "DIFF"
         }
       },
       "outputs": {
@@ -181,7 +174,8 @@
       "solution": [
         "A -> g",
         "g -> X",
-        "g -> h",
+        "A -> h.0",
+        "B -> h.1",
         "h -> Y"
       ]
     },
@@ -202,18 +196,16 @@
       },
       "blocks": {
         "g": {
-          "kind": "D2"
+          "kind": "DIFF"
         },
         "h": {
-          "kind": "D3"
+          "kind": "MIRROR"
         },
         "k": {
-          "kind": "D4",
-          "state": 1
+          "kind": "MAX"
         },
         "m": {
-          "kind": "D2",
-          "state": 1
+          "kind": "MIN"
         }
       },
       "outputs": {

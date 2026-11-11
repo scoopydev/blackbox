@@ -475,7 +475,7 @@ namespace Blackbox.UI.Board
         public void ShowBlock(int block, WiringReport report)
         {
             _shown = true;
-            Blocks[block].Show(report.Values[Session.BlockNode(block)], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block), report.RefusingBlocks.Contains(block));
+            Blocks[block].Show(report.Values[Session.BlockNode(block)], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block));
         }
 
         public void ShowOutput(int output, WiringReport report)
@@ -803,8 +803,7 @@ namespace Blackbox.UI.Board
     }
 
     /// <summary>
-    /// A block in a wired circuit: its label (K1, K2 ...), its ports, and its state
-    /// dots unless the circuit's blocks are unmarked. After a run it shows what it sent above it,
+    /// A block in a wired circuit: its label (K1, K2 ...) and its ports. After a run it shows what it sent above it,
     /// and under it why it sent nothing (an empty input) or that it isn't used.
     /// </summary>
     public sealed class WiredBlockView : MonoBehaviour
@@ -849,24 +848,10 @@ namespace Blackbox.UI.Board
             view._outline.Radius = 16f * s;
 
             // Every block is numbered K1, K2 ... in its circuit. The number only tells
-            // blocks apart: it says nothing about what a block does.
-            bool marked = board.Puzzle.Marked;
+            // blocks apart: it says nothing about what a block does, and a block has
+            // no settings to show.
             view._code = UIKit.Text(rt, def.Label, TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Label");
-            view._code.rectTransform.Centered(0f, (marked && def.Kind.StateCount > 1 ? 4f : -3f) * s, w, h * 0.55f);
-
-            // Outside Part Three a block shows which of its states it is fixed in, so
-            // two blocks of one kind that behave differently never look the same.
-            int states = marked ? def.Kind.StateCount : 0;
-            for (int i = 0; i < states && states > 1; i++)
-            {
-                bool active = i == def.State;
-                var pip = UIKit.Shape(rt, "State " + (i + 1), ShapeKind.Circle);
-                pip.raycastTarget = false;
-                float size = active ? 7f : 4.5f;
-                pip.rectTransform.Centered((i - (states - 1) * 0.5f) * 15f * s, -h * 0.5f + 13f * s, size, size);
-                if (active) pip.Style(Paint.Solid, Palette.Dim, Paint.None, Color.clear);
-                else pip.Style(Paint.None, Color.clear, Paint.Solid, Palette.Faint, 1f);
-            }
+            view._code.rectTransform.Centered(0f, -3f * s, w, h * 0.55f);
 
             int node = board.NodeOf(def);
             int n = def.Kind.InputCount;
@@ -906,11 +891,11 @@ namespace Blackbox.UI.Board
         }
 
         /// <summary>What the block sent on the run, or null if nothing; and whether a rule is broken here.</summary>
-        public void Show(Trace sent, bool emptyInput, bool unused, bool refusing = false)
+        public void Show(Trace sent, bool emptyInput, bool unused)
         {
             _readout.gameObject.SetActive(true);
             _readout.Set(sent, ValueLook.Live);
-            _note.text = emptyInput ? "AN INPUT IS EMPTY" : refusing ? "CAN'T READ THAT SIGNAL" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
+            _note.text = emptyInput ? "AN INPUT IS EMPTY" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
             _broken = emptyInput || unused;
             Restyle();
         }
@@ -946,14 +931,14 @@ namespace Blackbox.UI.Board
             {
                 _rule.enabled = value;
                 // Under the block goes a short form; pointing at the block gives the whole rule.
-                _rule.text = value ? Capitalise(Def.Kind.ShortRule(Def.State)) : "";
+                _rule.text = value ? Capitalise(Def.Kind.ShortRule) : "";
                 var nrt = _note.rectTransform;
                 nrt.anchoredPosition = new Vector2(nrt.anchoredPosition.x, value ? _noteY - 40f : _noteY);
             }
         }
 
         /// <summary>The whole rule, for the status line, or null while the rule is hidden.</summary>
-        public string FullRule => _rule.enabled ? $"{Def.Label}: {Def.Kind.Spoilers[Def.State]}." : null;
+        public string FullRule => _rule.enabled ? $"{Def.Label}: {Def.Kind.Rule}." : null;
 
         static string Capitalise(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
 

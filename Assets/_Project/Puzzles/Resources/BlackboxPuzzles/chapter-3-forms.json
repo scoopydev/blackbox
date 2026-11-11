@@ -21,7 +21,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "S1"
+          "kind": "FILL"
         }
       },
       "outputs": {
@@ -52,7 +52,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "S3"
+          "kind": "TAKEFILL"
         }
       },
       "outputs": {
@@ -72,7 +72,7 @@
     },
     {
       "id": "forms-03",
-      "name": "Corners",
+      "name": "Repaint",
       "hint": "A signal can change as the loop plays: A is a triangle, then a hexagon.",
       "inputs": {
         "A": {
@@ -84,7 +84,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "S4"
+          "kind": "TAKECOLOUR"
         }
       },
       "outputs": {
@@ -101,7 +101,7 @@
     {
       "id": "forms-04",
       "name": "Turn",
-      "hint": "{g} and {h} are the same kind of block, fixed in different settings.",
+      "hint": "Watch how the form changes.",
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
@@ -112,11 +112,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "S2"
+          "kind": "NEXT"
         },
         "h": {
-          "kind": "S2",
-          "state": 1
+          "kind": "FILL"
         }
       },
       "outputs": {
@@ -130,7 +129,7 @@
       "solution": [
         "A -> g",
         "g -> X",
-        "B -> h",
+        "A -> h",
         "h -> Y"
       ]
     },
@@ -151,14 +150,13 @@
       },
       "blocks": {
         "g": {
-          "kind": "S3",
-          "state": 1
+          "kind": "TAKEFILL"
         },
         "h": {
-          "kind": "S1"
+          "kind": "FILL"
         },
         "k": {
-          "kind": "S2"
+          "kind": "NEXT"
         }
       },
       "outputs": {
@@ -170,10 +168,10 @@
         }
       },
       "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
-        "h -> X",
+        "A -> h",
+        "B -> g.0",
+        "h -> g.1",
+        "g -> X",
         "C -> k",
         "k -> Y"
       ]
@@ -195,17 +193,16 @@
       },
       "blocks": {
         "g": {
-          "kind": "S4",
-          "state": 1
+          "kind": "TAKECOLOUR"
         },
         "h": {
-          "kind": "S1"
+          "kind": "FILL"
         },
         "k": {
-          "kind": "S3"
+          "kind": "TAKEFILL"
         },
         "m": {
-          "kind": "S2"
+          "kind": "NEXT"
         }
       },
       "outputs": {

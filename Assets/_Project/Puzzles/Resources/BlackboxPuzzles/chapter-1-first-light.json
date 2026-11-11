@@ -21,7 +21,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "B1"
+          "kind": "NOT"
         }
       },
       "outputs": {
@@ -52,7 +52,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "B2"
+          "kind": "AND"
         }
       },
       "outputs": {
@@ -73,7 +73,7 @@
     {
       "id": "first-light-03",
       "name": "Under the Lid",
-      "hint": "Now you wire it all. Every block has to be used, and every block input needs a wire. The dots under a block show which of its settings it is fixed in.",
+      "hint": "Now you wire it all. Every block has to be used, and every block input needs a wire.",
       "inputs": {
         "A": {
           "signal": "binary 0110"
@@ -84,12 +84,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "B3",
-          "state": 1
+          "kind": "NOT"
         },
         "h": {
-          "kind": "B2",
-          "state": 1
+          "kind": "OR"
         }
       },
       "outputs": {
@@ -118,10 +116,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "B4"
+          "kind": "XOR"
         },
         "h": {
-          "kind": "B1"
+          "kind": "NOT"
         }
       },
       "outputs": {
@@ -142,8 +140,8 @@
     },
     {
       "id": "first-light-05",
-      "name": "Top and Bottom",
-      "hint": "Some blocks care which input is on top.",
+      "name": "Relay",
+      "hint": "Three blocks, one after another.",
       "inputs": {
         "A": {
           "signal": "binary 0011"
@@ -157,29 +155,27 @@
       },
       "blocks": {
         "g": {
-          "kind": "B4",
-          "state": 2
+          "kind": "OR"
         },
         "h": {
-          "kind": "B4",
-          "state": 2
+          "kind": "NOT"
+        },
+        "k": {
+          "kind": "AND"
         }
       },
       "outputs": {
         "X": {
-          "device": "display"
-        },
-        "Y": {
           "device": "display"
         }
       },
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "B -> h.0",
-        "A -> h.1",
-        "g -> X",
-        "h -> Y"
+        "g -> h",
+        "h -> k.0",
+        "C -> k.1",
+        "k -> X"
       ]
     },
     {
@@ -199,17 +195,16 @@
       },
       "blocks": {
         "g": {
-          "kind": "B1"
+          "kind": "NOT"
         },
         "h": {
-          "kind": "B2"
+          "kind": "AND"
         },
         "k": {
-          "kind": "B4"
+          "kind": "XOR"
         },
         "m": {
-          "kind": "B4",
-          "state": 3
+          "kind": "OR"
         }
       },
       "outputs": {

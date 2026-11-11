@@ -286,7 +286,7 @@ namespace Blackbox.UI.Board
             view._id.Uppercase = false;
             view._id.rectTransform.Centered(-w * 0.5f + 14f * s + 30f, h * 0.5f - 15f * s, 60f, 20f);
 
-            view._code = UIKit.Text(rt, def.Kind.Id, TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Kind");
+            view._code = UIKit.Text(rt, def.Label, TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Kind");
             view._code.rectTransform.Centered(0f, -3f * s, w, h * 0.6f);
 
             if (def.Locked)
@@ -371,8 +371,7 @@ namespace Blackbox.UI.Board
         {
             get
             {
-                var spoilers = Def.Kind.Spoilers;
-                return _state >= 0 && _state < spoilers.Count ? spoilers[_state] : "";
+                return Def.Kind.Rule;
             }
         }
 

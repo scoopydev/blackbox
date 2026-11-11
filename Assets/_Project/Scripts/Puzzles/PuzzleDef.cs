@@ -126,12 +126,6 @@ namespace Blackbox.Puzzles
         /// </summary>
         public bool Wiring;
 
-        /// <summary>
-        /// Blocks show dots for their kind's states, with the one they are fixed in
-        /// filled. Off for unmarked blocks (Part Three). Either way a block shows
-        /// only its label (<see cref="BlockDef.Label"/>), never its kind.
-        /// </summary>
-        public bool Marked = true;
 
         /// <summary>A wired circuit's intended wiring, which its outputs' wanted signals come from. Never shown.</summary>
         public readonly List<WireDef> Solution = new List<WireDef>();

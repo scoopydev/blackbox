@@ -348,14 +348,14 @@ namespace Blackbox.UI.Screens
             {
                 "Wire the circuit so every output does what its target shows. Drag from a dot to a dot to run a wire; click a wire to take it off.",
                 "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
-                "Blocks keep hidden rules. Their numbers, K1, K2 and so on, only tell them apart: K1 is a different block in every circuit. The dots under a block show which setting it is fixed in. Wire a block between an input and an output, run it, and watch what it sends. Once you solve a circuit, each of its blocks has its rule written under it.",
+                "Each block does one simple thing, the same every time you meet that kind of block, but it never says what. Their numbers, K1, K2 and so on, only tell them apart: K1 is a different block in every circuit. Wire a block between an input and an output, run it, and watch what it sends. Once you solve a circuit, each of its blocks has its rule written under it.",
                 "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
                 "Each output is a display: it shows the signal that reaches it, and plays it on a run. Its target is met only by the very same signal.",
                 "Signals can change through the loop. Each one plays across its card, and clicking any signal plays it.",
             } : new List<string>
             {
                 "The goal is written above the circuit. Press RUN to send the signals through: only then do the outputs show, and each target gets a tick or a cross.",
-                "Each block keeps a hidden rule. Click it, or one of its dots, to change what it does. A padlock means it can't be changed.",
+                "Each block keeps one hidden rule that never changes. Work it out from what comes out.",
                 "Inputs with arrows can be changed; the rest are fixed. Sometimes an input has to end at a target of its own.",
                 "Wires hide their signals. Click a wire to put a probe on it: it reads what the wire carries on every run. Each circuit has only so many.",
                 "Every signal has a sound. A run plays each output as it arrives, and clicking any value you can see plays it again.",

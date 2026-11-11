@@ -3,9 +3,9 @@
 Circuits are plain JSON files in `Assets/_Project/Puzzles/Resources/BlackboxPuzzles/`.
 `//` comments are allowed. The loader's error messages name the file, the circuit and the problem, and the game shows them on screen if a file can't be read.
 
-After editing, run **BLACKBOX → Validate Puzzles** in Unity, or the EditMode tests. Both solve every circuit by brute force: settings circuits by trying every input and block state, wired circuits by trying every way to wire them.
+After editing, run **BLACKBOX → Validate Puzzles** in Unity, or the EditMode tests. Both solve every circuit by brute force: settings circuits by trying every input value, wired circuits by trying every way to wire them.
 
-Every shipped chapter is a **wired** chapter (`"mode": "wiring"`): every block is fixed and the player draws the wires. They are described [further down](#wired-circuits). The loader still reads the older **settings** circuits, where the wires are drawn already and the player changes inputs and block states; only the title screen's moving picture uses one now.
+Every shipped chapter is a **wired** chapter (`"mode": "wiring"`): every block is fixed and the player draws the wires. They are described [further down](#wired-circuits). The loader still reads the older **settings** circuits, where the wires are drawn already and the player changes inputs; only the title screen's moving picture uses one now.
 
 ## chapters.json
 
@@ -41,7 +41,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
   "title": "Tally",
   "medium": "decimal",
   "tagline": "Count what changes.",
-  "signals": "Signals here are digits from 0 to 9. They wrap round, so one more than 9 is 0.",
+  "signals": "Signals here are digits from 0 to 9. A digit sounds as a short tone: the bigger the digit, the higher the tone.",
   "circuits": [ ... ]
 }
 ```
@@ -52,7 +52,6 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 | `title` | yes | Shown on the chapter map and the title card. |
 | `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal`, `shape`, `wave` (analog) or `sampled` (set aside for now, see below). A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
-| `marked` | no | `false` hides the state dots on every block, as in Part Three. Wired chapters only. Blocks never show their kind code: the player sees them as K1, K2 and so on. |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
 | `signals` | no | One line about the medium, shown on the title card and in the help. |
@@ -72,8 +71,8 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
     "B": { "at": [0, 2], "value": 0, "adjustable": true }
   },
   "blocks": {
-    "g": { "kind": "B2", "state": 0, "at": [1, 1], "target": 1 },
-    "k": { "kind": "B3", "state": 0, "at": [2, 1] }
+    "g": { "kind": "AND", "at": [1, 1], "target": 1 },
+    "k": { "kind": "NOT", "at": [2, 1] }
   },
   "outputs": {
     "X": { "at": [3, 1], "target": 0 }
@@ -86,7 +85,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 |---|---|---|
 | `id` | yes | Unique across all chapters. Saves refer to it. |
 | `name` | no | Shown in the header and on the chapter map. |
-| `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. In a wired circuit, write a block as `{g}` (its id in braces): the game shows it as the block's label, such as K1. Never write a kind code in a hint. |
+| `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. In a wired circuit, write a block as `{g}` (its id in braces): the game shows it as the block's label, such as K1. Never name a kind (such as MIRROR) in a hint or chapter line; a test checks this. |
 | `goal` | no | The goal sentence. Leave it out and it is written from the targets, which is almost always what you want. |
 | `probes` | no | How many probes the player may place. Defaults to 0. |
 | `medium` | no | Overrides the chapter's medium for this circuit. |
@@ -117,14 +116,14 @@ The short form `[column, row]` is a fixed input at the first value.
 ### Blocks
 
 ```json
-"g": { "kind": "B2", "state": 0, "locked": false, "at": [1, 1], "target": 1 }
+"g": { "kind": "AND", "at": [1, 1], "target": 1 }
 ```
 
 | Key | Meaning |
 |---|---|
-| `kind` | The block kind, such as `B2`. It must belong to the circuit's medium. See the table below. |
-| `state` | The state the block starts in, counting from 0. |
-| `locked` | `true` draws a padlock and stops the player changing the block. |
+| `kind` | The block kind, such as `AND`. It must belong to the circuit's medium. See the table below. |
+| `state` | Optional, and only ever 0: blocks have one rule and nothing to set. Kept so old files still read. |
+| `locked` | `true` draws a padlock. Blocks can't be changed anyway, so it only marks one. |
 | `at` | Position, `[column, row]`. |
 | `target` | The value the block must send. The board shows the wanted value and a tick or cross, but not what the block sends now. |
 
@@ -174,7 +173,7 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 * every input port of every block has a wire, and
 * every block leads to an output, through other blocks or straight there.
 
-Inputs may go unused. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. Outside Part Three a block shows a dot for each state of its kind, with its own filled.
+Inputs may go unused. Blocks have no settings: each kind does one thing. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. A block shows only its label and its ports.
 
 ```json
 {
@@ -187,7 +186,7 @@ Inputs may go unused. Blocks are fixed: the player never changes a state, so eve
     "C": "wave sine f3 a7"
   },
   "blocks": {
-    "g": { "kind": "B2", "state": 0 }
+    "g": "AND"
   },
   "outputs": {
     "X": { "device": "display" }
@@ -199,7 +198,7 @@ Inputs may go unused. Blocks are fixed: the player never changes a state, so eve
 | Key | Meaning |
 |---|---|
 | `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. |
-| `blocks` | Each block is `{ "kind": "B2", "state": 0, "at": [col, row] }`. Any kind can be wired. The wave kinds (W and Q) change a wave's settings, so they only read a plain wave of their own kind (straight from an input or another W or Q block) and send nothing otherwise. |
+| `blocks` | Each block is its kind alone, `"AND"`, or `{ "kind": "AND", "at": [col, row] }`. A `state` is refused: blocks have no settings. Any kind can be wired, and every kind reads any signal (see [Mixing kinds](#mixing-kinds)). |
 | `outputs` | Each output is a device name, or `{ "device": "display", "at": [col, row] }`. The default device is `display`, and for now it is the only one the loader accepts (see [Devices](#devices)). |
 | `solution` | The intended wiring, as wires. It must keep the rules above. The targets come from it: each output wants what the solution sends it. |
 | `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts fully wired with one wire wrong, the second half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |
@@ -219,7 +218,7 @@ A signal is its type and its value, or a pattern of values played in turn throug
 "shape solid pink triangle"         colours: cyan, pink, amber, green
 "wave sine f2 a7"                   an analog wave: form, frequency f1 to f7, height a1 to a7
 "wave sine f2 a7 p2"                the same wave half a cycle later (p1 to p3 are quarter cycles)
-"sampled saw f1 a7 s6"              a sampled wave, read 3, 6 or 12 times a cycle
+"sampled saw f1 a7 s6"              a sampled wave, read 3, 6 or 12 times a cycle (set aside)
 ```
 
 A pattern must divide the loop evenly: 1, 2, 3, 4, 6, 8, 9, 12 or 16 values (and others that divide 288). Waves are always steady: their settings don't change.
@@ -241,45 +240,35 @@ Devices compare what they do, not the signal, so a digit display wanting 3 is me
 
 ### Mixing kinds
 
-Bit, digit and shape blocks read any signal as their own kind, at every step of the loop: a digit is 1 unless it's 0, a shape is 1 when solid, a wave is 1 above its middle; a shape read as a digit is its corners, a wave its height from 0 to 9; a bit, digit or wave read as a shape is a circle, solid when it would read as 1. The M kinds work on any signal; their rules are in [Design.md](Design.md#spoilers-the-rules).
+Bit, digit and shape blocks read any signal as their own kind, at every step of the loop: a digit is 1 unless it's 0, a shape is 1 when solid, a wave is 1 above its middle; a shape read as a digit is its corners, a wave its height from 0 to 9; a bit, digit or wave read as a shape is a circle, solid when it would read as 1. Wave blocks read any signal as a wave: a bit or a shape's fill at the top or bottom, a digit as a flat level from 0 at the bottom to 9 at the top. The mixing kinds (GATE, COUNT, COMPARE) work on any signal; their rules are in [Design.md](Design.md#spoilers-the-rules).
 
 ## Block kinds
 
-The player never sees a kind's code, only the block's label (K1, K2...) and, outside Part Three, its state dots. The rules are listed in [Design.md](Design.md#spoilers-the-rules).
+The player never sees a kind, only the block's label (K1, K2...) and its ports. Every kind has one rule and no settings. The rules are listed in [Design.md](Design.md#spoilers-the-rules).
 
-| Medium | Kind | Inputs | States |
-|---|---|---|---|
-| binary | B1 | 1 | 2 |
-| binary | B2 | 2 | 2 |
-| binary | B3 | 1 | 4 |
-| binary | B4 | 2 | 4 |
-| decimal | D1 | 1 | 3 |
-| decimal | D2 | 2 | 2 |
-| decimal | D3 | 1 | 3 |
-| decimal | D4 | 2 | 2 |
-| shape | S1 | 1 | 2 |
-| shape | S2 | 1 | 2 |
-| shape | S3 | 2 | 2 |
-| shape | S4 | 2 | 2 |
-| wave | W1 | 1 | 2 |
-| wave | W2 | 1 | 3 |
-| wave | W3 | 2 | 2 |
-| wave | W4 | 1 | 2 |
-| sampled | Q1 | 1 | 2 |
-| sampled | Q2 | 1 | 2 |
-| sampled | Q3 | 2 | 2 |
-| sampled | Q4 | 2 | 2 |
-| any | M1, M5, M8 | 2 | 1 |
-| any | M2, M3, M4, M6, M7 | 1 | 1 |
+| Sends | Kinds | Inputs |
+|---|---|---|
+| binary | NOT | 1 |
+| binary | AND, OR, XOR | 2 |
+| decimal | MIRROR | 1 |
+| decimal | MAX, MIN, DIFF | 2 |
+| shape | FILL, NEXT | 1 |
+| shape | TAKEFILL, TAKECOLOUR | 2 |
+| wave | FLIP, FASTER, LATER | 1 |
+| wave | MIX | 2 |
+| the top input's kind | GATE | 2 |
+| decimal | COUNT | 1 |
+| binary | COMPARE | 2 |
+| sampled | STEPS (set aside) | 1 |
 
-Q1 to Q4 and M4 are set aside for now, with stepped waves: the loader refuses a circuit that holds one.
+STEPS is set aside for now, with stepped waves: the loader refuses a circuit that holds it. The old kinds with settings (B1 to M8, Q1 to Q4) are gone, and a file that names one is refused.
 
 ## What makes a good circuit
 
 * **The goal must be clear.** Every target is written into the goal sentence and shown on the board. If the sentence gets long, the circuit is probably asking too much at once.
 * **It must not be solved at the start.** The validator checks this.
-* **Prefer one solution**, especially in a chapter's last circuit. Targets on blocks and locked blocks are the tools for ruling out the routes you didn't mean.
-* **Make the player look inside.** If a circuit can be solved by trying every state of every block, give it more blocks and fewer probes, or targets that depend on each other.
+* **Prefer one solution**, especially in a chapter's last circuit. Targets on blocks are the tool for ruling out the routes you didn't mean.
+* **Make the player look inside.** If a circuit can be solved by trying every input, give it more blocks and fewer probes, or targets that depend on each other.
 * **Introduce one thing at a time.** A new kind should first appear where it is the only unknown, or where the player can change an input that reaches it.
 * **Keep the hint about controls.** The circuit itself should teach the rule.
 
@@ -287,4 +276,4 @@ For wired circuits:
 
 * **No input should already do the job.** If wiring an input straight to an output meets its target, the player is told the circuit isn't solved for a reason they can't see. The validator warns about it.
 * **Fewer ways to solve it is better**, but a few are fine. The validator and the `WiringTests` count them.
-* **Show a kind with its dots before hiding them.** Every kind an unmarked circuit uses should appear in a marked circuit earlier. A test checks this.
+* **Teach a kind before Build uses it.** Every kind a Part Three circuit uses should appear in Part One or Two first, and every kind in play is taught there. A test checks this.

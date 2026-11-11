@@ -4,27 +4,43 @@ using System.Collections.Generic;
 namespace Blackbox.Components
 {
     /// <summary>
-    /// A family of blocks that share one hidden rule. Every block of a kind behaves
-    /// the same way in every circuit, which is what lets the player carry what they
-    /// learn from one circuit to the next. The player sees the kind's code (such as
-    /// "B3"), its ports and its state dots, never the rule.
+    /// A kind of block: one fixed rule, the same in every circuit, which is what
+    /// lets the player carry what they learn from one circuit to the next. A block
+    /// has no settings. The player sees only its label (K1, K2 ...) and its ports,
+    /// never its kind or its rule, until its circuit is solved.
+    ///
+    /// Every rule is meant to be simple enough to say in a few words and to work
+    /// out by experiment, with no exceptions: no ties to break, no wrapping past
+    /// 9, no signal a block refuses.
     /// </summary>
     public sealed class BlockKind
     {
-        readonly Func<int[], int, int> _rule;
-        readonly Func<Trace[], int, Trace> _traceRule;
+        readonly Func<int[], int> _rule;
+        readonly Func<Trace[], Trace> _traceRule;
 
+        /// <summary>The kind's id, used by puzzle files and tests. Never shown to the player.</summary>
         public string Id { get; }
-        /// <summary>The medium the block works on. A mixing block works on any; this is what it reads its inputs as, if anything.</summary>
-        public Medium Medium { get; }
-        public int InputCount { get; }
-        public int StateCount { get; }
 
         /// <summary>
-        /// A mixing block: it works on whole signals over time, of any type, and
-        /// only appears in circuits the player wires. It has no rule for single values.
+        /// The kind of signal the block sends. Bit, digit, shape and wave blocks
+        /// also read every input as this kind. A mixing block reads its inputs its
+        /// own way (see <see cref="Mixing"/>).
         /// </summary>
-        public bool Mixing => _rule == null;
+        public Medium Medium { get; }
+
+        public int InputCount { get; }
+
+        /// <summary>
+        /// A mixing block (GATE, COUNT, COMPARE): taught in Blend, it works on
+        /// whole signals of any kind, as its rule says.
+        /// </summary>
+        public bool Mixing { get; }
+
+        /// <summary>The whole rule, in a sentence, shown when the player points at a block in a solved circuit.</summary>
+        public string Rule { get; }
+
+        /// <summary>The rule in a few words (at most 30 characters), written under a block once its circuit is solved.</summary>
+        public string ShortRule { get; }
 
         /// <summary>
         /// Set aside for now: the kind still works, but no circuit may use it.
@@ -33,108 +49,55 @@ namespace Blackbox.Components
         public bool Shelved => KindCatalog.Shelved.Contains(Id);
 
         /// <summary>
-        /// True when the block works on a wave's settings (frequency, form, height,
-        /// phase, steps) rather than on its level at each moment. Such a block only
-        /// reads a wave of its own type that no other block has mixed, and sends
-        /// nothing for anything else (see <see cref="Reads"/>).
+        /// Always 1: a block has one fixed rule. Kept for the old settings screens
+        /// (the title screen's demo), which never find a block to change.
         /// </summary>
-        public bool WorksOnSettings => !Mixing && Media.IsWave(Medium);
+        public int StateCount => 1;
 
-        /// <summary>Every kind can be wired. Kept for the loader and the tests.</summary>
-        public bool Wireable => true;
-
-        /// <summary>
-        /// False when this block can't make sense of these inputs and sends
-        /// nothing: a wave block fed something other than a plain wave of its type.
-        /// </summary>
-        public bool Reads(Trace[] inputs)
-        {
-            if (!WorksOnSettings) return true;
-            foreach (var t in inputs)
-                if (t == null || t.Medium != Medium || !t.Value.HasValue) return false;
-            return true;
-        }
-
-        /// <summary>
-        /// What each state does, for designers, tests and the editor validator.
-        /// In game a block's rule shows only once its circuit is solved (or with
-        /// the debug setting): working it out is the puzzle.
-        /// </summary>
-        public IReadOnlyList<string> Spoilers { get; }
-
-        /// <summary>
-        /// A rule short enough to sit under a block on the board: the spoiler
-        /// itself when it's short, otherwise a few words, with the whole rule
-        /// kept for when the player points at the block.
-        /// </summary>
-        public string ShortRule(int state)
-        {
-            if (ShortRules.TryGetValue(Id, out var shorts) && state < shorts.Length) return shorts[state];
-            string rule = Spoilers[state];
-            if (rule.Length <= 30) return rule;
-            int cut = rule.IndexOf(" (", StringComparison.Ordinal);
-            return cut > 0 ? rule.Substring(0, cut) : rule;
-        }
-
-        static readonly Dictionary<string, string[]> ShortRules = new Dictionary<string, string[]>
-        {
-            { "M1", new[] { "add them as waves" } },
-            { "M2", new[] { "turn it upside down" } },
-            { "M4", new[] { "sample it 12 times a loop" } },
-            { "M5", new[] { "top, only while bottom is on" } },
-            { "M6", new[] { "count its switch-ons" } },
-            { "M7", new[] { "twice as fast" } },
-            { "M8", new[] { "1 while top is higher" } },
-        };
-
-        public BlockKind(string id, Medium medium, int inputCount, string[] spoilers, Func<int[], int, int> rule)
+        /// <summary>A block that works one value at a time: every input is read as <paramref name="medium"/>.</summary>
+        public BlockKind(string id, Medium medium, int inputCount, string rule, string shortRule, Func<int[], int> valueRule)
         {
             Id = id;
             Medium = medium;
             InputCount = inputCount;
-            StateCount = spoilers.Length;
-            Spoilers = spoilers;
-            _rule = rule ?? throw new ArgumentNullException(nameof(rule));
+            Rule = rule;
+            ShortRule = shortRule;
+            _rule = valueRule ?? throw new ArgumentNullException(nameof(valueRule));
         }
 
-        /// <summary>A mixing block, defined on whole signals over time.</summary>
-        public BlockKind(string id, int inputCount, string[] spoilers, Func<Trace[], int, Trace> traceRule)
+        /// <summary>A block that works on whole signals over the loop.</summary>
+        public BlockKind(string id, Medium medium, int inputCount, bool mixing, string rule, string shortRule, Func<Trace[], Trace> traceRule)
         {
             Id = id;
-            Medium = Medium.Wave;
+            Medium = medium;
             InputCount = inputCount;
-            StateCount = spoilers.Length;
-            Spoilers = spoilers;
+            Mixing = mixing;
+            Rule = rule;
+            ShortRule = shortRule;
             _traceRule = traceRule ?? throw new ArgumentNullException(nameof(traceRule));
         }
 
-        /// <summary>The block's output for these inputs in this state.</summary>
-        public int Apply(int[] inputs, int state)
+        /// <summary>The block's output for these single values, for blocks that work one value at a time.</summary>
+        public int Apply(int[] inputs)
         {
-            CheckState(state);
-            if (_rule == null) throw new InvalidOperationException($"{Id} is a mixing block: it works on whole signals, not single values.");
-            return _rule(inputs, state);
+            if (_rule == null) throw new InvalidOperationException($"{Id} works on whole signals, not single values.");
+            return _rule(inputs);
         }
+
+        /// <summary>Kept for the old settings screens: a block's one rule, whatever the state.</summary>
+        public int Apply(int[] inputs, int state) => Apply(inputs);
 
         /// <summary>
         /// The block's output, over a whole loop, for these input signals. A bit,
-        /// digit or shape block reads each input as its own type, step by step
-        /// (see <see cref="Trace.As"/>), and applies its rule at every step. A wave
-        /// block changes the settings of the plain wave it is given, and returns
-        /// null (it sends nothing) when it isn't given one.
+        /// digit or shape block reads each input as its own kind, step by step
+        /// (see <see cref="Trace.As"/>), and applies its rule at every step. Wave
+        /// and mixing blocks work on the whole signal. Every block sends something
+        /// for any inputs.
         /// </summary>
-        public Trace Apply(Trace[] inputs, int state)
+        public Trace Apply(Trace[] inputs)
         {
-            CheckState(state);
             if (inputs == null || inputs.Length != InputCount) throw new ArgumentException($"{Id} takes {InputCount} input(s).", nameof(inputs));
-            if (_traceRule != null) return _traceRule(inputs, state);
-            if (WorksOnSettings)
-            {
-                if (!Reads(inputs)) return null;
-                var settings = new int[InputCount];
-                for (int p = 0; p < InputCount; p++) settings[p] = inputs[p].Value.Value;
-                return Trace.Of(Medium, _rule(settings, state));
-            }
+            if (_traceRule != null) return _traceRule(inputs);
 
             var read = new Trace[InputCount];
             bool flat = true;
@@ -147,21 +110,15 @@ namespace Blackbox.Components
             if (flat)
             {
                 for (int p = 0; p < InputCount; p++) values[p] = (int)read[p].First;
-                return Trace.Flat(Medium, _rule(values, state));
+                return Trace.Flat(Medium, _rule(values));
             }
             var levels = new float[Trace.Steps];
             for (int k = 0; k < Trace.Steps; k++)
             {
                 for (int p = 0; p < InputCount; p++) values[p] = (int)Math.Round(read[p][k]);
-                levels[k] = _rule(values, state);
+                levels[k] = _rule(values);
             }
             return new Trace(Medium, levels);
-        }
-
-        void CheckState(int state)
-        {
-            if (state < 0 || state >= StateCount)
-                throw new ArgumentOutOfRangeException(nameof(state), $"{Id} has {StateCount} states, not {state + 1}.");
         }
 
         public override string ToString() => Id;
@@ -171,17 +128,9 @@ namespace Blackbox.Components
     /// Every block kind in the game. Kinds are code, not data, so their behaviour is
     /// type checked and unit tested; puzzle files refer to them by id.
     ///
-    /// The bit, digit and shape kinds follow one pattern, so a player who has learned
-    /// the binary chapter has a head start on the others: a one-input block that
-    /// changes its signal, one that replaces part of it, a two-input block that
-    /// combines, and one that compares. The wave kinds each work one setting of a
-    /// wave (frequency, form, height, phase; steps and height for sampled waves).
-    /// States are listed in the order a block cycles through them.
-    ///
-    /// Mixing kinds (M1 to M8) work on whole signals over a loop, of any type:
-    /// adding, flipping, delaying, sampling, gating, counting, speeding up and
-    /// comparing. They only appear in circuits the player wires, where signals of
-    /// different types meet.
+    /// Each kind of signal has four blocks, and each set starts with a block that
+    /// flips the signal (NOT, MIRROR, FILL, FLIP), so a player who has learned one
+    /// set has a head start on the next. The three mixing blocks come in Blend.
     /// </summary>
     public static class KindCatalog
     {
@@ -190,115 +139,53 @@ namespace Blackbox.Components
 
         static KindCatalog()
         {
-            // ---- Binary: 0 and 1 ----------------------------------------------------
+            // ---- Bits: 0 and 1 ------------------------------------------------------
 
-            Add("B1", Medium.Binary, 1, new[] { "invert", "pass" }, (x, s) => s == 0 ? 1 - x[0] : x[0]);
+            Value("NOT", Medium.Binary, 1, "flips a bit: 1 becomes 0 and 0 becomes 1", "flips 0 and 1",
+                x => 1 - x[0]);
+            Value("AND", Medium.Binary, 2, "1 only while both inputs are 1", "1 when both are 1",
+                x => x[0] & x[1]);
+            Value("OR", Medium.Binary, 2, "1 while either input is 1", "1 when either is 1",
+                x => x[0] | x[1]);
+            Value("XOR", Medium.Binary, 2, "1 while the two inputs are different", "1 when they differ",
+                x => x[0] ^ x[1]);
 
-            Add("B2", Medium.Binary, 2, new[] { "and (1 only when both are 1)", "or (1 when either is 1)" },
-                (x, s) => s == 0 ? x[0] & x[1] : x[0] | x[1]);
+            // ---- Digits: 0 to 9. No rule can go below 0 or past 9 ------------------
 
-            Add("B3", Medium.Binary, 1, new[] { "always 1", "invert", "always 0", "pass" },
-                (x, s) => s == 0 ? 1 : s == 1 ? 1 - x[0] : s == 2 ? 0 : x[0]);
+            Value("MIRROR", Medium.Decimal, 1, "turns a digit around: 9 minus the digit, so 0 and 9 swap, 1 and 8, 2 and 7", "9 minus the digit",
+                x => 9 - x[0]);
+            Value("MAX", Medium.Decimal, 2, "the larger of the two digits", "the larger digit",
+                x => Math.Max(x[0], x[1]));
+            Value("MIN", Medium.Decimal, 2, "the smaller of the two digits", "the smaller digit",
+                x => Math.Min(x[0], x[1]));
+            Value("DIFF", Medium.Decimal, 2, "how far apart the two digits are: the larger minus the smaller", "how far apart they are",
+                x => Math.Abs(x[0] - x[1]));
 
-            Add("B4", Medium.Binary, 2, new[] { "xor (1 when they differ)", "and", "top and not bottom", "or" },
-                (x, s) =>
-                {
-                    int a = x[0], b = x[1];
-                    switch (s)
-                    {
-                        case 0: return a ^ b;
-                        case 1: return a & b;
-                        case 2: return a & (1 - b);
-                        default: return a | b;
-                    }
-                });
+            // ---- Shapes: a form, a fill and a colour ---------------------------------
 
-            // ---- Decimal: digits that wrap round ------------------------------------
+            Value("FILL", Medium.Shape, 1, "flips a shape's fill: hollow becomes solid and solid becomes hollow", "flips the fill",
+                x => x[0] ^ 1);
+            Value("NEXT", Medium.Shape, 1, "the next form round: circle, triangle, square, hexagon, then circle again, keeping the fill and colour", "the next form",
+                x => Shapes.Make(Shapes.Form(x[0]) + 1, Shapes.Solid(x[0]), Shapes.Colour(x[0])));
+            Value("TAKEFILL", Medium.Shape, 2, "the top shape, with the bottom shape's fill", "top shape, bottom's fill",
+                x => Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[1]), Shapes.Colour(x[0])));
+            Value("TAKECOLOUR", Medium.Shape, 2, "the top shape, in the bottom shape's colour", "top shape, bottom's colour",
+                x => Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[0]), Shapes.Colour(x[1])));
 
-            Add("D1", Medium.Decimal, 1, new[] { "add 1", "add 2", "add 3" }, (x, s) => Wrap(x[0] + s + 1));
+            // ---- Waves: every input read as a wave, a wave sent ----------------------
 
-            Add("D2", Medium.Decimal, 2, new[] { "sum (top + bottom)", "difference (top - bottom)" },
-                (x, s) => s == 0 ? Wrap(x[0] + x[1]) : Wrap(x[0] - x[1]));
+            Whole("FLIP", Medium.Wave, 1, false, "turns a wave upside down", "upside down",
+                x => x[0].As(Medium.Wave).Map(Medium.Wave, v => v == 0f ? 0f : -v));
+            Whole("FASTER", Medium.Wave, 1, false, "plays the wave twice as fast, so it repeats twice a loop", "twice as fast",
+                x => x[0].As(Medium.Wave).Faster(2));
+            Whole("LATER", Medium.Wave, 1, false, "plays the wave a quarter of the loop later", "a quarter loop later",
+                x => x[0].As(Medium.Wave).Later(Trace.Steps / 4));
+            Whole("MIX", Medium.Wave, 2, false, "halfway between the two waves at every moment, so a wave and its upside-down twin mix to a flat line", "halfway between them",
+                x => Trace.Zip(Medium.Wave, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => (a + b) * 0.5f));
 
-            Add("D3", Medium.Decimal, 1, new[] { "double", "halve, rounding down", "mirror (9 - x)" },
-                (x, s) => s == 0 ? Wrap(x[0] * 2) : s == 1 ? x[0] / 2 : 9 - x[0]);
+            // ---- Mixing: whole signals of any kind ------------------------------------
 
-            Add("D4", Medium.Decimal, 2, new[] { "the larger", "the smaller" },
-                (x, s) => s == 0 ? Math.Max(x[0], x[1]) : Math.Min(x[0], x[1]));
-
-            // ---- Shapes: four forms, hollow or solid --------------------------------
-
-            Add("S1", Medium.Shape, 1, new[] { "flip fill", "pass" },
-                (x, s) => s == 0 ? x[0] ^ 1 : x[0]);
-
-            Add("S2", Medium.Shape, 1, new[] { "next form (circle, triangle, square, hexagon, circle)", "previous form" },
-                (x, s) => Shapes.Make(Shapes.Form(x[0]) + (s == 0 ? 1 : -1), Shapes.Solid(x[0]), Shapes.Colour(x[0])));
-
-            Add("S3", Medium.Shape, 2, new[] { "form of top, fill of bottom", "form of bottom, fill of top" },
-                (x, s) => s == 0
-                    ? Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[1]), Shapes.Colour(x[0]))
-                    : Shapes.Make(Shapes.Form(x[1]), Shapes.Solid(x[0]), Shapes.Colour(x[1])));
-
-            Add("S4", Medium.Shape, 2, new[] { "the one with more corners (top on a tie)", "the one with fewer corners (top on a tie)" },
-                (x, s) =>
-                {
-                    int a = Shapes.Corners[Shapes.Form(x[0])], b = Shapes.Corners[Shapes.Form(x[1])];
-                    if (a == b) return x[0];
-                    return (s == 0) == (a > b) ? x[0] : x[1];
-                });
-
-            // ---- Analog waves: form, frequency, height and phase ----------------------
-
-            Add("W1", Medium.Wave, 1, new[] { "one step faster (the fastest wraps to the slowest)", "one step slower (the slowest wraps to the fastest)" },
-                (x, s) => Waves.WithFrequency(x[0], Waves.Frequency(x[0]) + (s == 0 ? 1 : -1)));
-
-            Add("W2", Medium.Wave, 1, new[] { "make it a square wave", "make it a sine wave", "make it a saw wave" },
-                (x, s) => Waves.WithForm(x[0], s == 0 ? Waves.SquareWave : s == 1 ? Waves.Sine : Waves.Saw));
-
-            Add("W3", Medium.Wave, 2, new[] { "top's wave at bottom's height", "bottom's wave at top's height" },
-                (x, s) => s == 0
-                    ? Waves.WithHeight(x[0], Waves.Height(x[1]))
-                    : Waves.WithHeight(x[1], Waves.Height(x[0])));
-
-            Add("W4", Medium.Wave, 1, new[] { "a quarter cycle later", "half a cycle later" },
-                (x, s) => Waves.WithPhase(x[0], Waves.Phase(x[0]) + (s == 0 ? 1 : 2)));
-
-            // ---- Sampled waves: an analog wave read a few times a cycle -------------
-
-            Add("Q1", Medium.Sampled, 1, new[] { "more steps a cycle (3, 6, 12, then 3 again)", "fewer steps a cycle (12, 6, 3, then 12 again)" },
-                (x, s) => Sampled.WithRate(x[0], Sampled.Rate(x[0]) + (s == 0 ? 1 : -1)));
-
-            Add("Q2", Medium.Sampled, 1, new[] { "one level taller (7 wraps to 1)", "one level shorter (1 wraps to 7)" },
-                (x, s) => Sampled.WithHeight(x[0], Sampled.Height(x[0]) + (s == 0 ? 1 : -1)));
-
-            Add("Q3", Medium.Sampled, 2, new[] { "top's wave with bottom's steps", "bottom's wave with top's steps" },
-                (x, s) => s == 0
-                    ? Sampled.WithRate(x[0], Sampled.Rate(x[1]))
-                    : Sampled.WithRate(x[1], Sampled.Rate(x[0])));
-
-            Add("Q4", Medium.Sampled, 2, new[] { "the taller (top on a tie)", "the shorter (top on a tie)" },
-                (x, s) =>
-                {
-                    int a = Sampled.Height(x[0]), b = Sampled.Height(x[1]);
-                    if (a == b) return x[0];
-                    return (s == 0) == (a > b) ? x[0] : x[1];
-                });
-
-            // ---- Mixing: whole signals of any type, for circuits the player wires ----
-
-            Mix("M1", 2, "add them as waves (clipped at the top and bottom)",
-                x => Trace.Zip(Medium.Wave, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => Clip(a + b)));
-
-            Mix("M2", 1, "turn it upside down (a wave flips, a bit inverts, a digit d becomes 9 - d, a shape swaps its fill)",
-                x => Flip(x[0]));
-
-            Mix("M3", 1, "a quarter of a loop later",
-                x => x[0].Later(Trace.Steps / 4));
-
-            Mix("M4", 1, "read it as a wave 12 times a loop and hold each reading, rounded (a sampled wave)",
-                x => SampleOf(x[0], 12));
-
-            Mix("M5", 2, "the top signal while the bottom is on, and nothing (0) while it's off",
+            Whole("GATE", Medium.Wave, 2, true, "lets the top signal through while the bottom one is on, and sends nothing while it's off (0, a flat line or an empty circle)", "top, while bottom is on",
                 x =>
                 {
                     var gate = x[1].As(Medium.Binary);
@@ -309,7 +196,7 @@ namespace Blackbox.Components
                     return new Trace(top.Medium, levels);
                 });
 
-            Mix("M6", 1, "count how many times it has switched on so far this loop (a digit, wrapping after 9)",
+            Whole("COUNT", Medium.Decimal, 1, true, "counts how many times its input has switched on so far this loop, up to 9", "counts the switch-ons",
                 x =>
                 {
                     var bits = x[0].As(Medium.Binary);
@@ -318,34 +205,23 @@ namespace Blackbox.Components
                     for (int k = 0; k < Trace.Steps; k++)
                     {
                         bool rise = bits[k] == 1f && (k == 0 || bits[k - 1] == 0f);
-                        if (rise) count = (count + 1) % 10;
+                        if (rise && count < 9) count++;
                         levels[k] = count;
                     }
                     return new Trace(Medium.Decimal, levels);
                 });
 
-            Mix("M7", 1, "play it twice as fast, so it repeats twice a loop",
-                x => x[0].Faster(2));
-
-            Mix("M8", 2, "1 while the top is higher than the bottom, read as waves; 0 otherwise",
+            Whole("COMPARE", Medium.Binary, 2, true, "1 while the top signal is higher than the bottom one, both read as waves; otherwise 0", "1 while top is higher",
                 x => Trace.Zip(Medium.Binary, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => a > b + Trace.Tolerance ? 1f : 0f));
+
+            // ---- Set aside: stepped waves ---------------------------------------------
+
+            Whole("STEPS", Medium.Sampled, 1, true, "reads it as a wave 12 times a loop and holds each reading, rounded (a stepped wave)", "12 held steps a loop",
+                x => SampleOf(x[0], 12));
         }
 
-        static float Clip(float v) => v > Trace.Peak ? Trace.Peak : v < -Trace.Peak ? -Trace.Peak : v;
-
-        /// <summary>What a signal of this type is while it's off: 0 for numbers and waves, a hollow circle for shapes.</summary>
+        /// <summary>What a signal of this kind is while it's off: 0 for numbers and waves, a hollow circle for shapes.</summary>
         static float Off(Medium m) => m == Medium.Shape ? Shapes.Make(Shapes.Circle, false) : 0f;
-
-        static Trace Flip(Trace t)
-        {
-            switch (t.Medium)
-            {
-                case Medium.Binary: return t.Map(Medium.Binary, v => 1f - v);
-                case Medium.Decimal: return t.Map(Medium.Decimal, v => 9f - v);
-                case Medium.Shape: return t.Map(Medium.Shape, v => (int)v ^ 1);
-                default: return t.Map(t.Medium, v => v == 0f ? 0f : -v);
-            }
-        }
 
         /// <summary>The signal read as a wave <paramref name="times"/> times a loop, at the middle of each stretch, each reading rounded and held.</summary>
         static Trace SampleOf(Trace t, int times)
@@ -361,18 +237,14 @@ namespace Blackbox.Components
             return new Trace(Medium.Sampled, levels);
         }
 
-        static void Mix(string id, int inputs, string spoiler, Func<Trace[], Trace> rule)
-        {
-            var kind = new BlockKind(id, inputs, new[] { spoiler }, (x, s) => rule(x));
-            s_Kinds.Add(kind.Id, kind);
-            s_Ordered.Add(kind);
-        }
+        static void Value(string id, Medium medium, int inputs, string rule, string shortRule, Func<int[], int> f) =>
+            Register(new BlockKind(id, medium, inputs, rule, shortRule, f));
 
-        static int Wrap(int v) => ((v % 10) + 10) % 10;
+        static void Whole(string id, Medium medium, int inputs, bool mixing, string rule, string shortRule, Func<Trace[], Trace> f) =>
+            Register(new BlockKind(id, medium, inputs, mixing, rule, shortRule, f));
 
-        static void Add(string id, Medium medium, int inputs, string[] spoilers, Func<int[], int, int> rule)
+        static void Register(BlockKind kind)
         {
-            var kind = new BlockKind(id, medium, inputs, spoilers, rule);
             s_Kinds.Add(kind.Id, kind);
             s_Ordered.Add(kind);
         }
@@ -380,12 +252,12 @@ namespace Blackbox.Components
         public static IReadOnlyList<BlockKind> All => s_Ordered;
 
         /// <summary>
-        /// Kinds set aside for now (11 Nov 2026): the stepped-wave blocks Q1 to Q4
-        /// and M4, which turns any signal into a stepped wave. Their code and tests
-        /// stay, so bringing them back means emptying this set and listing the
-        /// Grain chapter (kept in Puzzles/Shelved) in chapters.json again.
+        /// Kinds set aside for now (11 Nov 2026): STEPS, which turns any signal into
+        /// a stepped wave. Its code and tests stay. The old stepped-wave blocks went
+        /// when every block got one fixed rule, so Grain (kept in Puzzles/Shelved)
+        /// needs new blocks before it can come back.
         /// </summary>
-        public static readonly HashSet<string> Shelved = new HashSet<string> { "Q1", "Q2", "Q3", "Q4", "M4" };
+        public static readonly HashSet<string> Shelved = new HashSet<string> { "STEPS" };
 
         /// <summary>Signal kinds set aside for now, with <see cref="Shelved"/>: stepped (sampled) waves.</summary>
         public static bool MediumShelved(Medium m) => m == Medium.Sampled;

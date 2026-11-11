@@ -8,10 +8,10 @@ namespace Blackbox.Tests
     /// <summary>The block kinds, the five signal media, their traces over a run, and their sounds.</summary>
     public class ComponentTests
     {
-        /// <summary>The kinds with a rule for single values: every kind but the mixing ones.</summary>
-        static IEnumerable<BlockKind> AllKinds() => KindCatalog.All.Where(k => !k.Mixing);
+        /// <summary>The kinds that work one value at a time: bits, digits and shapes.</summary>
+        static IEnumerable<BlockKind> ValueKinds() => KindCatalog.All.Where(k => !k.Mixing && !Media.IsWave(k.Medium));
 
-        static int Apply(string kind, int state, params int[] inputs) => KindCatalog.Get(kind).Apply(inputs, state);
+        static int Apply(string kind, params int[] inputs) => KindCatalog.Get(kind).Apply(inputs);
 
         /// <summary>Every combination of input values a kind can be given.</summary>
         static IEnumerable<int[]> InputsFor(BlockKind kind)
@@ -25,10 +25,23 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void EachMediumHasFourKinds()
+        public void EachSignalKindHasFourBlocks()
         {
-            foreach (Medium m in AllMedia())
+            foreach (Medium m in new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave })
                 Assert.That(KindCatalog.All.Count(k => !k.Mixing && k.Medium == m), Is.EqualTo(4), m.ToString());
+            Assert.That(KindCatalog.All.Count(k => !k.Mixing && k.Medium == Medium.Sampled), Is.Zero, "stepped waves are set aside");
+        }
+
+        [Test]
+        public void EveryBlockHasOneFixedRule()
+        {
+            foreach (var kind in KindCatalog.All)
+            {
+                Assert.That(kind.StateCount, Is.EqualTo(1), kind.Id);
+                Assert.That(kind.InputCount, Is.InRange(1, 2), kind.Id);
+                Assert.That(KindCatalog.Get(kind.Id), Is.SameAs(kind));
+                Assert.That(kind.Rule, Is.Not.Empty, kind.Id);
+            }
         }
 
         [Test]
@@ -36,136 +49,121 @@ namespace Blackbox.Tests
         {
             // Once a circuit is solved its blocks show their rules on the board, in at most two short lines.
             foreach (var kind in KindCatalog.All)
-                for (int s = 0; s < kind.StateCount; s++)
-                {
-                    string rule = kind.ShortRule(s);
-                    Assert.That(rule, Is.Not.Empty, $"{kind.Id}/{s}");
-                    Assert.That(rule.Length, Is.LessThanOrEqualTo(30), $"{kind.Id}/{s}: \"{rule}\"");
-                }
+            {
+                Assert.That(kind.ShortRule, Is.Not.Empty, kind.Id);
+                Assert.That(kind.ShortRule.Length, Is.LessThanOrEqualTo(30), $"{kind.Id}: \"{kind.ShortRule}\"");
+            }
         }
 
         [Test]
         public void MixingKindsAreWellFormed()
         {
-            var mixing = KindCatalog.All.Where(k => k.Mixing).ToList();
-            Assert.That(mixing.Count, Is.EqualTo(8));
-            foreach (var kind in mixing)
+            var mixing = KindCatalog.All.Where(k => k.Mixing).Select(k => k.Id).ToList();
+            Assert.That(mixing, Is.EquivalentTo(new[] { "GATE", "COUNT", "COMPARE", "STEPS" }));
+            foreach (string id in mixing)
             {
-                Assert.That(kind.Id, Does.StartWith("M"));
-                Assert.That(kind.InputCount, Is.InRange(1, 2), kind.Id);
-                Assert.That(kind.StateCount, Is.EqualTo(1), kind.Id);
-                Assert.That(kind.Wireable, Is.True, kind.Id);
-                Assert.Throws<System.InvalidOperationException>(() => kind.Apply(new int[kind.InputCount], 0), kind.Id);
+                var kind = KindCatalog.Get(id);
+                Assert.Throws<System.InvalidOperationException>(() => kind.Apply(new int[kind.InputCount]), id);
             }
-            foreach (var kind in KindCatalog.All.Where(k => !k.Mixing))
-            {
-                Assert.That(kind.Wireable, Is.True, kind.Id);
-                Assert.That(kind.WorksOnSettings, Is.EqualTo(Media.IsWave(kind.Medium)), kind.Id);
-            }
+            Assert.That(KindCatalog.Get("STEPS").Shelved, Is.True);
+            Assert.That(KindCatalog.All.Where(k => k.Shelved).Select(k => k.Id), Is.EqualTo(new[] { "STEPS" }));
         }
 
-        [TestCaseSource(nameof(AllKinds))]
-        public void KindIsWellFormed(BlockKind kind)
-        {
-            Assert.That(kind.InputCount, Is.InRange(1, 2));
-            Assert.That(kind.StateCount, Is.GreaterThanOrEqualTo(2));
-            Assert.That(kind.Spoilers.Count, Is.EqualTo(kind.StateCount));
-            Assert.That(KindCatalog.Get(kind.Id), Is.SameAs(kind));
-        }
-
-        [TestCaseSource(nameof(AllKinds))]
+        [TestCaseSource(nameof(ValueKinds))]
         public void KindAlwaysSendsAValueOfItsMedium(BlockKind kind)
         {
             foreach (var inputs in InputsFor(kind))
-                for (int s = 0; s < kind.StateCount; s++)
-                {
-                    int v = kind.Apply(inputs, s);
-                    Assert.That(Media.IsValid(kind.Medium, v), Is.True, $"{kind.Id} state {s} on [{string.Join(",", inputs)}] gave {v}");
-                }
+            {
+                int v = kind.Apply(inputs);
+                Assert.That(Media.IsValid(kind.Medium, v), Is.True, $"{kind.Id} on [{string.Join(",", inputs)}] gave {v}");
+            }
         }
 
-        [TestCaseSource(nameof(AllKinds))]
-        public void EveryStateBehavesDifferently(BlockKind kind)
+        [TestCaseSource(nameof(ValueKinds))]
+        public void KindIsNeverConstant(BlockKind kind)
         {
-            // If two states agree on every input, one of them is a wasted click.
-            for (int s = 0; s < kind.StateCount; s++)
-                for (int t = s + 1; t < kind.StateCount; t++)
+            // A block that ignores its inputs couldn't be worked out by wiring it.
+            int first = kind.Apply(InputsFor(kind).First());
+            Assert.That(InputsFor(kind).Any(x => kind.Apply(x) != first), Is.True, kind.Id);
+        }
+
+        [TestCaseSource(nameof(ValueKinds))]
+        public void EveryInputMatters(BlockKind kind)
+        {
+            // Changing either input can change what the block sends, so no wire is ever wasted.
+            for (int p = 0; p < kind.InputCount; p++)
+            {
+                bool matters = InputsFor(kind).Any(x =>
                 {
-                    bool differ = InputsFor(kind).Any(x => kind.Apply(x, s) != kind.Apply(x, t));
-                    Assert.That(differ, Is.True, $"{kind.Id}: states {s} and {t} are the same");
-                }
+                    var y = (int[])x.Clone();
+                    y[p] = (y[p] + 1) % Media.Size(kind.Medium);
+                    return kind.Apply(x) != kind.Apply(y);
+                });
+                Assert.That(matters, Is.True, $"{kind.Id} input {p}");
+            }
         }
 
         [Test]
-        public void BinaryRules()
+        public void BitRules()
         {
-            Assert.That(Apply("B1", 0, 1), Is.EqualTo(0), "invert");
-            Assert.That(Apply("B1", 1, 1), Is.EqualTo(1), "pass");
-            Assert.That(Apply("B2", 0, 1, 0), Is.EqualTo(0), "and");
-            Assert.That(Apply("B2", 1, 1, 0), Is.EqualTo(1), "or");
-            Assert.That(Apply("B3", 0, 0), Is.EqualTo(1), "always 1");
-            Assert.That(Apply("B3", 2, 1), Is.EqualTo(0), "always 0");
-            Assert.That(Apply("B4", 0, 1, 1), Is.EqualTo(0), "xor");
-            Assert.That(Apply("B4", 2, 1, 0), Is.EqualTo(1), "top and not bottom");
-            Assert.That(Apply("B4", 2, 1, 1), Is.EqualTo(0), "top and not bottom");
+            Assert.That(Apply("NOT", 1), Is.EqualTo(0));
+            Assert.That(Apply("NOT", 0), Is.EqualTo(1));
+            Assert.That(Apply("AND", 1, 0), Is.EqualTo(0));
+            Assert.That(Apply("AND", 1, 1), Is.EqualTo(1));
+            Assert.That(Apply("OR", 1, 0), Is.EqualTo(1));
+            Assert.That(Apply("OR", 0, 0), Is.EqualTo(0));
+            Assert.That(Apply("XOR", 1, 1), Is.EqualTo(0));
+            Assert.That(Apply("XOR", 0, 1), Is.EqualTo(1));
         }
 
         [Test]
-        public void DecimalRulesWrap()
+        public void DigitRulesNeverWrap()
         {
-            Assert.That(Apply("D1", 0, 9), Is.EqualTo(0), "add 1 wraps");
-            Assert.That(Apply("D1", 2, 8), Is.EqualTo(1), "add 3 wraps");
-            Assert.That(Apply("D2", 0, 7, 5), Is.EqualTo(2), "sum wraps");
-            Assert.That(Apply("D2", 1, 2, 5), Is.EqualTo(7), "difference wraps");
-            Assert.That(Apply("D3", 0, 6), Is.EqualTo(2), "double wraps");
-            Assert.That(Apply("D3", 1, 7), Is.EqualTo(3), "halve rounds down");
-            Assert.That(Apply("D3", 2, 2), Is.EqualTo(7), "mirror");
-            Assert.That(Apply("D4", 0, 3, 8), Is.EqualTo(8), "larger");
-            Assert.That(Apply("D4", 1, 3, 8), Is.EqualTo(3), "smaller");
+            Assert.That(Apply("MIRROR", 2), Is.EqualTo(7));
+            Assert.That(Apply("MIRROR", 9), Is.EqualTo(0));
+            Assert.That(Apply("MAX", 3, 8), Is.EqualTo(8));
+            Assert.That(Apply("MIN", 3, 8), Is.EqualTo(3));
+            Assert.That(Apply("DIFF", 2, 7), Is.EqualTo(5));
+            Assert.That(Apply("DIFF", 7, 2), Is.EqualTo(5), "the same either way round");
+            Assert.That(Apply("DIFF", 4, 4), Is.EqualTo(0));
         }
 
         [Test]
         public void ShapeRules()
         {
             int hollowCircle = Shapes.Make(0, false), solidCircle = Shapes.Make(0, true);
-            int solidTriangle = Shapes.Make(1, true), hollowSquare = Shapes.Make(2, false), solidHexagon = Shapes.Make(3, true);
-            Assert.That(Apply("S1", 0, hollowCircle), Is.EqualTo(solidCircle), "flip fill");
-            Assert.That(Apply("S2", 0, solidHexagon), Is.EqualTo(solidCircle), "next form wraps and keeps fill");
-            Assert.That(Apply("S2", 1, solidCircle), Is.EqualTo(solidHexagon), "previous form wraps");
-            Assert.That(Apply("S3", 0, hollowSquare, solidTriangle), Is.EqualTo(Shapes.Make(2, true)), "form of top, fill of bottom");
-            Assert.That(Apply("S3", 1, hollowSquare, solidTriangle), Is.EqualTo(Shapes.Make(1, false)), "form of bottom, fill of top");
-            Assert.That(Apply("S4", 0, solidTriangle, hollowSquare), Is.EqualTo(hollowSquare), "more corners");
-            Assert.That(Apply("S4", 1, solidTriangle, hollowSquare), Is.EqualTo(solidTriangle), "fewer corners");
-            Assert.That(Apply("S4", 1, hollowCircle, solidCircle), Is.EqualTo(hollowCircle), "top on a tie");
+            int pinkTriangle = Shapes.Make(1, true, 1), hollowAmberSquare = Shapes.Make(2, false, 2), solidGreenHexagon = Shapes.Make(3, true, 3);
+            Assert.That(Apply("FILL", hollowCircle), Is.EqualTo(solidCircle));
+            Assert.That(Apply("FILL", pinkTriangle), Is.EqualTo(Shapes.Make(1, false, 1)), "keeps form and colour");
+            Assert.That(Apply("NEXT", pinkTriangle), Is.EqualTo(Shapes.Make(2, true, 1)), "triangle to square, keeping fill and colour");
+            Assert.That(Apply("NEXT", solidGreenHexagon), Is.EqualTo(Shapes.Make(0, true, 3)), "hexagon round to circle");
+            Assert.That(Apply("TAKEFILL", hollowAmberSquare, pinkTriangle), Is.EqualTo(Shapes.Make(2, true, 2)), "top's form and colour, bottom's fill");
+            Assert.That(Apply("TAKECOLOUR", hollowAmberSquare, pinkTriangle), Is.EqualTo(Shapes.Make(2, false, 1)), "top's form and fill, bottom's colour");
         }
+
+        static Trace WaveOf(int form, int frequency, int height, int phase = 0) => Trace.Of(Medium.Wave, Waves.Make(form, frequency, height, phase));
+        static Trace Run(string kind, params Trace[] inputs) => KindCatalog.Get(kind).Apply(inputs);
 
         [Test]
         public void WaveRules()
         {
-            int sineFastest = Waves.Make(Waves.Sine, 6, 2, 1), sawSlowest = Waves.Make(Waves.Saw, 0, 6), square = Waves.Make(Waves.SquareWave, 3, 0, 3);
-            Assert.That(Apply("W1", 0, sineFastest), Is.EqualTo(Waves.Make(Waves.Sine, 0, 2, 1)), "faster wraps to the slowest, keeping the rest");
-            Assert.That(Apply("W1", 1, sawSlowest), Is.EqualTo(Waves.Make(Waves.Saw, 6, 6)), "slower wraps to the fastest");
-            Assert.That(Apply("W2", 2, sineFastest), Is.EqualTo(Waves.Make(Waves.Saw, 6, 2, 1)), "make saw keeps frequency, height and phase");
-            Assert.That(Apply("W3", 0, sawSlowest, sineFastest), Is.EqualTo(Waves.Make(Waves.Saw, 0, 2)), "top's wave at bottom's height");
-            Assert.That(Apply("W3", 1, sawSlowest, sineFastest), Is.EqualTo(Waves.Make(Waves.Sine, 6, 6, 1)), "bottom's wave at top's height");
-            Assert.That(Apply("W4", 0, sineFastest), Is.EqualTo(Waves.Make(Waves.Sine, 6, 2, 2)), "a quarter later");
-            Assert.That(Apply("W4", 1, square), Is.EqualTo(Waves.Make(Waves.SquareWave, 3, 0, 1)), "half a cycle later wraps");
+            var sine = WaveOf(Waves.Sine, 0, 6);
+            Assert.That(Run("FLIP", sine).Matches(WaveOf(Waves.Sine, 0, 6, 2)), Is.True, "a sine upside down is a sine half a cycle late");
+            Assert.That(Run("FASTER", sine).Matches(WaveOf(Waves.Sine, 1, 6)), Is.True, "twice as fast");
+            Assert.That(Run("FASTER", WaveOf(Waves.Saw, 2, 3)).Matches(WaveOf(Waves.Saw, 4, 3)), Is.True, "3 a loop becomes 6");
+            Assert.That(Run("LATER", sine).Matches(WaveOf(Waves.Sine, 0, 6, 1)), Is.True, "a quarter of the loop later");
+            Assert.That(Run("MIX", sine, Run("FLIP", sine)).Matches(Trace.Flat(Medium.Wave, 0)), Is.True, "a wave and its upside-down twin mix to a flat line");
+            Assert.That(Run("MIX", sine, sine).Matches(sine), Is.True, "halfway between a wave and itself is the wave");
         }
 
         [Test]
-        public void SampledRules()
+        public void WaveBlocksReadAnySignalAsAWave()
         {
-            int fine = Sampled.Make(Waves.Sine, 2, 6, 2), coarse = Sampled.Make(Waves.Saw, 4, 0, 0);
-            Assert.That(Apply("Q1", 0, fine), Is.EqualTo(Sampled.Make(Waves.Sine, 2, 6, 0)), "more steps wraps 12 to 3");
-            Assert.That(Apply("Q1", 1, coarse), Is.EqualTo(Sampled.Make(Waves.Saw, 4, 0, 2)), "fewer steps wraps 3 to 12");
-            Assert.That(Apply("Q2", 0, fine), Is.EqualTo(Sampled.Make(Waves.Sine, 2, 0, 2)), "taller wraps 7 to 1");
-            Assert.That(Apply("Q2", 1, coarse), Is.EqualTo(Sampled.Make(Waves.Saw, 4, 6, 0)), "shorter wraps 1 to 7");
-            Assert.That(Apply("Q3", 0, fine, coarse), Is.EqualTo(Sampled.Make(Waves.Sine, 2, 6, 0)), "top's wave with bottom's steps");
-            Assert.That(Apply("Q3", 1, fine, coarse), Is.EqualTo(Sampled.Make(Waves.Saw, 4, 0, 2)), "bottom's wave with top's steps");
-            Assert.That(Apply("Q4", 0, coarse, fine), Is.EqualTo(fine), "taller");
-            Assert.That(Apply("Q4", 1, coarse, fine), Is.EqualTo(coarse), "shorter");
-            int twin = Sampled.Make(Waves.SquareWave, 0, 6, 1);
-            Assert.That(Apply("Q4", 1, fine, twin), Is.EqualTo(fine), "top on a tie");
+            var bit = Trace.Of(Medium.Binary, 1);
+            var flipped = Run("FLIP", bit);
+            Assert.That(flipped.Medium, Is.EqualTo(Medium.Wave));
+            Assert.That(flipped[0], Is.EqualTo(-7f), "a 1 is a wave at the top, so upside down it's at the bottom");
+            Assert.That(Run("MIX", Trace.Of(Medium.Decimal, 9), Trace.Of(Medium.Binary, 0))[0], Is.EqualTo(0f), "9 is the top, a 0 bit the bottom");
         }
 
         [Test]

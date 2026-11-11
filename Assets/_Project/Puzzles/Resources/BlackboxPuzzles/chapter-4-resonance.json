@@ -21,7 +21,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "W1"
+          "kind": "FASTER"
         }
       },
       "outputs": {
@@ -44,15 +44,15 @@
       "hint": "One of {g}'s inputs is empty.",
       "inputs": {
         "A": {
-          "signal": "wave sine f3 a2"
+          "signal": "wave sine f1 a6"
         },
         "B": {
-          "signal": "wave square f1 a7"
+          "signal": "wave square f3 a2"
         }
       },
       "blocks": {
         "g": {
-          "kind": "W3"
+          "kind": "MIX"
         }
       },
       "outputs": {
@@ -73,10 +73,10 @@
     {
       "id": "resonance-03",
       "name": "Timbre",
-      "hint": "Wave blocks only work on a plain wave, straight from an input or another wave block.",
+      "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
-          "signal": "wave sine f2 a6"
+          "signal": "wave sine f1 a6"
         },
         "B": {
           "signal": "wave saw f1 a3"
@@ -84,11 +84,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "W2"
+          "kind": "FASTER"
         },
         "h": {
-          "kind": "W4",
-          "state": 1
+          "kind": "LATER"
         }
       },
       "outputs": {
@@ -97,15 +96,15 @@
         }
       },
       "solution": [
-        "A -> g",
-        "g -> h",
-        "h -> X"
+        "B -> h",
+        "h -> g",
+        "g -> X"
       ]
     },
     {
       "id": "resonance-04",
       "name": "Offset",
-      "hint": "Which wave goes on top matters.",
+      "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a7"
@@ -116,23 +115,26 @@
       },
       "blocks": {
         "g": {
-          "kind": "W4"
+          "kind": "FLIP"
         },
         "h": {
-          "kind": "W3",
-          "state": 1
+          "kind": "MIX"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
-        "A -> g",
-        "B -> h.0",
+        "B -> g",
+        "g -> X",
+        "A -> h.0",
         "g -> h.1",
-        "h -> X"
+        "h -> Y"
       ]
     },
     {
@@ -141,24 +143,21 @@
       "hint": "Two outputs. Listen to each target on its own.",
       "inputs": {
         "A": {
-          "signal": "wave square f2 a3"
+          "signal": "wave square f1 a3"
         },
         "B": {
-          "signal": "wave sine f4 a6"
+          "signal": "wave sine f1 a6"
         }
       },
       "blocks": {
         "g": {
-          "kind": "W1",
-          "state": 1
+          "kind": "LATER"
         },
         "h": {
-          "kind": "W2",
-          "state": 2
+          "kind": "FLIP"
         },
         "k": {
-          "kind": "W4",
-          "state": 1
+          "kind": "FASTER"
         }
       },
       "outputs": {
@@ -186,25 +185,24 @@
           "signal": "wave sine f1 a7"
         },
         "B": {
-          "signal": "wave saw f3 a2"
+          "signal": "wave saw f2 a2"
         },
         "C": {
-          "signal": "wave square f5 a5"
+          "signal": "wave square f1 a5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "W3"
+          "kind": "MIX"
         },
         "h": {
-          "kind": "W1"
+          "kind": "FASTER"
         },
         "k": {
-          "kind": "W2",
-          "state": 1
+          "kind": "FLIP"
         },
         "m": {
-          "kind": "W4"
+          "kind": "LATER"
         }
       },
       "outputs": {

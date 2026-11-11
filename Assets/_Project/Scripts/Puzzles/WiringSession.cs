@@ -18,8 +18,6 @@ namespace Blackbox.Puzzles
         public readonly List<int> EmptyBlocks = new List<int>();
         /// <summary>Blocks wired up fully, but fed nothing by a block upstream. They send nothing either.</summary>
         public readonly List<int> StarvedBlocks = new List<int>();
-        /// <summary>Blocks given signals they can't read, so they send nothing: a wave block fed anything but a plain wave of its type.</summary>
-        public readonly List<int> RefusingBlocks = new List<int>();
         /// <summary>Blocks whose signal doesn't lead to any output.</summary>
         public readonly List<int> UnusedBlocks = new List<int>();
         /// <summary>Outputs with no wire into them.</summary>
@@ -346,12 +344,7 @@ namespace Blackbox.Puzzles
                 var ports = driver[inputs + b];
                 bool empty = Array.IndexOf(ports, -1) >= 0;
                 if (empty) report.EmptyBlocks.Add(b);
-                else if (report.Values[inputs + b] == null)
-                {
-                    bool fed = true;
-                    foreach (int d in ports) fed &= report.Values[d] != null;
-                    (fed ? report.RefusingBlocks : report.StarvedBlocks).Add(b);
-                }
+                else if (report.Values[inputs + b] == null) report.StarvedBlocks.Add(b);
             }
             for (int o = 0; o < outputs; o++)
             {
@@ -402,7 +395,7 @@ namespace Blackbox.Puzzles
                     if (all)
                     {
                         var block = p.Blocks[n - inputs];
-                        result = block.Kind.Apply(ins, block.State);
+                        result = block.Kind.Apply(ins);
                     }
                 }
                 values[n] = result;
