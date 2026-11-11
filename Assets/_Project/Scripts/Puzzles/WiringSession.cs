@@ -21,7 +21,6 @@ namespace Blackbox.Puzzles
         /// <summary>Blocks whose signal doesn't lead to any output.</summary>
         public readonly List<int> UnusedBlocks = new List<int>();
         /// <summary>Inputs whose signal doesn't lead to any output.</summary>
-        public readonly List<int> UnusedInputs = new List<int>();
         /// <summary>Outputs with no wire into them.</summary>
         public readonly List<int> UnwiredOutputs = new List<int>();
 
@@ -36,8 +35,8 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>Every input and every block is used, and every block input is connected.</summary>
-        public bool RulesKept => EmptyBlocks.Count == 0 && UnusedBlocks.Count == 0 && UnusedInputs.Count == 0;
+        /// <summary>Every block is used, and every block input is connected. Inputs may go unused.</summary>
+        public bool RulesKept => EmptyBlocks.Count == 0 && UnusedBlocks.Count == 0;
 
         /// <summary>Every output gets what it wants, and the rules are kept.</summary>
         public bool Solved => RulesKept && Met == OutputMet.Length;
@@ -54,7 +53,7 @@ namespace Blackbox.Puzzles
     /// its inputs is connected to something that sends a signal.
     ///
     /// The circuit is solved by a run in which every output gets the signal it
-    /// wants, every input and every block leads to an output, and no block input
+    /// wants, every block leads to an output, and no block input
     /// is empty.
     /// </summary>
     public sealed class WiringSession
@@ -370,7 +369,6 @@ namespace Blackbox.Puzzles
                 report.OutputMet[o] = got != null && Devices.Same(p.Outputs[o].Device, got, p.Outputs[o].Want);
             }
             report.UnusedBlocks.AddRange(UnusedBlocks(p, driver));
-            report.UnusedInputs.AddRange(UnusedInputs(p, driver));
             return report;
         }
 
@@ -439,22 +437,11 @@ namespace Blackbox.Puzzles
             return unused;
         }
 
-        public static List<int> UnusedInputs(PuzzleDef p, IEnumerable<WireDef> wires) => UnusedInputs(p, DriversOf(p, wires));
-
-        /// <summary>Inputs whose signal doesn't lead to any output, straight there or through blocks.</summary>
-        public static List<int> UnusedInputs(PuzzleDef p, int[][] driver)
+        /// <summary>Every block leads to an output: the rule on what must be used. Inputs needn't be.</summary>
+        public static bool AllBlocksUsed(PuzzleDef p, int[][] driver)
         {
             var used = Used(p, driver);
-            var unused = new List<int>();
-            for (int i = 0; i < p.Inputs.Count; i++) if (!used[i]) unused.Add(i);
-            return unused;
-        }
-
-        /// <summary>Every input and every block leads to an output: the rule on what must be used.</summary>
-        public static bool AllUsed(PuzzleDef p, int[][] driver)
-        {
-            var used = Used(p, driver);
-            for (int n = 0; n < p.Inputs.Count + p.Blocks.Count; n++) if (!used[n]) return false;
+            for (int b = 0; b < p.Blocks.Count; b++) if (!used[p.Inputs.Count + b]) return false;
             return true;
         }
 

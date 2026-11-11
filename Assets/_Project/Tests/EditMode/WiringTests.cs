@@ -364,8 +364,7 @@ namespace Blackbox.Tests
             s.Connect(a, g, 1);
             report = s.Check();
             Assert.That(report.EmptyBlocks, Is.Empty);
-            Assert.That(report.UnusedInputs, Is.EqualTo(new[] { 1 }), "B isn't used");
-            Assert.That(report.RulesKept, Is.False, "every input has to be used too");
+            Assert.That(report.RulesKept, Is.True, "B goes unused, which is allowed");
             Assert.That(report.Solved, Is.False, "steady instead of blinking");
             Assert.That(s.Connect(b, g, 1), Is.True, "a new wire replaces the old one in that port");
             Assert.That(s.DriverOf(g, 1), Is.EqualTo(b));
@@ -380,8 +379,9 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void EveryInputMustBeUsed()
+        public void InputsMayGoUnusedButBlocksMayNot()
         {
+            // An input can be left unwired, so the player can try things; every block has to be used.
             var p = TestContent.ParseWired(Small);
             var s = new WiringSession(p);
             int a = 0, b = 1, g = s.BlockNode(0), h = s.BlockNode(1), x = s.OutputNode(0);
@@ -391,33 +391,28 @@ namespace Blackbox.Tests
             s.Connect(h, x, 0);
             var report = s.Check();
             Assert.That(report.UnusedBlocks, Is.Empty);
-            Assert.That(report.UnusedInputs, Is.EqualTo(new[] { 1 }), "B leads nowhere");
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Input B isn't used: its signal doesn't reach an output. Every input and every block has to lead to an output."));
-
-            s.Connect(b, g, 1);
-            report = s.Check();
-            Assert.That(report.UnusedInputs, Is.Empty, "B now reaches X through g and h");
-            Assert.That(report.RulesKept, Is.True);
+            Assert.That(report.RulesKept, Is.True, "B leads nowhere, and that's fine");
+            Assert.That(GoalText.BrokenRules(p, report), Is.Null);
 
             s.Connect(b, h, 0);
             report = s.Check();
             Assert.That(report.UnusedBlocks, Is.EqualTo(new[] { 0 }), "h now reads B, so g leads nowhere");
-            Assert.That(report.UnusedInputs, Is.EqualTo(new[] { 0 }), "and nor does A, which only feeds g");
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block K1 isn't used: its signal doesn't reach an output. Input A isn't used: its signal doesn't reach an output. Every input and every block has to lead to an output."));
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block K1 isn't used: its signal doesn't reach an output. Every block has to lead to an output."));
             s.Disconnect(g, 1);
             report = s.Check();
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block K1 has an input with no wire, so it sends nothing. Block K1 isn't used: its signal doesn't reach an output. Input A isn't used: its signal doesn't reach an output. Every input and every block has to lead to an output. Every block input needs a wire."));
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block K1 has an input with no wire, so it sends nothing. Block K1 isn't used: its signal doesn't reach an output. Every block has to lead to an output. Every block input needs a wire."));
             s.Clear();
             report = s.Check();
             Assert.That(GoalText.BrokenRules(p, report), Does.StartWith("Blocks K1 and K2 have inputs with no wire, so they send nothing. Blocks K1 and K2 aren't used"));
-            Assert.That(GoalText.BrokenRules(p, report), Does.Contain("Inputs A and B aren't used"));
+            Assert.That(GoalText.BrokenRules(p, report), Does.Not.Contain("Input"));
 
             s.Connect(a, g, 0);
             s.Connect(b, g, 1);
             s.Connect(g, h, 0);
             s.Connect(h, x, 0);
             Assert.That(GoalText.BrokenRules(p, s.Check()), Is.Null, "every rule kept");
-            Assert.That(WiringSession.AllUsed(p, s.Drivers), Is.True);
+            Assert.That(WiringSession.AllBlocksUsed(p, s.Drivers), Is.True);
+            Assert.That(GoalText.WiringRules, Is.EqualTo("MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS."));
         }
 
         [Test]
@@ -472,7 +467,6 @@ namespace Blackbox.Tests
             Refused(Small.Replace(@"""kind"": ""NOT""", @"""kind"": ""B1"""), "the old kind codes are gone", "B1");
             Refused(Small.Replace(@"""g -> h"", ", ""), "the solution must use every block", "nothing wired into it");
             Refused(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""B -> g.1"", ""A -> h"", ""g -> X"" ]"), "a block that leads nowhere", "doesn't use block 'h'");
-            Refused(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""A -> g.1"", ""g -> h"", ""h -> X"" ]"), "an input that leads nowhere", "doesn't use input 'B'");
             Refused(Small.Replace(@"""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"""hint"": ""none"""), "no solution", "solution");
             Refused(Small.Replace(@"""outputs"":", @"""probes"": 2, ""outputs"":"), "no probes", "probes");
             Refused(Small.Replace(@"""X"": ""display""", @"""X"": ""toaster"""), "unknown device", "toaster");

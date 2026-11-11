@@ -542,9 +542,6 @@ namespace Blackbox.Puzzles
             var unused = WiringSession.UnusedBlocks(p, p.Solution);
             if (unused.Count > 0)
                 throw new PuzzleFormatException($"{where}: the solution doesn't use block '{p.Blocks[unused[0]].Id}': every block must lead to an output.");
-            var spare = WiringSession.UnusedInputs(p, p.Solution);
-            if (spare.Count > 0)
-                throw new PuzzleFormatException($"{where}: the solution doesn't use input '{p.Inputs[spare[0]].Id}': every input must lead to an output.");
 
             BoardLayout.ApplyWiring(p);
             p.Hint = NameBlocks(p.Hint, p, where + " hint");

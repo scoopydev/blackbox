@@ -97,9 +97,10 @@ namespace Blackbox.Puzzles
         }
 
         /// <summary>
-        /// Every rule a run broke, naming each block and input that broke it, then
-        /// the rules those break: "Block K2 isn't used. Input C isn't used. Every
-        /// input and every block has to lead to an output." Null when the rules are kept.
+        /// Every rule a run broke, naming each block that broke it, then the rules
+        /// those break: "Block K2 isn't used: its signal doesn't reach an output.
+        /// Every block has to lead to an output." Null when the rules are kept.
+        /// Inputs may go unused.
         /// </summary>
         public static string BrokenRules(PuzzleDef p, WiringReport r)
         {
@@ -117,13 +118,8 @@ namespace Blackbox.Puzzles
                 said.Add(r.UnusedBlocks.Count == 1
                     ? $"Block {Names(r.UnusedBlocks, b => p.Blocks[b].Label)} isn't used: its signal doesn't reach an output."
                     : $"Blocks {Names(r.UnusedBlocks, b => p.Blocks[b].Label)} aren't used: their signals don't reach an output.");
-            if (r.UnusedInputs.Count > 0)
-                said.Add(r.UnusedInputs.Count == 1
-                    ? $"Input {Names(r.UnusedInputs, i => p.Inputs[i].Id)} isn't used: its signal doesn't reach an output."
-                    : $"Inputs {Names(r.UnusedInputs, i => p.Inputs[i].Id)} aren't used: their signals don't reach an output.");
             if (said.Count == 0) return null;
-            bool unused = r.UnusedBlocks.Count > 0 || r.UnusedInputs.Count > 0;
-            if (unused) said.Add("Every input and every block has to lead to an output.");
+            if (r.UnusedBlocks.Count > 0) said.Add("Every block has to lead to an output.");
             if (r.EmptyBlocks.Count > 0) said.Add("Every block input needs a wire.");
             return string.Join(" ", said);
         }
