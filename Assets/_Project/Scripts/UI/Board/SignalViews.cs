@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Blackbox.Components;
 using Blackbox.Game;
 using UnityEngine;
@@ -166,6 +167,11 @@ namespace Blackbox.UI.Board
             if ((m == Medium.Shape || m == Medium.Decimal) && runs.Count <= MaxListed)
             {
                 _strip.gameObject.SetActive(true);
+                // Every digit or shape in a strip is drawn the same size, from a
+                // typical run, so a value held longer isn't drawn bigger; its place
+                // along the strip still shows when it comes and how long it lasts.
+                var lengths = runs.Select(r => r.length).OrderBy(n => n).ToList();
+                float typical = _w * lengths[lengths.Count / 2] / Trace.Steps;
                 foreach (var (start, length, level) in runs)
                 {
                     float x0 = -_w * 0.5f + _w * start / Trace.Steps;
@@ -173,7 +179,7 @@ namespace Blackbox.UI.Board
                     float cx = x0 + span * 0.5f;
                     if (m == Medium.Shape)
                     {
-                        float size = Mathf.Min(_h * 0.62f, span * 0.72f);
+                        float size = Mathf.Min(_h * 0.62f, typical * 0.72f);
                         int v = (int)level;
                         int form = Shapes.Form(v);
                         var s = UIKit.Shape(_strip, "Shape", form == 0 ? ShapeKind.Circle : form == 1 ? ShapeKind.Triangle : form == 2 ? ShapeKind.Square : ShapeKind.Hexagon);
@@ -183,10 +189,10 @@ namespace Blackbox.UI.Board
                     }
                     else
                     {
-                        int size = Mathf.RoundToInt(Mathf.Min(_h * 0.7f, span * 1.1f));
+                        int size = Mathf.RoundToInt(Mathf.Min(_h * 0.7f, typical * 1.1f));
                         var d = UIKit.Text(_strip, ((int)level).ToString(), TextStyle.Value.WithSize(Mathf.Max(10, size)).WithWeight(300), TextAnchor.MiddleCenter, "Digit");
                         d.raycastTarget = false;
-                        d.rectTransform.Centered(cx, 0f, span + 10f, _h);
+                        d.rectTransform.Centered(cx, 0f, Mathf.Max(span, typical) + 10f, _h);
                         _digits.Add(d);
                     }
                 }
