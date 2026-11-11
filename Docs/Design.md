@@ -36,12 +36,12 @@ A device matches on what it does, not on the signal, so a digit display wanting 
 
 ### Signal media
 
-The game has three kinds of signal, and **every signal is drawn as a waveform**: a line through the loop, even when it never changes. Shapes are set aside for now (see "Set aside: shapes" at the end).
+The game has three kinds of signal, and **every signal is drawn as a waveform**: a line through the loop, even a steady bit. The one exception is a steady digit, which is just its number, written large. Shapes are set aside for now (see "Set aside: shapes" at the end).
 
 | Chapter | Medium | Values | Drawn as |
 |---|---|---|---|
 | I First Light | binary | 0 and 1 | A line above a faint midline for 1 and below it for 0, square where it switches |
-| II Tally | decimal | 0 to 9 | A line whose height is the digit, 0 at the bottom up to 9 at the top, stepped where it changes, with the digit written beside it |
+| II Tally | decimal | 0 to 9 | A steady digit is its number, written large. A digit that changes is a stepped line whose height is the digit, 0 at the bottom up to 9 at the top, with each step's number written on it |
 | III Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
 
 ### Signals over time
@@ -64,7 +64,7 @@ Wave blocks read any signal as a wave (the last row) and send a wave, so they ch
 
 Once the player has seen a block send something, pointing at a wire into it says how that block reads the wire when the kinds differ, such as "K3 reads this wave as a digit: 0 at the bottom up to 9 at the top." (`Media.HowRead`, `BlockKind.Reads`). It waits for a run so it never gives away what kind of block it is.
 
-A steady bit or digit is a flat line at its height (a digit has the number written beside it). A signal that changes is drawn across the loop: bits as a square line about the midline, with 1 and 0 written at its left; digits as a stepped line, each step with its digit written on it, or, when it changes more than eight times, with only its highest and lowest digits written at its left; waves as themselves.
+A steady bit is a flat line above or below the midline; a steady digit is just its number, as big as the box allows. A signal that changes is drawn across the loop: bits as a square line about the midline, with 1 and 0 written at its left; digits as a stepped line, each step with its number written on it (above the line in its lower half, below it in its upper half; the step playing now is white), or, when it changes more than eight times, with only its highest and lowest digits written at its left; waves as themselves. Numbers written on a line are in plain light grey at regular weight, as large as the line's box has room for, so they stay readable.
 
 ### Signal sounds
 

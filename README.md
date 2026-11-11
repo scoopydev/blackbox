@@ -15,7 +15,7 @@ The core loop is experimentation:
 3. **Deduce** – form a theory about each block's rule, and write it on the circuit with the pen or the text tool.
 4. **Solve** – wire it so every output matches in one run, keeping both rules.
 
-Every output is a display that shows the signal reaching it (lights, speakers, digit displays, fans and servos are set aside for now). Signals are bits, digits and waves, all drawn as waveforms: a bit is a line above or below the middle, a digit a line at its height from 0 to 9, and a wave itself. Some change as the loop plays. Every signal can be heard as well as seen.
+Every output is a display that shows the signal reaching it (lights, speakers, digit displays, fans and servos are set aside for now). Signals are bits, digits and waves, drawn as waveforms: a bit is a line above or below the middle, a changing digit a stepped line at its height from 0 to 9 with its numbers on it, and a wave itself. A steady digit is just its number. Some change as the loop plays. Every signal can be heard as well as seen.
 
 The game has three parts:
 

@@ -8,11 +8,11 @@ using UnityEngine;
 namespace Blackbox.UI.Board
 {
     /// <summary>
-    /// A signal over a whole loop, of any type, fitted to a box. A steady bit,
-    /// digit or shape shows as its value; a short pattern of digits or shapes as
-    /// the values in a row, each as wide as its share of the loop; anything else as
-    /// a line across the loop: pulses for bits, steps for digits and sampled waves,
-    /// a smooth line for waves. Nothing (a block that sends nothing, an output with
+    /// A signal over a whole loop, of any type, fitted to a box. A steady digit
+    /// or shape shows as its value; a short pattern of shapes as the shapes in a
+    /// row, each at its place in the loop; anything else as a line across the
+    /// loop: a square line about the middle for bits, steady or not; steps for
+    /// digits, with each step's number written on it; a smooth line for waves. Nothing (a block that sends nothing, an output with
     /// no wire) shows as a faint dash.
     /// </summary>
     public sealed class SignalView : MonoBehaviour
@@ -153,9 +153,10 @@ namespace Blackbox.UI.Board
 
             var t = _trace;
             var m = t.Medium;
-            // Bits and digits are drawn as waveforms like waves are, even a
-            // steady 0 or 7: a line whose height is the value.
-            if (t.IsFlat && m == Medium.Shape)
+            // Bits are drawn as waveforms like waves are, even a steady 0 or 1: a
+            // line above or below the middle. A steady digit is just the number;
+            // a digit that changes is a stepped line with its numbers written on it.
+            if (t.IsFlat && (m == Medium.Shape || m == Medium.Decimal))
             {
                 if (_value == null || _valueMedium != m)
                 {
@@ -234,20 +235,24 @@ namespace Blackbox.UI.Board
             return -_h * 0.5f + pad + (level - _graph.Min) / (_graph.Max - _graph.Min) * (_h - 2f * pad);
         }
 
+        /// <summary>The size of the numbers written on a line of digits or bits: as big as the view has room for.</summary>
+        float NumberSize(float share, float max) => Mathf.Clamp(_h * share, 12f, max);
+
         /// <summary>
         /// A digit signal is a stepped line, 0 at the bottom and 9 at the top. When
-        /// it has few enough steps, each step has its digit written beside it (above
-        /// the line, or below it near the top), lit while the loop plays it.
+        /// it has few enough steps, each step has its digit written beside it, in
+        /// plain light type as large as fits: above the line in the lower half,
+        /// below it in the upper half. The step the loop is playing is brightest.
         /// </summary>
         void LabelSteps(List<(int start, int length, float level)> runs)
         {
-            float size = Mathf.Clamp(_h * 0.28f, 9f, 15f);
+            float size = NumberSize(0.4f, 20f);
             foreach (var (start, length, level) in runs)
             {
                 float span = _w * length / Trace.Steps;
                 float cx = -_w * 0.5f + _w * start / Trace.Steps + span * 0.5f;
-                float dy = level <= 6f ? size * 0.75f : -size * 0.75f;
-                var d = UIKit.Text(_rt, ((int)Mathf.Round(level)).ToString(), TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(300), TextAnchor.MiddleCenter, "Step");
+                float dy = level <= 4f ? size * 0.72f : -size * 0.72f;
+                var d = UIKit.Text(_rt, ((int)Mathf.Round(level)).ToString(), TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(400), TextAnchor.MiddleCenter, "Step");
                 d.raycastTarget = false;
                 d.rectTransform.Centered(cx, GraphY(level) + dy, Mathf.Max(span, size) + 4f, size * 1.3f);
                 _digits.Add(d);
@@ -261,7 +266,7 @@ namespace Blackbox.UI.Board
         /// </summary>
         void LabelGraph(float hi, float lo)
         {
-            float size = Mathf.Clamp(_h * 0.24f, 9f, 13f);
+            float size = NumberSize(0.34f, 17f);
             float margin = size * 0.9f + 4f;
             _graph.rectTransform.Centered(margin * 0.5f, 0f, _w - margin, _h);
             float yHi = GraphY(hi), yLo = GraphY(lo);
@@ -273,19 +278,25 @@ namespace Blackbox.UI.Board
             }
             foreach (var (level, y) in new[] { (hi, yHi), (lo, yLo) })
             {
-                var d = UIKit.Text(_rt, ((int)Mathf.Round(level)).ToString(), TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(300), TextAnchor.MiddleCenter, "Scale");
+                var d = UIKit.Text(_rt, ((int)Mathf.Round(level)).ToString(), TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(400), TextAnchor.MiddleCenter, "Scale");
                 d.raycastTarget = false;
                 d.rectTransform.Centered(-_w * 0.5f + margin * 0.5f - 1f, y, margin + 4f, size * 1.3f);
                 _scale.Add(d);
             }
         }
 
+        /// <summary>
+        /// Numbers written on a line are plain light grey, not the signal gradient,
+        /// so they stay easy to read at a small size; the playing step is white.
+        /// </summary>
+        static readonly Color NumberDim = Color.Lerp(Palette.Dim, Palette.Text, 0.6f);
+
         void Restyle()
         {
             bool live = _look == ValueLook.Live;
             Color quiet = Color.Lerp(_look == ValueLook.Met ? Palette.Text : Palette.Dim, Color.white, _ping);
             if (_caption != null) _caption.color = live ? Palette.Dim : quiet;
-            foreach (var d in _scale) d.color = live ? Palette.Dim : quiet;
+            foreach (var d in _scale) d.color = live ? NumberDim : quiet;
             if (_value != null && _value.gameObject.activeSelf) _value.Look = _look;
             if (_graph.enabled)
             {
@@ -327,8 +338,7 @@ namespace Blackbox.UI.Board
                 var (start, length, _) = runs[i];
                 bool current = now >= start && now < start + length;
                 var d = _digits[i];
-                d.SignalFill = live;
-                d.color = live ? (current || now < 0 ? Color.white : Palette.Dim) : quiet;
+                d.color = live ? (current || now < 0 ? Color.white : NumberDim) : quiet;
             }
         }
     }
