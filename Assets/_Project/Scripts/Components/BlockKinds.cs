@@ -27,6 +27,12 @@ namespace Blackbox.Components
         public bool Mixing => _rule == null;
 
         /// <summary>
+        /// Set aside for now: the kind still works, but no circuit may use it.
+        /// See <see cref="KindCatalog.Shelved"/>.
+        /// </summary>
+        public bool Shelved => KindCatalog.Shelved.Contains(Id);
+
+        /// <summary>
         /// True when the block works on a wave's settings (frequency, form, height,
         /// phase, steps) rather than on its level at each moment. Such a block only
         /// reads a wave of its own type that no other block has mixed, and sends
@@ -372,6 +378,17 @@ namespace Blackbox.Components
         }
 
         public static IReadOnlyList<BlockKind> All => s_Ordered;
+
+        /// <summary>
+        /// Kinds set aside for now (11 Nov 2026): the stepped-wave blocks Q1 to Q4
+        /// and M4, which turns any signal into a stepped wave. Their code and tests
+        /// stay, so bringing them back means emptying this set and listing the
+        /// Grain chapter (kept in Puzzles/Shelved) in chapters.json again.
+        /// </summary>
+        public static readonly HashSet<string> Shelved = new HashSet<string> { "Q1", "Q2", "Q3", "Q4", "M4" };
+
+        /// <summary>Signal kinds set aside for now, with <see cref="Shelved"/>: stepped (sampled) waves.</summary>
+        public static bool MediumShelved(Medium m) => m == Medium.Sampled;
 
         public static bool TryGet(string id, out BlockKind kind) => s_Kinds.TryGetValue(id ?? string.Empty, out kind);
 

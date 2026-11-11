@@ -361,6 +361,8 @@ namespace Blackbox.Tests
             Refused(Small.Replace(@"""outputs"":", @"""probes"": 2, ""outputs"":"), "no probes", "probes");
             Refused(Small.Replace(@"""X"": ""light""", @"""X"": ""toaster"""), "unknown device", "toaster");
             Refused(Small.Replace(@"""A"": ""binary 1""", @"""A"": ""binary 11011"""), "a pattern that doesn't fit", "doesn't fit");
+            Refused(Small.Replace(@"""B"": ""wave sine f1 a7""", @"""B"": ""sampled sine f1 a7 s6"""), "stepped waves are set aside", "set aside");
+            Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""M4"""), "the sampler is set aside", "set aside");
 
             var p = TestContent.ParseWired(Small);
             Assert.That(p.Wiring, Is.True);
@@ -416,7 +418,7 @@ namespace Blackbox.Tests
                 }
                 foreach (var b in p.Blocks) Assert.That(named, Does.Contain(b.Kind.Id), $"{p.Id}: {b.Kind.Id} turns up unnamed before it was ever named");
             }
-            foreach (var kind in KindCatalog.All.Where(k => k.Mixing))
+            foreach (var kind in KindCatalog.All.Where(k => k.Mixing && !k.Shelved))
                 Assert.That(named, Does.Contain(kind.Id), $"{kind.Id} is taught in Combine");
         }
 

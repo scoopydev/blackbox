@@ -506,7 +506,6 @@ namespace Blackbox.UI.Screens
                 (Medium.Decimal, 5),
                 (Medium.Shape, Shapes.Make(Shapes.Triangle, true)),
                 (Medium.Wave, Waves.Make(Waves.Sine, 1, 6)),
-                (Medium.Sampled, Sampled.Make(Waves.Sine, 1, 6, 1)),
             };
             const float size = 38f;
             float total = 0f;

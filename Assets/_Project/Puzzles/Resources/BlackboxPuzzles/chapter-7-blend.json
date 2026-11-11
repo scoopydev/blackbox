@@ -3,7 +3,7 @@
   "title": "Blend",
   "mode": "wiring",
   "tagline": "Signals of different kinds, mixed together.",
-  "signals": "A bit block reads a wave as 1 while it's above the middle. The new M blocks work on any signal: they add, flip, delay, sample, gate, count, speed up and compare.",
+  "signals": "A bit block reads a wave as 1 while it's above the middle. The new M blocks work on any signal: they add, flip, delay, gate, count, speed up and compare.",
   "circuits": [
     {
       "id": "blend-01",
@@ -130,8 +130,8 @@
     },
     {
       "id": "blend-05",
-      "name": "Steps",
-      "hint": "M4 and M7 are new. The order the blocks come in matters.",
+      "name": "Double Time",
+      "hint": "M7 is new. The order the blocks come in matters.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -142,7 +142,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "M4"
+          "kind": "M3"
         },
         "h": {
           "kind": "M7"
@@ -154,7 +154,7 @@
         }
       },
       "solution": [
-        "A -> h",
+        "B -> h",
         "h -> g",
         "g -> X"
       ]

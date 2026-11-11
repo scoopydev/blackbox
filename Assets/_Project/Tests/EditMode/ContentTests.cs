@@ -24,7 +24,7 @@ namespace Blackbox.Tests
             Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
             Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
-            Assert.That(library.Chapters.Count, Is.EqualTo(10));
+            Assert.That(library.Chapters.Count, Is.EqualTo(9));
             Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend" }), "Combine reads, then meets, then mixes");
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
             Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
@@ -49,7 +49,26 @@ namespace Blackbox.Tests
             }
             foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
                 Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");
-            Assert.That(LearnChapters.Select(c => c.Medium).Distinct().Count(), Is.EqualTo(5), "one chapter for each medium");
+            var media = LearnChapters.Select(c => c.Medium).ToList();
+            Assert.That(media.Distinct().Count(), Is.EqualTo(media.Count), "one chapter for each medium");
+            Assert.That(media, Is.EquivalentTo(System.Enum.GetValues(typeof(Medium)).Cast<Medium>().Where(m => !KindCatalog.MediumShelved(m))), "every medium in play has its chapter");
+        }
+
+        [Test]
+        public void NothingShippedUsesWhatIsSetAside()
+        {
+            // Stepped waves were set aside on 11 Nov 2026: no circuit may send or
+            // want one, and no circuit may hold a block that only makes sense with them.
+            Assert.That(KindCatalog.MediumShelved(Medium.Sampled), Is.True);
+            foreach (var p in TestContent.Library.AllPuzzles)
+            {
+                foreach (var b in p.Blocks) Assert.That(b.Kind.Shelved, Is.False, $"{p.Id}: {b.Kind.Id} is set aside");
+                // Every input, block and output along the intended wiring.
+                foreach (var t in WiringSession.Evaluate(p, p.Solution))
+                    if (t != null) Assert.That(t.Medium, Is.Not.EqualTo(Medium.Sampled), $"{p.Id}: a stepped wave");
+            }
+            foreach (var id in new[] { "Q1", "Q2", "Q3", "Q4", "M4" })
+                Assert.That(KindCatalog.Get(id).Shelved, Is.True, id);
         }
 
         [Test]

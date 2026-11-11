@@ -15,12 +15,12 @@ The core loop is experimentation:
 3. **Deduce** – form a theory about each block's rule, and write it on the circuit with the pen or the text tool.
 4. **Solve** – wire it so every output matches in one run, keeping both rules.
 
-Outputs are devices: displays, lights, speakers, digit displays, fans and servos. Signals are bits, digits, shapes (with a form, a fill and a colour), analog waves and sampled waves, and some change as the loop plays. Every signal can be heard as well as seen.
+Outputs are devices: displays, lights, speakers, digit displays, fans and servos. Signals are bits, digits, shapes (with a form, a fill and a colour), and waves, and some change as the loop plays. Every signal can be heard as well as seen.
 
 The game has three parts:
 
 * **Learn** teaches one kind of signal per chapter, with its four blocks. In each chapter the first circuit comes wired (move one wire), the second half wired (finish it), and from the third on you draw every wire.
-* **Combine** mixes kinds: every block reads every signal, and eight mixing blocks add, flip, delay, sample, gate, count, speed up and compare.
+* **Combine** mixes kinds: every block reads every signal, and seven mixing blocks add, flip, delay, gate, count, speed up and compare.
 * **Build** is the main game: bigger circuits with every kind of signal, and blocks that no longer say what kind they are.
 
 There is no tutorial text explaining the parts. Understanding *is* the puzzle.
@@ -51,7 +51,7 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | H | How it works |
 | Esc | Finish typing, put the pen down, drop a wire, or open the menu |
 
-Part One has five chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes), *Resonance* (analog waves) and *Grain* (sampled waves). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
+Part One has four chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes) and *Resonance* (waves). Stepped waves and their chapter, *Grain*, are set aside for now (see the end of Design.md). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
 ## Project layout
 
@@ -69,6 +69,7 @@ Assets/
       UI/Screens/          Title, chapter map, circuit and wiring screens, overlays
       Editor/              The BLACKBOX menu
     Puzzles/Resources/BlackboxPuzzles/   The circuits, as JSON
+    Puzzles/Shelved/                     Chapters set aside for now (Grain), which the game never loads
     Fonts/Resources/BlackboxFonts/       Sora (SIL Open Font License)
     Tests/EditMode/        NUnit tests: rules, circuits, every shipped circuit, a full playthrough
     Prefabs/ Scenes/ Art/ Audio/ Materials/

@@ -99,8 +99,8 @@
     },
     {
       "id": "blackbox-03",
-      "name": "Stepper",
-      "hint": "A servo can move in steps as well as smoothly.",
+      "name": "Pendulum",
+      "hint": "Count how often the target's arm swings back in one loop, and which way it sweeps.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -114,7 +114,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "M4"
+          "kind": "M7"
         },
         "h": {
           "kind": "M2"

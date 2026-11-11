@@ -417,6 +417,8 @@ namespace Blackbox.Puzzles
                 if (text == null) throw new PuzzleFormatException($"{where}: input '{m.Key}' needs a \"signal\", like \"binary 0110\" or \"wave sine f2 a7\".");
                 if (!Signals.TryParse(text, out node.Signal, out string error))
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': {error}.");
+                if (KindCatalog.MediumShelved(node.Signal.Medium))
+                    throw new PuzzleFormatException($"{where}: input '{m.Key}': {Media.Key(node.Signal.Medium)} signals are set aside for now, so no circuit may use them.");
                 if (v.IsObject && (v.Has("adjustable") || v.Has("target") || v.Has("value")))
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs of a wired circuit are fixed signals, so they take no \"value\", \"adjustable\" or \"target\".");
                 p.Inputs.Add(node);
@@ -432,6 +434,8 @@ namespace Blackbox.Puzzles
                     throw new PuzzleFormatException($"{where}: block '{m.Key}' has unknown kind '{kindId}'.");
                 if (!kind.Wireable)
                     throw new PuzzleFormatException($"{where}: block '{m.Key}' is a {kind.Id}, which changes wave settings, so it can't go in a wired circuit.");
+                if (kind.Shelved)
+                    throw new PuzzleFormatException($"{where}: block '{m.Key}' is a {kind.Id}, which is set aside for now, so no circuit may use it.");
                 var block = new BlockDef
                 {
                     Id = m.Key,
