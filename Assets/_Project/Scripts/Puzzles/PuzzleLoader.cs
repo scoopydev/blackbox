@@ -523,7 +523,24 @@ namespace Blackbox.Puzzles
                 throw new PuzzleFormatException($"{where}: the solution doesn't use block '{p.Blocks[unused[0]].Id}': every block must lead to an output.");
 
             BoardLayout.ApplyWiring(p);
+            p.Hint = NameBlocks(p.Hint, p, where + " hint");
+            p.Goal = NameBlocks(p.Goal, p, where + " goal");
             return p;
+        }
+
+        /// <summary>
+        /// Writes each "{id}" in a hint or goal as the block's label ("{g}" becomes
+        /// "K1"), so text never has to know the order the blocks are numbered in.
+        /// </summary>
+        static string NameBlocks(string text, PuzzleDef p, string where)
+        {
+            if (string.IsNullOrEmpty(text) || text.IndexOf('{') < 0) return text;
+            return System.Text.RegularExpressions.Regex.Replace(text, @"\{([^{}]*)\}", m =>
+            {
+                var block = p.Blocks.Find(b => b.Id == m.Groups[1].Value);
+                if (block == null) throw new PuzzleFormatException($"{where}: \"{m.Value}\" doesn't name a block.");
+                return block.Label;
+            });
         }
 
         static string Required(JsonValue obj, string key, string where)

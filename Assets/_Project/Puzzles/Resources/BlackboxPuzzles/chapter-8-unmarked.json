@@ -2,14 +2,14 @@
   "id": "unmarked",
   "title": "Unmarked",
   "mode": "wiring",
-  "tagline": "The blocks have lost their names.",
-  "signals": "From here on, blocks don't say what kind they are. Every kind of signal and every block you've met can turn up, so try things and watch what each block sends.",
+  "tagline": "The blocks keep their secrets.",
+  "signals": "From here on, blocks don't show the dots for their settings. Every kind of signal and every block you've met can turn up, so try things and watch what each block sends.",
   "marked": false,
   "circuits": [
     {
       "id": "unmarked-01",
       "name": "Nameless",
-      "hint": "Without names, the only way to learn a block is to wire it up and press RUN.",
+      "hint": "Without the dots, the only way to learn a block is to wire it up and press RUN.",
       "inputs": {
         "A": {
           "signal": "decimal 4"

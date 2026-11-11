@@ -803,8 +803,8 @@ namespace Blackbox.UI.Board
     }
 
     /// <summary>
-    /// A block in a wired circuit: its ports, and its kind code unless the
-    /// circuit's blocks are unmarked. After a run it shows what it sent above it,
+    /// A block in a wired circuit: its label (K1, K2 ...), its ports, and its state
+    /// dots unless the circuit's blocks are unmarked. After a run it shows what it sent above it,
     /// and under it why it sent nothing (an empty input) or that it isn't used.
     /// </summary>
     public sealed class WiredBlockView : MonoBehaviour
@@ -819,7 +819,7 @@ namespace Blackbox.UI.Board
         public readonly List<PortView> Ins = new List<PortView>();
 
         ShapeGraphic _outline;
-        VoidText _code, _id, _note, _rule;
+        VoidText _code, _note, _rule;
         SignalView _readout;
         bool _solved, _broken, _lifted, _crowded, _hover;
         float _flash, _noteY;
@@ -848,16 +848,14 @@ namespace Blackbox.UI.Board
             view._outline.rectTransform.Stretch();
             view._outline.Radius = 16f * s;
 
-            view._id = UIKit.Text(rt, def.Id, TextStyle.Label.WithSize(Mathf.RoundToInt(14 * s)).WithTracking(0.1f), TextAnchor.MiddleLeft, "Id");
-            view._id.Uppercase = false;
-            view._id.rectTransform.Centered(-w * 0.5f + 14f * s + 30f, h * 0.5f - 15f * s, 60f, 20f);
-
+            // Every block is numbered K1, K2 ... in its circuit. The number only tells
+            // blocks apart: it says nothing about what a block does.
             bool marked = board.Puzzle.Marked;
-            view._code = UIKit.Text(rt, marked ? def.Kind.Id : "", TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Kind");
+            view._code = UIKit.Text(rt, def.Label, TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Label");
             view._code.rectTransform.Centered(0f, (marked && def.Kind.StateCount > 1 ? 4f : -3f) * s, w, h * 0.55f);
 
-            // A named block shows which of its kind's states it is fixed in, so two
-            // blocks of one kind that behave differently never look the same.
+            // Outside Part Three a block shows which of its states it is fixed in, so
+            // two blocks of one kind that behave differently never look the same.
             int states = marked ? def.Kind.StateCount : 0;
             for (int i = 0; i < states && states > 1; i++)
             {
@@ -947,17 +945,15 @@ namespace Blackbox.UI.Board
             set
             {
                 _rule.enabled = value;
-                // A named block already shows its code, so its rule doesn't repeat it.
                 // Under the block goes a short form; pointing at the block gives the whole rule.
-                string rule = Def.Kind.ShortRule(Def.State);
-                _rule.text = !value ? "" : _board.Puzzle.Marked ? Capitalise(rule) : $"{Def.Kind.Id}: {rule}";
+                _rule.text = value ? Capitalise(Def.Kind.ShortRule(Def.State)) : "";
                 var nrt = _note.rectTransform;
                 nrt.anchoredPosition = new Vector2(nrt.anchoredPosition.x, value ? _noteY - 40f : _noteY);
             }
         }
 
         /// <summary>The whole rule, for the status line, or null while the rule is hidden.</summary>
-        public string FullRule => _rule.enabled ? $"{Def.Id} ({Def.Kind.Id}): {Def.Kind.Spoilers[Def.State]}." : null;
+        public string FullRule => _rule.enabled ? $"{Def.Label}: {Def.Kind.Spoilers[Def.State]}." : null;
 
         static string Capitalise(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
 
@@ -996,7 +992,6 @@ namespace Blackbox.UI.Board
             _outline.GlowPaint = Paint.Signal;
             _outline.GlowRadius = 22f;
             _code.color = Palette.Dim;
-            _id.color = Palette.Faint;
         }
     }
 

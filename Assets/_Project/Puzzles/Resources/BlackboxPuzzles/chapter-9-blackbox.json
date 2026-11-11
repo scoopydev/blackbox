@@ -3,7 +3,7 @@
   "title": "Blackbox",
   "mode": "wiring",
   "tagline": "Everything at once.",
-  "signals": "Bigger circuits with every kind of signal and block, none of them named. Make every output do what its target shows.",
+  "signals": "Bigger circuits with every kind of signal and block, and no dots to go by. Make every output do what its target shows.",
   "marked": false,
   "circuits": [
     {

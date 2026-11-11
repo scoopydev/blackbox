@@ -52,7 +52,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 | `title` | yes | Shown on the chapter map and the title card. |
 | `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal`, `shape`, `wave` (analog) or `sampled` (set aside for now, see below). A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
-| `marked` | no | `false` hides the kind code on every block, as in Part Three. Wired chapters only. |
+| `marked` | no | `false` hides the state dots on every block, as in Part Three. Wired chapters only. Blocks never show their kind code: the player sees them as K1, K2 and so on. |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
 | `signals` | no | One line about the medium, shown on the title card and in the help. |
@@ -86,7 +86,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 |---|---|---|
 | `id` | yes | Unique across all chapters. Saves refer to it. |
 | `name` | no | Shown in the header and on the chapter map. |
-| `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. |
+| `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. In a wired circuit, write a block as `{g}` (its id in braces): the game shows it as the block's label, such as K1. Never write a kind code in a hint. |
 | `goal` | no | The goal sentence. Leave it out and it is written from the targets, which is almost always what you want. |
 | `probes` | no | How many probes the player may place. Defaults to 0. |
 | `medium` | no | Overrides the chapter's medium for this circuit. |
@@ -174,7 +174,7 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 * every input port of every block has a wire, and
 * every block leads to an output, through other blocks or straight there.
 
-Inputs may go unused. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it. A named block shows a dot for each state of its kind, with its own filled.
+Inputs may go unused. Blocks are fixed: the player never changes a state, so every block is locked and keeps the state the file gives it. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. Outside Part Three a block shows a dot for each state of its kind, with its own filled.
 
 ```json
 {
@@ -245,7 +245,7 @@ Bit, digit and shape blocks read any signal as their own kind, at every step of 
 
 ## Block kinds
 
-The player sees only a kind's code (and in an unmarked chapter, not even that). The rules are listed in [Design.md](Design.md#spoilers-the-rules).
+The player never sees a kind's code, only the block's label (K1, K2...) and, outside Part Three, its state dots. The rules are listed in [Design.md](Design.md#spoilers-the-rules).
 
 | Medium | Kind | Inputs | States |
 |---|---|---|---|
@@ -287,4 +287,4 @@ For wired circuits:
 
 * **No input should already do the job.** If wiring an input straight to an output meets its target, the player is told the circuit isn't solved for a reason they can't see. The validator warns about it.
 * **Fewer ways to solve it is better**, but a few are fine. The validator and the `WiringTests` count them.
-* **Name a block before hiding it.** Every kind an unmarked circuit uses should appear by name earlier. A test checks this.
+* **Show a kind with its dots before hiding them.** Every kind an unmarked circuit uses should appear in a marked circuit earlier. A test checks this.

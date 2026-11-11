@@ -10,7 +10,7 @@
     {
       "id": "first-light-01",
       "name": "First Light",
-      "hint": "The wires are drawn, but one starts at the wrong input. Click the wire into g to take it off, drag from B's dot to g's left dot, then press RUN.",
+      "hint": "The wires are drawn, but one starts at the wrong input. Click the wire into {g} to take it off, drag from B's dot to {g}'s left dot, then press RUN.",
       "inputs": {
         "A": {
           "signal": "binary 0011"
@@ -41,7 +41,7 @@
     {
       "id": "first-light-02",
       "name": "Switch",
-      "hint": "g has two inputs and one is empty. A block with an empty input sends nothing, so wire something into it.",
+      "hint": "{g} has two inputs and one is empty. A block with an empty input sends nothing, so wire something into it.",
       "inputs": {
         "A": {
           "signal": "binary 0011"

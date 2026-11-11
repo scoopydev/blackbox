@@ -313,7 +313,7 @@ namespace Blackbox.UI.Screens
             {
                 "Wire the circuit so every output does what its target shows. Drag from a dot to a dot to run a wire; click a wire to take it off.",
                 "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
-                "Blocks keep hidden rules. The dots under a named block show which setting it is fixed in. Wire a block between an input and an output, run it, and watch what it sends. Once you solve a circuit, each of its blocks has its rule written under it.",
+                "Blocks keep hidden rules. Their numbers, K1, K2 and so on, only tell them apart: K1 is a different block in every circuit. The dots under a block show which setting it is fixed in. Wire a block between an input and an output, run it, and watch what it sends. Once you solve a circuit, each of its blocks has its rule written under it.",
                 "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
                 "Each output is a display: it shows the signal that reaches it, and plays it on a run. Its target is met only by the very same signal.",
                 "Signals can change through the loop. Each one plays across its card, and clicking any signal plays it.",

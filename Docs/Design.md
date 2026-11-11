@@ -17,7 +17,7 @@ Every circuit gives the player **inputs** on the left, **blocks** in the middle 
 
 The circuit screen keeps its text down: the pen colours show only while a pen or text tool is out, CLEAR NOTES only once there are notes, and an input's type is named on its card only in chapters that mix types.
 
-Blocks are fixed: the player never changes a block's setting. A **named** block shows its kind's code (such as "B3") and a dot for each of the kind's settings, with the one it is fixed in filled, so two blocks of one kind that behave differently never look the same. In Part Three blocks are **unmarked**: no code and no dots, only their ports.
+Blocks are fixed: the player never changes a block's setting. Every block is labelled **K1, K2, K3...** in its circuit, counted down each column of the board in turn. The label only tells blocks apart, so the player can remember and talk about them; it never says what a block does, and K1 is a different block in every circuit. The player never sees a block's kind code (such as "B3"). In Parts One and Two a block also shows a dot for each of its kind's settings, with the one it is fixed in filled, so two blocks of one kind that behave differently never look the same. In Part Three blocks are **unmarked**: no dots, only the label and the ports.
 
 ### Devices
 
@@ -150,7 +150,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter V: Patch
 
-*Every block reads every signal.* Named blocks of one kind, fed signals of another.
+*Every block reads every signal.* Blocks of one kind, fed signals of another.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
@@ -162,7 +162,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter VI: Junction
 
-*Where kinds of signal meet.* Two kinds of signal into one named block from Part One, the step between Patch (one kind read as another) and Blend (the mixing blocks). No M kinds yet; a test checks that every solution feeds some block two kinds at once.
+*Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No M kinds yet; a test checks that every solution feeds some block two kinds at once.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
@@ -190,7 +190,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter VIII: Unmarked
 
-*The blocks have lost their names.* Two blocks each, of every kind met so far.
+*The blocks keep their secrets.* No more dots. Two blocks each, of every kind met so far.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
@@ -203,7 +203,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter IX: Blackbox
 
-*Everything at once.* Three to five unnamed blocks, two or three outputs.
+*Everything at once.* Three to five blocks without dots, two or three outputs.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
@@ -271,7 +271,7 @@ New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTes
 
 ## Spoilers: the rules
 
-A named block shows only its kind code, its ports and its state dots; an unmarked one only its ports. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule from this table written under it (shortened to a few words by `BlockKind.ShortRule`; pointing at the block shows the whole rule), and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
+A block shows only its label (K1, K2...), its ports and, outside Part Three, its state dots. The kind codes below are for designers; players never see them. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule from this table written under it (shortened to a few words by `BlockKind.ShortRule`; pointing at the block shows the whole rule), and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
 
 | Kind | Inputs | States, in order |
 |---|---|---|

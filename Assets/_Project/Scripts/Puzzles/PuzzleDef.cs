@@ -61,6 +61,14 @@ namespace Blackbox.Puzzles
     public sealed class BlockDef : NodeDef
     {
         public BlockKind Kind;
+
+        /// <summary>
+        /// What the player sees on the block: K1, K2 and so on, counted down each
+        /// column of the board in turn (the order the file lists them). It says
+        /// nothing about the block's kind, so K1 is a different block in every
+        /// circuit. Hints name blocks as {id}, which the loader turns into this.
+        /// </summary>
+        public string Label => "K" + (Index + 1);
         /// <summary>The state the block starts in.</summary>
         public int State;
         /// <summary>A locked block keeps its state. It is drawn with a dashed outline and a padlock.</summary>
@@ -118,7 +126,11 @@ namespace Blackbox.Puzzles
         /// </summary>
         public bool Wiring;
 
-        /// <summary>Blocks show their kind code. Off for unmarked blocks, which the player tells apart only by testing them.</summary>
+        /// <summary>
+        /// Blocks show dots for their kind's states, with the one they are fixed in
+        /// filled. Off for unmarked blocks (Part Three). Either way a block shows
+        /// only its label (<see cref="BlockDef.Label"/>), never its kind.
+        /// </summary>
         public bool Marked = true;
 
         /// <summary>A wired circuit's intended wiring, which its outputs' wanted signals come from. Never shown.</summary>

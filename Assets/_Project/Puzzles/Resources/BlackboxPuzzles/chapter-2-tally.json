@@ -10,7 +10,7 @@
     {
       "id": "tally-01",
       "name": "Count",
-      "hint": "These wires are drawn already. Run it, then move g's input to the other digit.",
+      "hint": "These wires are drawn already. Run it, then move {g}'s input to the other digit.",
       "inputs": {
         "A": {
           "signal": "decimal 4"
@@ -41,7 +41,7 @@
     {
       "id": "tally-02",
       "name": "Balance",
-      "hint": "One of g's inputs is empty.",
+      "hint": "One of {g}'s inputs is empty.",
       "inputs": {
         "A": {
           "signal": "decimal 2"

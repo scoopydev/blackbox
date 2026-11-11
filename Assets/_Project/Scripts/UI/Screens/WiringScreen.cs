@@ -580,14 +580,14 @@ namespace Blackbox.UI.Screens
             string lead = allMet ? "Every output matches, but " : "";
             if (r.EmptyBlocks.Count > 0)
             {
-                string id = Puzzle.Blocks[r.EmptyBlocks[0]].Id;
+                string id = Puzzle.Blocks[r.EmptyBlocks[0]].Label;
                 return allMet
                     ? lead + $"block {id} has an empty input. Every block input needs a wire."
                     : $"Block {id} has an input with no wire, so it sends nothing. Every block input needs a wire.";
             }
             if (r.UnusedBlocks.Count > 0)
             {
-                string id = Puzzle.Blocks[r.UnusedBlocks[0]].Id;
+                string id = Puzzle.Blocks[r.UnusedBlocks[0]].Label;
                 return allMet
                     ? lead + $"block {id} isn't used. Every block has to lead to an output."
                     : $"Block {id} isn't used: its signal doesn't reach any output. Every block has to lead to one.";

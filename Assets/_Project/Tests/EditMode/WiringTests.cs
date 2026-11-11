@@ -375,6 +375,19 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void BlocksAreNumberedNotNamed()
+        {
+            // The player sees K1, K2 ... on blocks, never their kind, and hints name
+            // blocks as {id} so they always match the numbers on the board.
+            var hinted = Small.Replace(@"""name"": ""Test"",", @"""name"": ""Test"", ""hint"": ""Wire {g}, then {h}."",");
+            var p = TestContent.ParseWired(hinted);
+            Assert.That(p.Blocks.Select(b => b.Label), Is.EqualTo(new[] { "K1", "K2" }));
+            Assert.That(p.Hint, Is.EqualTo("Wire K1, then K2."));
+            var ex = Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(hinted.Replace("{h}", "{q}")));
+            Assert.That(ex.Message, Does.Contain("{q}"));
+        }
+
+        [Test]
         public void GoalsNameTheOutputs()
         {
             Assert.That(GoalText.For(TestContent.ParseWired(Small)), Is.EqualTo("Make display X do what its target shows."));
@@ -403,6 +416,10 @@ namespace Blackbox.Tests
             Assert.That(puzzle.Outputs.Count, Is.InRange(1, 4));
             Assert.That(puzzle.Blocks.All(b => b.Kind.Wireable), Is.True);
             Assert.That(puzzle.Hint, Is.Not.Empty, puzzle.Id);
+            Assert.That(System.Text.RegularExpressions.Regex.IsMatch(puzzle.Hint, @"\b[BDSWQM][1-8]\b"), Is.False, $"{puzzle.Id}: the hint names a kind code: {puzzle.Hint}");
+            Assert.That(puzzle.Hint, Does.Not.Contain("{"), $"{puzzle.Id}: the hint names a block the loader didn't label");
+            for (int b = 0; b < puzzle.Blocks.Count; b++)
+                Assert.That(puzzle.Blocks[b].Label, Is.EqualTo("K" + (b + 1)), $"{puzzle.Id}: blocks are numbered in order");
             foreach (var o in puzzle.Outputs)
             {
                 Assert.That(o.Want, Is.Not.Null, $"{puzzle.Id}: {o.Id}");

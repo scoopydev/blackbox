@@ -10,7 +10,7 @@
     {
       "id": "resonance-01",
       "name": "Hum",
-      "hint": "These wires are drawn already. Listen to the target, run it, then move g's input to the other wave.",
+      "hint": "These wires are drawn already. Listen to the target, run it, then move {g}'s input to the other wave.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a5"
@@ -41,7 +41,7 @@
     {
       "id": "resonance-02",
       "name": "Splice",
-      "hint": "One of g's inputs is empty.",
+      "hint": "One of {g}'s inputs is empty.",
       "inputs": {
         "A": {
           "signal": "wave sine f3 a2"

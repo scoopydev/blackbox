@@ -3,7 +3,7 @@
   "title": "Blend",
   "mode": "wiring",
   "tagline": "Signals of different kinds, mixed together.",
-  "signals": "A bit block reads a wave as 1 while it's above the middle. The new M blocks work on any signal: they add, flip, delay, gate, count, speed up and compare.",
+  "signals": "A bit block reads a wave as 1 while it's above the middle. The new blocks work on any signal: they add, flip, delay, gate, count, speed up and compare.",
   "circuits": [
     {
       "id": "blend-01",
@@ -39,7 +39,7 @@
     {
       "id": "blend-02",
       "name": "Silence",
-      "hint": "M1 is new. Two waves can cancel each other out.",
+      "hint": "{g} is a new kind of block. Two waves can cancel each other out.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a7"
@@ -70,7 +70,7 @@
     {
       "id": "blend-03",
       "name": "Mirror",
-      "hint": "M2 is new. A signal and its mirror image add up to nothing.",
+      "hint": "{g} is a new kind of block. A signal and its mirror image add up to nothing.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -99,7 +99,7 @@
     {
       "id": "blend-04",
       "name": "Late",
-      "hint": "M3 is new. How much later is a quarter of a loop, for a fast wave and a slow one?",
+      "hint": "{g} is a new kind of block. How much later is a quarter of a loop, for a fast wave and a slow one?",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -131,7 +131,7 @@
     {
       "id": "blend-05",
       "name": "Double Time",
-      "hint": "M7 is new. The order the blocks come in matters.",
+      "hint": "{h} is a new kind of block. The order the blocks come in matters.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -162,7 +162,7 @@
     {
       "id": "blend-06",
       "name": "Burst",
-      "hint": "M5 is new. Listen to the target, then to what you make.",
+      "hint": "{g} is a new kind of block. Listen to the target, then to what you make.",
       "inputs": {
         "A": {
           "signal": "wave saw f3 a7"
@@ -190,7 +190,7 @@
     {
       "id": "blend-07",
       "name": "Count",
-      "hint": "M6 is new. Watch the target's digit change through the loop.",
+      "hint": "{g} is a new kind of block. Watch the target's digit change through the loop.",
       "inputs": {
         "A": {
           "signal": "wave sine f4 a7"
@@ -222,7 +222,7 @@
     {
       "id": "blend-08",
       "name": "Threshold",
-      "hint": "M8 is new. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The target stays at 1 for longer when the height is lower.",
+      "hint": "{g} is a new kind of block. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The target stays at 1 for longer when the height is lower.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"

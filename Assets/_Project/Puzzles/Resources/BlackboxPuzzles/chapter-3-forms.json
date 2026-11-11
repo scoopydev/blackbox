@@ -10,7 +10,7 @@
     {
       "id": "forms-01",
       "name": "Fill",
-      "hint": "These wires are drawn already. Run it, then move g's input to the other shape.",
+      "hint": "These wires are drawn already. Run it, then move {g}'s input to the other shape.",
       "inputs": {
         "A": {
           "signal": "shape solid pink triangle"
@@ -41,7 +41,7 @@
     {
       "id": "forms-02",
       "name": "Graft",
-      "hint": "One of g's inputs is empty.",
+      "hint": "One of {g}'s inputs is empty.",
       "inputs": {
         "A": {
           "signal": "shape hollow green circle"
@@ -101,7 +101,7 @@
     {
       "id": "forms-04",
       "name": "Turn",
-      "hint": "g and h are the same kind of block, fixed in different settings.",
+      "hint": "{g} and {h} are the same kind of block, fixed in different settings.",
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
