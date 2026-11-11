@@ -475,7 +475,34 @@ namespace Blackbox.UI.Board
         public void ShowBlock(int block, WiringReport report)
         {
             _shown = true;
-            Blocks[block].Show(report.Values[Session.BlockNode(block)], report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block));
+            var sent = report.Values[Session.BlockNode(block)];
+            if (sent != null) _seenBlocks[block] = sent.Medium;
+            Blocks[block].Show(sent, report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block));
+        }
+
+        /// <summary>The kind of signal each block has been seen sending, on some run this visit.</summary>
+        readonly Dictionary<int, Medium> _seenBlocks = new Dictionary<int, Medium>();
+
+        /// <summary>
+        /// For a wire into a block of another kind of signal, how that block reads
+        /// what the wire carries ("K3 reads this wave as a digit: 0 at the bottom up
+        /// to 9 at the top."), or null. Only once the player has seen the block
+        /// send something, so it never gives away what kind of block it is.
+        /// </summary>
+        internal string ReadingNote(int from, int to, int port)
+        {
+            int inputs = Session.InputCount, blocks = Session.BlockCount;
+            if (to < inputs || to >= inputs + blocks) return null;
+            int block = to - inputs;
+            if (!_seenBlocks.ContainsKey(block)) return null;
+            Medium sent;
+            if (from < inputs) sent = Session.Puzzle.Inputs[from].Signal.Medium;
+            else if (from >= inputs + blocks || !_seenBlocks.TryGetValue(from - inputs, out sent)) return null;
+            var def = Session.Puzzle.Blocks[block];
+            var reads = def.Kind.Reads(port);
+            if (reads == null) return null;
+            string how = Media.HowRead(sent, reads.Value);
+            return how == null ? null : $"{def.Label} reads this {Media.Noun(sent)} as a {Media.Noun(reads.Value)}: {how}.";
         }
 
         public void ShowOutput(int output, WiringReport report)
@@ -650,7 +677,9 @@ namespace Blackbox.UI.Board
         {
             _hover = on && _board.Host.CanWire && !_board.Drawing;
             ApplyRest();
-            if (_hover) _board.Host.Say("Click to take this wire off.", 2f);
+            if (!_hover) return;
+            string note = _board.ReadingNote(From, To, Port);
+            _board.Host.Say(note == null ? "Click to take this wire off." : note + " Click to take the wire off.", note == null ? 2f : 5f);
         }
 
         internal void Clicked() => _board.LinkClicked(this);

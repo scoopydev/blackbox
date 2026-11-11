@@ -62,6 +62,10 @@ Bit, digit and shape blocks work step by step through the loop, and read any sig
 
 Wave blocks read any signal as a wave (the last row) and send a wave, so they chain in any order and never refuse a signal.
 
+Once the player has seen a block send something, pointing at a wire into it says how that block reads the wire when the kinds differ, such as "K3 reads this wave as a digit: 0 at the bottom up to 9 at the top." (`Media.HowRead`, `BlockKind.Reads`). It waits for a run so it never gives away what kind of block it is.
+
+A signal that changes is drawn as a strip of its values along the loop, all the same size, or as a line when it changes too often to list. A line of digits is stepped, from 0 at the bottom to 9 at the top, with its highest and lowest digits written at its left.
+
 ### Signal sounds
 
 Each medium is heard in its own way, so a player can follow a circuit by ear as well as by eye. The sounds are synthesised in `Components/SignalSound.cs`.

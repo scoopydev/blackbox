@@ -183,6 +183,29 @@ namespace Blackbox.Components
 
     public static class Media
     {
+        /// <summary>
+        /// How a block reading signals of kind <paramref name="to"/> reads a signal of
+        /// kind <paramref name="from"/>, in a few words (see <see cref="Trace.As"/>),
+        /// or null when it needs no reading because the kinds are the same.
+        /// </summary>
+        public static string HowRead(Medium from, Medium to)
+        {
+            if (IsWave(from)) from = Medium.Wave;
+            if (IsWave(to)) to = Medium.Wave;
+            if (from == to) return null;
+            switch (to)
+            {
+                case Medium.Binary:
+                    return from == Medium.Decimal ? "1 unless it's 0" : from == Medium.Shape ? "1 when solid, 0 when hollow" : "1 while it's above the middle, 0 below";
+                case Medium.Decimal:
+                    return from == Medium.Binary ? "0 or 1" : from == Medium.Shape ? "its corners: circle 0, triangle 3, square 4, hexagon 6" : "0 at the bottom up to 9 at the top";
+                case Medium.Shape:
+                    return from == Medium.Binary ? "a circle, solid for 1 and hollow for 0" : from == Medium.Decimal ? "a circle, solid unless it's 0" : "a circle, solid while it's above the middle";
+                default:
+                    return from == Medium.Binary ? "the top for 1, the bottom for 0" : from == Medium.Decimal ? "a flat line, 0 at the bottom up to 9 at the top" : "the top when solid, the bottom when hollow";
+            }
+        }
+
         /// <summary>How many values the medium has. Values run from 0 to Size - 1.</summary>
         public static int Size(Medium m)
         {

@@ -104,6 +104,32 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void BlocksSayHowTheyReadEachInput()
+        {
+            // The board tells the player how a block reads a wire of another kind.
+            foreach (var kind in KindCatalog.All.Where(k => !k.Mixing))
+                for (int p = 0; p < kind.InputCount; p++)
+                    Assert.That(kind.Reads(p), Is.EqualTo(kind.Medium), $"{kind.Id} input {p}");
+            Assert.That(KindCatalog.Get("GATE").Reads(0), Is.Null, "GATE passes its top input as it is");
+            Assert.That(KindCatalog.Get("GATE").Reads(1), Is.EqualTo(Medium.Binary));
+            Assert.That(KindCatalog.Get("COUNT").Reads(0), Is.EqualTo(Medium.Binary));
+            Assert.That(KindCatalog.Get("COMPARE").Reads(0), Is.EqualTo(Medium.Wave));
+            Assert.That(KindCatalog.Get("COMPARE").Reads(1), Is.EqualTo(Medium.Wave));
+
+            var kinds = new[] { Medium.Binary, Medium.Decimal, Medium.Shape, Medium.Wave };
+            foreach (var from in kinds)
+                foreach (var to in kinds)
+                {
+                    string how = Media.HowRead(from, to);
+                    if (from == to) Assert.That(how, Is.Null);
+                    else Assert.That(how, Is.Not.Empty, $"{from} as {to}");
+                }
+            Assert.That(Media.HowRead(Medium.Wave, Medium.Decimal), Does.Contain("9 at the top"));
+            Assert.That(Media.HowRead(Medium.Shape, Medium.Decimal), Does.Contain("triangle 3"));
+            Assert.That(Trace.Of(Medium.Shape, Shapes.Make(Shapes.Triangle, false)).As(Medium.Decimal)[0], Is.EqualTo(3f), "as the note says");
+        }
+
+        [Test]
         public void BitRules()
         {
             Assert.That(Apply("NOT", 1), Is.EqualTo(0));

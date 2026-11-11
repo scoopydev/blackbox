@@ -34,6 +34,7 @@ namespace Blackbox.UI.Board
         RectTransform _strip;
         readonly List<ShapeGraphic> _shapes = new List<ShapeGraphic>();
         readonly List<VoidText> _digits = new List<VoidText>();
+        readonly List<VoidText> _scale = new List<VoidText>();
         VoidText _nothing, _caption;
         GlyphGraphic _speaker;
 
@@ -139,8 +140,11 @@ namespace Blackbox.UI.Board
         {
             foreach (var s in _shapes) Destroy(s.gameObject);
             foreach (var d in _digits) Destroy(d.gameObject);
+            foreach (var d in _scale) Destroy(d.gameObject);
             _shapes.Clear();
             _digits.Clear();
+            _scale.Clear();
+            _graph.rectTransform.Centered(0f, 0f, _w, _h);
             _graph.enabled = false;
             _strip.gameObject.SetActive(false);
             if (_value != null) _value.gameObject.SetActive(false);
@@ -210,6 +214,7 @@ namespace Blackbox.UI.Board
                 case Medium.Decimal:
                     _graph.SetLevels(t.Levels);
                     _graph.Min = -0.5f; _graph.Max = 9.5f; _graph.Stepped = true; _graph.Midline = false;
+                    LabelDigitGraph(t);
                     break;
                 case Medium.Shape:
                     _graph.SetLevels(t.As(Medium.Binary).Levels);
@@ -224,11 +229,42 @@ namespace Blackbox.UI.Board
             }
         }
 
+        /// <summary>
+        /// Too many digits to list are drawn as a stepped line from 0 (bottom) to 9
+        /// (top). Its highest and lowest digits are written at its left, in a
+        /// narrow margin, so the line can be read as numbers.
+        /// </summary>
+        void LabelDigitGraph(Trace t)
+        {
+            float lo = 9f, hi = 0f;
+            for (int k = 0; k < Trace.Steps; k++) { lo = Mathf.Min(lo, t[k]); hi = Mathf.Max(hi, t[k]); }
+            float size = Mathf.Clamp(_h * 0.24f, 9f, 13f);
+            float margin = size * 0.9f + 4f;
+            _graph.rectTransform.Centered(margin * 0.5f, 0f, _w - margin, _h);
+            float pad = Mathf.Clamp(_h * 0.05f, 1.4f, 2.4f);
+            float Y(float level) => -_h * 0.5f + pad + (level + 0.5f) / 10f * (_h - 2f * pad);
+            float yHi = Y(hi), yLo = Y(lo);
+            if (yHi - yLo < size)
+            {
+                float mid = (yHi + yLo) * 0.5f;
+                yHi = mid + size * 0.5f;
+                yLo = mid - size * 0.5f;
+            }
+            foreach (var (level, y) in new[] { (hi, yHi), (lo, yLo) })
+            {
+                var d = UIKit.Text(_rt, ((int)Mathf.Round(level)).ToString(), TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(300), TextAnchor.MiddleCenter, "Scale");
+                d.raycastTarget = false;
+                d.rectTransform.Centered(-_w * 0.5f + margin * 0.5f - 1f, y, margin + 4f, size * 1.3f);
+                _scale.Add(d);
+            }
+        }
+
         void Restyle()
         {
             bool live = _look == ValueLook.Live;
             Color quiet = Color.Lerp(_look == ValueLook.Met ? Palette.Text : Palette.Dim, Color.white, _ping);
             if (_caption != null) _caption.color = live ? Palette.Dim : quiet;
+            foreach (var d in _scale) d.color = live ? Palette.Dim : quiet;
             if (_value != null && _value.gameObject.activeSelf) _value.Look = _look;
             if (_graph.enabled)
             {

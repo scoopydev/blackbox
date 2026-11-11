@@ -121,6 +121,25 @@ namespace Blackbox.Components
             return new Trace(Medium, levels);
         }
 
+        Medium?[] _reads;
+
+        /// <summary>
+        /// The kind of signal input <paramref name="port"/> is read as, or null if
+        /// the block takes it as it is (GATE's top input). Bit, digit, shape and
+        /// wave blocks read every input as their own kind.
+        /// </summary>
+        public Medium? Reads(int port)
+        {
+            if (_reads != null) return port >= 0 && port < _reads.Length ? _reads[port] : null;
+            return Mixing ? (Medium?)null : Medium;
+        }
+
+        internal BlockKind ReadingAs(params Medium?[] reads)
+        {
+            _reads = reads;
+            return this;
+        }
+
         public override string ToString() => Id;
     }
 
@@ -196,6 +215,8 @@ namespace Blackbox.Components
                     return new Trace(top.Medium, levels);
                 });
 
+            s_Kinds["GATE"].ReadingAs(null, Medium.Binary);
+
             Whole("COUNT", Medium.Decimal, 1, true, "counts how many times its input has switched on so far this loop, up to 9", "counts each switch-on, up to 9",
                 x =>
                 {
@@ -211,13 +232,18 @@ namespace Blackbox.Components
                     return new Trace(Medium.Decimal, levels);
                 });
 
+            s_Kinds["COUNT"].ReadingAs(Medium.Binary);
+
             Whole("COMPARE", Medium.Binary, 2, true, "1 while the top signal is higher than the bottom one, both read as waves; otherwise 0", "1 while the top is higher than the bottom",
                 x => Trace.Zip(Medium.Binary, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => a > b + Trace.Tolerance ? 1f : 0f));
+
+            s_Kinds["COMPARE"].ReadingAs(Medium.Wave, Medium.Wave);
 
             // ---- Set aside: stepped waves ---------------------------------------------
 
             Whole("STEPS", Medium.Sampled, 1, true, "reads it as a wave 12 times a loop and holds each reading, rounded (a stepped wave)", "12 held steps a loop",
                 x => SampleOf(x[0], 12));
+            s_Kinds["STEPS"].ReadingAs(Medium.Wave);
         }
 
         /// <summary>What a signal of this kind is while it's off: 0 for numbers and waves, a hollow circle for shapes.</summary>
