@@ -14,9 +14,6 @@
           "signal": "binary 1"
         },
         "B": {
-          "signal": "wave sine f2 a7"
-        },
-        "C": {
           "signal": "wave sine f3 a7"
         }
       },
@@ -32,7 +29,7 @@
       },
       "solution": [
         "A -> g.0",
-        "C -> g.1",
+        "B -> g.1",
         "g -> X"
       ]
     },
@@ -46,9 +43,6 @@
         },
         "B": {
           "signal": "wave sine f2 a7 p2"
-        },
-        "C": {
-          "signal": "wave sine f2 a7 p1"
         }
       },
       "blocks": {
@@ -76,22 +70,30 @@
           "signal": "binary 0011"
         },
         "B": {
-          "signal": "decimal 9"
+          "signal": "binary 0101"
         }
       },
       "blocks": {
         "g": {
           "kind": "FASTER"
+        },
+        "h": {
+          "kind": "FLIP"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> g",
-        "g -> X"
+        "g -> X",
+        "B -> h",
+        "h -> Y"
       ]
     },
     {
@@ -100,9 +102,6 @@
       "hint": "How much later is a quarter of a loop, for a fast wave and a slow one?",
       "inputs": {
         "A": {
-          "signal": "wave sine f1 a7"
-        },
-        "B": {
           "signal": "wave sine f2 a7"
         }
       },
@@ -120,8 +119,8 @@
         }
       },
       "solution": [
-        "B -> g",
-        "B -> h.0",
+        "A -> g",
+        "A -> h.0",
         "g -> h.1",
         "h -> X"
       ]
@@ -196,9 +195,6 @@
         },
         "B": {
           "signal": "decimal 7"
-        },
-        "C": {
-          "signal": "decimal 2"
         }
       },
       "blocks": {
@@ -226,9 +222,6 @@
           "signal": "wave sine f3 a7"
         },
         "B": {
-          "signal": "decimal 4"
-        },
-        "C": {
           "signal": "decimal 8"
         }
       },
@@ -250,7 +243,7 @@
       },
       "solution": [
         "A -> g.0",
-        "C -> g.1",
+        "B -> g.1",
         "g -> X",
         "g -> h",
         "h -> Y"

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Blackbox.Components;
 
@@ -94,8 +96,40 @@ namespace Blackbox.Puzzles
             }
         }
 
+        /// <summary>
+        /// Every rule a run broke, naming each block and input that broke it, then
+        /// the rules those break: "Block K2 isn't used. Input C isn't used. Every
+        /// input and every block has to lead to an output." Null when the rules are kept.
+        /// </summary>
+        public static string BrokenRules(PuzzleDef p, WiringReport r)
+        {
+            var said = new List<string>();
+            string Names(List<int> list, Func<int, string> name)
+            {
+                var names = list.Select(name).ToList();
+                return names.Count == 1 ? names[0] : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[names.Count - 1];
+            }
+            if (r.EmptyBlocks.Count > 0)
+                said.Add(r.EmptyBlocks.Count == 1
+                    ? $"Block {Names(r.EmptyBlocks, b => p.Blocks[b].Label)} has an input with no wire, so it sends nothing."
+                    : $"Blocks {Names(r.EmptyBlocks, b => p.Blocks[b].Label)} have inputs with no wire, so they send nothing.");
+            if (r.UnusedBlocks.Count > 0)
+                said.Add(r.UnusedBlocks.Count == 1
+                    ? $"Block {Names(r.UnusedBlocks, b => p.Blocks[b].Label)} isn't used: its signal doesn't reach an output."
+                    : $"Blocks {Names(r.UnusedBlocks, b => p.Blocks[b].Label)} aren't used: their signals don't reach an output.");
+            if (r.UnusedInputs.Count > 0)
+                said.Add(r.UnusedInputs.Count == 1
+                    ? $"Input {Names(r.UnusedInputs, i => p.Inputs[i].Id)} isn't used: its signal doesn't reach an output."
+                    : $"Inputs {Names(r.UnusedInputs, i => p.Inputs[i].Id)} aren't used: their signals don't reach an output.");
+            if (said.Count == 0) return null;
+            bool unused = r.UnusedBlocks.Count > 0 || r.UnusedInputs.Count > 0;
+            if (unused) said.Add("Every input and every block has to lead to an output.");
+            if (r.EmptyBlocks.Count > 0) said.Add("Every block input needs a wire.");
+            return string.Join(" ", said);
+        }
+
         /// <summary>The rules of every wired circuit, shown under its goal.</summary>
-        public const string WiringRules = "USE EVERY BLOCK  ·  WIRE EVERY BLOCK INPUT";
+        public const string WiringRules = "USE EVERY INPUT AND EVERY BLOCK  ·  WIRE EVERY BLOCK INPUT";
 
         /// <summary>
         /// "Make light X and display Y do what their targets show", or "Make displays

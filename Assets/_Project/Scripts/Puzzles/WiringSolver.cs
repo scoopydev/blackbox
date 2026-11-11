@@ -37,7 +37,7 @@ namespace Blackbox.Puzzles
     /// Searches every way to wire a wired circuit and counts those that solve it.
     /// Each block input takes any input or other block, without loops; then each
     /// output takes any signal its device reads the way its target wants, and the
-    /// wiring counts if every block ends up leading to an output.
+    /// wiring counts if every input and every block ends up leading to an output.
     /// </summary>
     public static class WiringSolver
     {
@@ -134,6 +134,7 @@ namespace Blackbox.Puzzles
             }
 
             var consumed = new bool[blocks];
+            var fed = new bool[inputs];
             var candidates = new List<int>[outputs];
             for (int o = 0; o < outputs; o++) candidates[o] = new List<int>();
             var choice = new int[outputs];
@@ -141,11 +142,17 @@ namespace Blackbox.Puzzles
             void Leaf()
             {
                 Array.Clear(consumed, 0, blocks);
+                Array.Clear(fed, 0, inputs);
                 for (int b = 0; b < blocks; b++)
                     foreach (int d in driver[inputs + b])
+                    {
                         if (d >= inputs) consumed[d - inputs] = true;
+                        else if (d >= 0) fed[d] = true;
+                    }
+                // Every block and input no block reads has to go straight to an output.
                 int dangling = 0;
                 for (int b = 0; b < blocks; b++) if (!consumed[b]) dangling++;
+                for (int i = 0; i < inputs; i++) if (!fed[i]) dangling++;
                 if (dangling > outputs) return;
 
                 var done = new bool[sources];
@@ -168,7 +175,7 @@ namespace Blackbox.Puzzles
                 if (o == outputs)
                 {
                     for (int k = 0; k < outputs; k++) driver[sources + k][0] = choice[k];
-                    if (WiringSession.UnusedBlocks(p, driver).Count == 0)
+                    if (WiringSession.AllUsed(p, driver))
                     {
                         result.Solutions++;
                         if (result.Examples.Count < keep) result.Examples.Add(Describe(session, driver));

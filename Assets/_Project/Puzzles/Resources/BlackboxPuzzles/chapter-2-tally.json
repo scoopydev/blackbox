@@ -10,12 +10,9 @@
     {
       "id": "tally-01",
       "name": "Reflection",
-      "hint": "These wires are drawn already. Run it, then move {g}'s input to the other digit.",
+      "hint": "These wires are drawn already, but X's comes straight from A. Run it, then move X's wire so it comes from {g}.",
       "inputs": {
         "A": {
-          "signal": "decimal 4"
-        },
-        "B": {
           "signal": "decimal 6"
         }
       },
@@ -31,10 +28,10 @@
       },
       "start": [
         "A -> g",
-        "g -> X"
+        "A -> X"
       ],
       "solution": [
-        "B -> g",
+        "A -> g",
         "g -> X"
       ]
     },

@@ -470,6 +470,7 @@ namespace Blackbox.UI.Board
             _shown = false;
             foreach (var b in Blocks) b.Conceal();
             foreach (var o in Outputs) o.Conceal();
+            foreach (var i in Inputs) i.Unused = false;
         }
 
         /// <summary>
@@ -494,6 +495,8 @@ namespace Blackbox.UI.Board
                 else view.Conceal();
             }
             foreach (var o in Outputs) o.Conceal();
+            // Whether an input is used can change with any wire, so its mark waits for the next run.
+            foreach (var i in Inputs) i.Unused = false;
             _shown = any;
         }
 
@@ -550,11 +553,12 @@ namespace Blackbox.UI.Board
             return min <= max ? (min, max) : (0f, 0f);
         }
 
-        /// <summary>Shows everything from a run at once.</summary>
+        /// <summary>Shows everything from a run at once, and marks the inputs it found unused.</summary>
         public void ShowAll(WiringReport report)
         {
             for (int b = 0; b < Blocks.Count; b++) ShowBlock(b, report);
             for (int o = 0; o < Outputs.Count; o++) ShowOutput(o, report);
+            for (int i = 0; i < Inputs.Count; i++) Inputs[i].Unused = report.UnusedInputs.Contains(i);
         }
 
         public bool Solved => _solved;
@@ -813,8 +817,8 @@ namespace Blackbox.UI.Board
         public Rect Bounds;
         ShapeGraphic _card;
         SignalView _signal;
-        VoidText _label;
-        bool _solved;
+        VoidText _label, _note;
+        bool _solved, _unused;
 
         public static WiredInputView Create(RectTransform layer, InputDef def, BoardMetrics m, WiringBoard board)
         {
@@ -850,6 +854,10 @@ namespace Blackbox.UI.Board
                 kind.rectTransform.Centered(0f, -h * 0.5f - 12f * s, w, 16f);
             }
 
+            // After a run, over the card: that this input's signal doesn't reach an output.
+            view._note = UIKit.Text(rt, "", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.24f).WithColor(Palette.Violet), TextAnchor.MiddleCenter, "Note");
+            view._note.rectTransform.Centered(0f, h * 0.5f + 12f * s, w + 40f, 16f);
+
             view.Out = PortView.Create(rt, new Vector2(w * 0.5f, 0f), c + new Vector2(w * 0.5f, 0f), board.NodeOf(def), -1, true, board);
             view.Restyle();
             return view;
@@ -859,9 +867,23 @@ namespace Blackbox.UI.Board
 
         public bool Solved { get => _solved; set { _solved = value; Out.Solved = value; Restyle(); } }
 
+        /// <summary>Marks the input, after a run, as one whose signal doesn't reach any output; every input has to.</summary>
+        public bool Unused
+        {
+            get => _unused;
+            set
+            {
+                if (_unused == value) return;
+                _unused = value;
+                _note.text = value ? "NOT USED" : "";
+                Restyle();
+            }
+        }
+
         void Restyle()
         {
-            _card.Style(Paint.Solid, Color.black, _solved ? Paint.Signal : Paint.Solid, _solved ? Color.white : Palette.Outline, _solved ? 1.6f : 1.2f);
+            Color edge = _solved ? Color.white : _unused ? Palette.Violet.WithAlpha(0.7f) : Palette.Outline;
+            _card.Style(Paint.Solid, Color.black, _solved ? Paint.Signal : Paint.Solid, edge, _solved ? 1.6f : 1.2f);
             _card.Glow = _solved ? 0.3f : 0f;
             _card.GlowPaint = Paint.Signal;
             _card.GlowRadius = 18f;

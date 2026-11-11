@@ -8,16 +8,13 @@
     {
       "id": "patch-01",
       "name": "Cross Talk",
-      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0. One input can feed both of a block's inputs.",
+      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0.",
       "inputs": {
         "A": {
-          "signal": "decimal 0"
+          "signal": "decimal 3"
         },
         "B": {
-          "signal": "decimal 4"
-        },
-        "C": {
-          "signal": "binary 0"
+          "signal": "decimal 6"
         }
       },
       "blocks": {
@@ -31,7 +28,7 @@
         }
       },
       "solution": [
-        "B -> g.0",
+        "A -> g.0",
         "B -> g.1",
         "g -> X"
       ]
@@ -39,28 +36,36 @@
     {
       "id": "patch-02",
       "name": "Reading",
-      "hint": "A digit block reads a bit as the digit 0 or 1.",
+      "hint": "A digit block reads a bit as the digit 0 or 1, and a bit block reads a digit as 1 unless it's 0.",
       "inputs": {
         "A": {
           "signal": "binary 0101"
         },
         "B": {
-          "signal": "decimal 2"
+          "signal": "decimal 0"
         }
       },
       "blocks": {
         "g": {
           "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "NOT"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> g",
-        "g -> X"
+        "g -> X",
+        "B -> h",
+        "h -> Y"
       ]
     },
     {
@@ -72,22 +77,30 @@
           "signal": "wave saw f1 a7"
         },
         "B": {
-          "signal": "decimal 4"
+          "signal": "wave sine f1 a7"
         }
       },
       "blocks": {
         "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
           "kind": "MIRROR"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> g",
-        "g -> X"
+        "g -> X",
+        "B -> h",
+        "h -> Y"
       ]
     },
     {
@@ -105,16 +118,24 @@
       "blocks": {
         "g": {
           "kind": "LATER"
+        },
+        "h": {
+          "kind": "FLIP"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> g",
-        "g -> X"
+        "g -> X",
+        "B -> h",
+        "h -> Y"
       ]
     },
     {

@@ -171,9 +171,9 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 
 * every output's device does the same as its target does (see [Devices](#devices)),
 * every input port of every block has a wire, and
-* every block leads to an output, through other blocks or straight there.
+* every block, and every input, leads to an output, through blocks or straight there.
 
-Inputs may go unused. Blocks have no settings: each kind does one thing. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. A block shows only its label and its ports.
+No input may go unused, so a circuit has no spare inputs: the loader refuses a `solution` that leaves an input or a block leading nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. A block shows only its label and its ports.
 
 ```json
 {
@@ -182,8 +182,7 @@ Inputs may go unused. Blocks have no settings: each kind does one thing. Blocks 
   "hint": "A wave into a bit block turns on and off as the wave rises and falls.",
   "inputs": {
     "A": { "signal": "binary 1" },
-    "B": "wave sine f2 a7",
-    "C": "wave sine f3 a7"
+    "B": "wave sine f3 a7"
   },
   "blocks": {
     "g": "AND"
@@ -191,7 +190,7 @@ Inputs may go unused. Blocks have no settings: each kind does one thing. Blocks 
   "outputs": {
     "X": { "device": "display" }
   },
-  "solution": ["A -> g.0", "C -> g.1", "g -> X"]
+  "solution": ["A -> g.0", "B -> g.1", "g -> X"]
 }
 ```
 

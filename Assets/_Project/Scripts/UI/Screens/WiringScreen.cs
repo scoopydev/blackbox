@@ -675,21 +675,8 @@ namespace Blackbox.UI.Screens
         {
             int total = Puzzle.Outputs.Count;
             bool allMet = r.Met == total;
-            string lead = allMet ? "Every output matches, but " : "";
-            if (r.EmptyBlocks.Count > 0)
-            {
-                string id = Puzzle.Blocks[r.EmptyBlocks[0]].Label;
-                return allMet
-                    ? lead + $"block {id} has an empty input. Every block input needs a wire."
-                    : $"Block {id} has an input with no wire, so it sends nothing. Every block input needs a wire.";
-            }
-            if (r.UnusedBlocks.Count > 0)
-            {
-                string id = Puzzle.Blocks[r.UnusedBlocks[0]].Label;
-                return allMet
-                    ? lead + $"block {id} isn't used. Every block has to lead to an output."
-                    : $"Block {id} isn't used: its signal doesn't reach any output. Every block has to lead to one.";
-            }
+            string broken = GoalText.BrokenRules(Puzzle, r);
+            if (broken != null) return allMet ? "Every output matches, but " + char.ToLowerInvariant(broken[0]) + broken.Substring(1) : broken;
             if (r.UnwiredOutputs.Count > 0 && r.Met == 0)
                 return $"Output {Puzzle.Outputs[r.UnwiredOutputs[0]].Id} has no wire into it yet.";
             if (r.Met == 0) return total == 1 ? "The output doesn't do what its target shows yet. Change the wiring and run it again." : "No output does what its target shows yet. Change the wiring and run it again.";

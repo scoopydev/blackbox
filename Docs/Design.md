@@ -10,7 +10,7 @@ Every circuit gives the player **inputs** on the left, **blocks** in the middle 
 1. **Read the goal.** The goal is one short sentence above the board ("Make display X do what its target shows."), with the two rules in small letters under it and a count of the outputs met beside it. Every output shows its target beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
 2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires. Dragging a block by its body moves it, and its wires follow, so the player can untangle a circuit; a block can't be dropped on another card. The circuit remembers where its blocks were left, and RESET in the menu puts them back.
 3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs show what reaches them, top to bottom, each playing its sound. A change to the wires hides the outputs again. Each block keeps the signal it showed until the next run, unless its own input wires change or a block feeding it changes; rewiring where a block's signal goes leaves it showing (`WiringSession.BlocksUnchanged`). So every signal on show is still what that block sends as wired now.
-4. **Keep the rules.** Every block must be used: it must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused. The verdict after a run names the first broken rule, such as "block g has an input with no wire" or "block h isn't used".
+4. **Keep the rules.** Every input and every block must be used: each must lead to an output, through blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Nothing in a circuit is spare. The verdict after a run names every broken rule and everything that broke it, such as "Block K2 isn't used: its signal doesn't reach an output. Input C isn't used: its signal doesn't reach an output. Every input and every block has to lead to an output." (`GoalText.BrokenRules`), and the run marks each unused input and block NOT USED on the board.
 5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
 7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered. Each block's rule is then written under it, in a few words, and pointing at the block puts the whole rule in the status line.
@@ -87,7 +87,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
 * The first time a player enters a chapter, its title card plays, with a line about its signals.
 * Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch.
-  1. **Pre-wired.** One block, every wire drawn, but one runs from the wrong input. The player moves it.
+  1. **Pre-wired.** One input and one block, every wire drawn, but the output's wire comes straight from the input, so the block isn't used. The player moves it to come from the block.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
   3. From here the player draws every wire: two blocks in a chain.
   4. One source feeding two blocks, and a second output.
@@ -103,13 +103,13 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | First Light | Steady bits. Pre-wired: move one wire, and NOT | 2 | 1 |
-| 02 | Switch | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 3 |
-| 03 | Under the Lid | Steady bits. Wiring it all, a chain, and OR | 27 | 6 |
+| 01 | First Light | A steady bit. Pre-wired: move one wire, and NOT | 1 | 1 |
+| 02 | Switch | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 2 |
+| 03 | Under the Lid | Steady bits. Wiring it all, a chain, and OR | 27 | 4 |
 | 04 | Sequence | Bits that switch through the loop; AND on every moment | 4 | 2 |
 | 05 | Fork | One input feeding two blocks, and XOR | 27 | 2 |
-| 06 | Relay | Three blocks in a row | 3,125 | 24 |
-| 07 | Tangle | Four blocks, two outputs | 279,936 | 224 |
+| 06 | Relay | Three blocks in a row | 3,125 | 16 |
+| 07 | Tangle | Four blocks, two outputs | 279,936 | 120 |
 
 The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves on to bit patterns (such as 0011, 0 for half the loop and then 1) from Sequence on, so a new player meets one bit at a time first. A steady bit target can only be 0 or 1, so an input may already match it; those circuits are excused from the straight-wire check below, and the every-block rule still stops a straight wire solving them. AND and OR give the same answer either way round, and so does XOR, which is why bit circuits have more solutions.
 
@@ -119,9 +119,9 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Reflection | Pre-wired, and MIRROR | 2 | 1 |
+| 01 | Reflection | Pre-wired, and MIRROR | 1 | 1 |
 | 02 | Balance | Half wired, and DIFF | 4 | 2 |
-| 03 | Peak | MAX, and order matters | 27 | 6 |
+| 03 | Peak | MAX, and order matters | 27 | 4 |
 | 04 | Fork | MIN, and one input feeding two blocks | 1,024 | 44 |
 | 05 | Retrace | A pattern of digits | 27 | 2 |
 | 06 | Ledger | Four blocks, two outputs | 279,936 | 24 |
@@ -132,9 +132,9 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Hum | Pre-wired, and FASTER | 2 | 1 |
+| 01 | Hum | Pre-wired, and FASTER | 1 | 1 |
 | 02 | Splice | Half wired, and MIX | 4 | 2 |
-| 03 | Timbre | LATER, and order matters | 9 | 1 |
+| 03 | Timbre | LATER, and order matters | 4 | 1 |
 | 04 | Offset | FLIP, feeding an output and a block at once | 27 | 2 |
 | 05 | Echo | Two outputs, by ear | 64 | 2 |
 | 06 | Chorus | Four blocks, two outputs | 7,776 | 2 |
@@ -147,10 +147,10 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Cross Talk | AND reads a digit as a bit; one input into both ports | 9 | 1 |
-| 02 | Reading | MIRROR reads bits as the digits 0 and 1 | 2 | 1 |
-| 03 | Height | MIRROR reads a wave by its height | 2 | 1 |
-| 04 | Level | LATER reads a pattern of digits as a stepped wave | 2 | 1 |
+| 01 | Cross Talk | AND reads two digits as bits | 4 | 2 |
+| 02 | Reading | MIRROR reads bits as the digits 0 and 1; NOT reads the digit 0 as 0 | 9 | 1 |
+| 03 | Height | Two MIRRORs read two waves by their height | 9 | 2 |
+| 04 | Level | LATER reads digits as levels; FLIP reads bits as top and bottom | 9 | 1 |
 | 05 | Crossover | Each block fed the other kind of signal: a wave into NOT, bits into MIRROR | 9 | 1 |
 
 ### Chapter V: Junction
@@ -159,11 +159,11 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Both On | AND of a pattern of digits and a pattern of bits | 9 | 2 |
-| 02 | Step Down | DIFF of a digit and a bit: the bit takes 0 or 1 off | 9 | 2 |
-| 03 | Cut Off | XOR of a digit and a wave | 9 | 2 |
-| 04 | Staircase | MAX of a wave read as a digit and a steady digit | 9 | 2 |
-| 05 | Lift | MIX of a wave and a steady 1 lifts the wave | 9 | 2 |
+| 01 | Both On | AND of a pattern of digits and a pattern of bits | 4 | 2 |
+| 02 | Step Down | DIFF of a digit and a bit: the bit takes 0 or 1 off | 4 | 2 |
+| 03 | Cut Off | XOR of a digit and a wave | 4 | 2 |
+| 04 | Staircase | MAX of a wave read as a digit and a steady digit | 4 | 2 |
+| 05 | Lift | MIX of a wave and a steady 1 lifts the wave | 4 | 2 |
 | 06 | Junction | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 8 |
 
 ### Chapter VI: Blend
@@ -172,14 +172,14 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Pulse | A wave into AND blinks a bit | 9 | 3 |
-| 02 | Silence | MIX: a wave and its half-cycle twin cancel | 9 | 2 |
-| 03 | Square Up | FASTER reads a bit pattern as a square wave | 2 | 1 |
-| 04 | Late | LATER: a quarter loop is half a cycle of a twice-a-loop wave | 27 | 2 |
+| 01 | Pulse | A wave into AND blinks a bit | 4 | 2 |
+| 02 | Silence | MIX: a wave and its half-cycle twin cancel | 4 | 2 |
+| 03 | Square Up | FASTER and FLIP read bit patterns as square waves | 9 | 1 |
+| 04 | Late | LATER: a quarter loop is half a cycle of a twice-a-loop wave | 8 | 2 |
 | 05 | Burst | GATE lets a wave through a pattern | 4 | 1 |
 | 06 | Count | COUNT counts switch-ons, through a gate | 27 | 2 |
-| 07 | Threshold | COMPARE against a digit makes a pulse | 9 | 1 |
-| 08 | Counter | COMPARE, then COUNT the pulses | 64 | 1 |
+| 07 | Threshold | COMPARE against a digit makes a pulse | 4 | 1 |
+| 08 | Counter | COMPARE, then COUNT the pulses | 27 | 1 |
 
 ### Chapter VII: Unmarked
 
@@ -187,11 +187,11 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Nameless | Order matters: MAX then MIRROR | 27 | 4 |
+| 01 | Nameless | Order matters: MAX then MIRROR | 27 | 2 |
 | 02 | Matchmaker | Which block goes with which input | 9 | 1 |
-| 03 | Sweep | A wave sped up, then delayed | 9 | 1 |
-| 04 | Strobe | Two outputs from one chain | 64 | 6 |
-| 05 | Countdown | A count, mirrored | 9 | 1 |
+| 03 | Sweep | A wave sped up, then delayed | 4 | 1 |
+| 04 | Strobe | Two outputs from one chain | 27 | 4 |
+| 05 | Countdown | A count, mirrored | 4 | 1 |
 | 06 | Reflections | XOR, then MIRROR: one block feeding an output and another block | 27 | 2 |
 
 ### Chapter VIII: Blackbox
@@ -200,9 +200,9 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Metronome | Speed up twice, compare, count the blinks | 7,776 | 2 |
+| 01 | Metronome | Speed up twice, compare, count the blinks | 3,125 | 2 |
 | 02 | Mixing Desk | Mix two waves, gate the mix, flip the gate | 3,125 | 2 |
-| 03 | Downhill | A flipped saw, sped up, beside a digit | 125 | 2 |
+| 03 | Downhill | A flipped saw, sped up, beside a digit | 64 | 2 |
 | 04 | Signal Box | One wave read as bits by two blocks and as a digit by a third, three outputs | 279,936 | 16 |
 | 05 | Pulse Width | A threshold from a difference, three readers of one pulse | 46,656 | 2 |
 | 06 | Black Box | Three separate machines in one circuit, five blocks | 2,097,152 | 2 |
@@ -311,7 +311,7 @@ On 11 Nov 2026 stepped (sampled) waves were taken out of the game for now. A ste
 
 The code that makes, draws, sounds and checks stepped waves is all still there, with its tests. `KindCatalog.Shelved` lists STEPS and `KindCatalog.MediumShelved` the medium, and the loader refuses any circuit that uses them. Grain's file is kept in `Assets/_Project/Puzzles/Shelved/`, outside `Resources`, so the game never loads it.
 
-To bring them back: empty both checks in `KindCatalog`, design four single-rule stepped-wave blocks, rewrite Grain's circuits with them (its file still uses the old Q kinds, which the loader no longer knows), move it back into `BlackboxPuzzles`, list it in `chapters.json` after Resonance, renumber the chapters after it, and teach STEPS somewhere in Blend.
+To bring them back: empty both checks in `KindCatalog`, design four single-rule stepped-wave blocks, rewrite Grain's circuits with them (its file still uses the old Q kinds, which the loader no longer knows, and spare inputs, which every-input-used no longer allows), move it back into `BlackboxPuzzles`, list it in `chapters.json` after Resonance, renumber the chapters after it, and teach STEPS somewhere in Blend.
 
 ## Set aside: shapes
 
@@ -330,7 +330,7 @@ The circuits in Patch, Junction, Unmarked and Blackbox that used shapes were reb
 
 The code that makes, draws, sounds and reads shapes is all still there, with its tests. `KindCatalog.Shelved` lists the four shape blocks and `KindCatalog.MediumShelved` the medium, and the loader refuses any circuit that uses them. Forms' file is kept in `Assets/_Project/Puzzles/Shelved/`, outside `Resources`, so the game never loads it.
 
-To bring them back: take shapes and their blocks out of both checks in `KindCatalog`, move Forms back into `BlackboxPuzzles`, list it in `chapters.json` after Tally, renumber the chapters after it, add a shape sample back to the HOW IT WORKS overlay (`Overlays.cs`), and check every circuit with **BLACKBOX → Validate Puzzles**.
+To bring them back: take shapes and their blocks out of both checks in `KindCatalog`, rework Forms' circuits so every input is used (they were made before that rule, with spare inputs), move Forms back into `BlackboxPuzzles`, list it in `chapters.json` after Tally, renumber the chapters after it, add a shape sample back to the HOW IT WORKS overlay (`Overlays.cs`), and check every circuit with **BLACKBOX → Validate Puzzles**.
 
 ## Set aside: output devices
 

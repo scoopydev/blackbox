@@ -346,7 +346,7 @@ namespace Blackbox.UI.Screens
             var ideas = Wiring ? new List<string>
             {
                 "Wire the inputs to the outputs so every output matches its target.",
-                "Use every block, and give every block input a wire.",
+                "Use every input and every block: each has to lead to an output. Give every block input a wire.",
                 "Each block has one simple rule it never tells you. Run the circuit and watch what comes out.",
                 "K1, K2 and so on are just names. K1 is a different block in each circuit.",
                 "A block reads any signal as its own kind.",

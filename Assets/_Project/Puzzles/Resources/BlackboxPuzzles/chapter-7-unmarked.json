@@ -79,9 +79,6 @@
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
-        },
-        "B": {
-          "signal": "binary 0101"
         }
       },
       "blocks": {
@@ -106,16 +103,13 @@
     {
       "id": "unmarked-04",
       "name": "Strobe",
-      "hint": "Two outputs, two blocks. Each block has to lead to an output, through other blocks or straight there.",
+      "hint": "Two outputs, two blocks. Every input and every block has to lead to an output, through other blocks or straight there.",
       "inputs": {
         "A": {
           "signal": "binary 1"
         },
         "B": {
           "signal": "wave sine f4 a7"
-        },
-        "C": {
-          "signal": "decimal 0"
         }
       },
       "blocks": {
@@ -149,9 +143,6 @@
       "inputs": {
         "A": {
           "signal": "wave sine f3 a7"
-        },
-        "B": {
-          "signal": "decimal 9"
         }
       },
       "blocks": {
