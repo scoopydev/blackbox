@@ -120,7 +120,7 @@ namespace Blackbox.UI.Board
                 if (Mathf.Abs(_playhead - value) < 1e-4f) return;
                 _playhead = value;
                 if (_graph.enabled) _graph.Playhead = value;
-                if (_strip.gameObject.activeSelf && (_shapes.Count > 0 || _digits.Count > 0)) Restyle();
+                if (_shapes.Count > 0 || _digits.Count > 0) Restyle();
             }
         }
 
@@ -153,7 +153,9 @@ namespace Blackbox.UI.Board
 
             var t = _trace;
             var m = t.Medium;
-            if (t.IsFlat && !Media.IsWave(m))
+            // Bits and digits are drawn as waveforms like waves are, even a
+            // steady 0 or 7: a line whose height is the value.
+            if (t.IsFlat && m == Medium.Shape)
             {
                 if (_value == null || _valueMedium != m)
                 {
@@ -168,12 +170,12 @@ namespace Blackbox.UI.Board
             }
 
             var runs = t.Runs();
-            if ((m == Medium.Shape || m == Medium.Decimal) && runs.Count <= MaxListed)
+            if (m == Medium.Shape && runs.Count <= MaxListed)
             {
                 _strip.gameObject.SetActive(true);
-                // Every digit or shape in a strip is drawn the same size, from a
-                // typical run, so a value held longer isn't drawn bigger; its place
-                // along the strip still shows when it comes and how long it lasts.
+                // Every shape in a strip is drawn the same size, from a typical
+                // run, so a value held longer isn't drawn bigger; its place along
+                // the strip still shows when it comes and how long it lasts.
                 var lengths = runs.Select(r => r.length).OrderBy(n => n).ToList();
                 float typical = _w * lengths[lengths.Count / 2] / Trace.Steps;
                 foreach (var (start, length, level) in runs)
@@ -181,24 +183,13 @@ namespace Blackbox.UI.Board
                     float x0 = -_w * 0.5f + _w * start / Trace.Steps;
                     float span = _w * length / Trace.Steps;
                     float cx = x0 + span * 0.5f;
-                    if (m == Medium.Shape)
-                    {
-                        float size = Mathf.Min(_h * 0.62f, typical * 0.72f);
-                        int v = (int)level;
-                        int form = Shapes.Form(v);
-                        var s = UIKit.Shape(_strip, "Shape", form == 0 ? ShapeKind.Circle : form == 1 ? ShapeKind.Triangle : form == 2 ? ShapeKind.Square : ShapeKind.Hexagon);
-                        s.raycastTarget = false;
-                        s.rectTransform.Centered(cx, 0f, size, size);
-                        _shapes.Add(s);
-                    }
-                    else
-                    {
-                        int size = Mathf.RoundToInt(Mathf.Min(_h * 0.7f, typical * 1.1f));
-                        var d = UIKit.Text(_strip, ((int)level).ToString(), TextStyle.Value.WithSize(Mathf.Max(10, size)).WithWeight(300), TextAnchor.MiddleCenter, "Digit");
-                        d.raycastTarget = false;
-                        d.rectTransform.Centered(cx, 0f, Mathf.Max(span, typical) + 10f, _h);
-                        _digits.Add(d);
-                    }
+                    float size = Mathf.Min(_h * 0.62f, typical * 0.72f);
+                    int v = (int)level;
+                    int form = Shapes.Form(v);
+                    var s = UIKit.Shape(_strip, "Shape", form == 0 ? ShapeKind.Circle : form == 1 ? ShapeKind.Triangle : form == 2 ? ShapeKind.Square : ShapeKind.Hexagon);
+                    s.raycastTarget = false;
+                    s.rectTransform.Centered(cx, 0f, size, size);
+                    _shapes.Add(s);
                 }
                 return;
             }
@@ -209,12 +200,19 @@ namespace Blackbox.UI.Board
             {
                 case Medium.Binary:
                     _graph.SetLevels(t.Levels);
-                    _graph.Min = -0.2f; _graph.Max = 1.2f; _graph.Stepped = true; _graph.Midline = false;
+                    _graph.Min = -0.3f; _graph.Max = 1.3f; _graph.Stepped = true; _graph.Midline = true;
+                    LabelGraph(1f, 0f);
                     break;
                 case Medium.Decimal:
                     _graph.SetLevels(t.Levels);
                     _graph.Min = -0.5f; _graph.Max = 9.5f; _graph.Stepped = true; _graph.Midline = false;
-                    LabelDigitGraph(t);
+                    if (runs.Count <= MaxListed) LabelSteps(runs);
+                    else
+                    {
+                        float lo = 9f, hi = 0f;
+                        for (int k = 0; k < Trace.Steps; k++) { lo = Mathf.Min(lo, t[k]); hi = Mathf.Max(hi, t[k]); }
+                        LabelGraph(hi, lo);
+                    }
                     break;
                 case Medium.Shape:
                     _graph.SetLevels(t.As(Medium.Binary).Levels);
@@ -229,21 +227,44 @@ namespace Blackbox.UI.Board
             }
         }
 
-        /// <summary>
-        /// Too many digits to list are drawn as a stepped line from 0 (bottom) to 9
-        /// (top). Its highest and lowest digits are written at its left, in a
-        /// narrow margin, so the line can be read as numbers.
-        /// </summary>
-        void LabelDigitGraph(Trace t)
+        /// <summary>Where a level of the graph is drawn, up from the middle of the view.</summary>
+        float GraphY(float level)
         {
-            float lo = 9f, hi = 0f;
-            for (int k = 0; k < Trace.Steps; k++) { lo = Mathf.Min(lo, t[k]); hi = Mathf.Max(hi, t[k]); }
+            float pad = Mathf.Clamp(_h * 0.05f, 1.4f, 2.4f);
+            return -_h * 0.5f + pad + (level - _graph.Min) / (_graph.Max - _graph.Min) * (_h - 2f * pad);
+        }
+
+        /// <summary>
+        /// A digit signal is a stepped line, 0 at the bottom and 9 at the top. When
+        /// it has few enough steps, each step has its digit written beside it (above
+        /// the line, or below it near the top), lit while the loop plays it.
+        /// </summary>
+        void LabelSteps(List<(int start, int length, float level)> runs)
+        {
+            float size = Mathf.Clamp(_h * 0.28f, 9f, 15f);
+            foreach (var (start, length, level) in runs)
+            {
+                float span = _w * length / Trace.Steps;
+                float cx = -_w * 0.5f + _w * start / Trace.Steps + span * 0.5f;
+                float dy = level <= 6f ? size * 0.75f : -size * 0.75f;
+                var d = UIKit.Text(_rt, ((int)Mathf.Round(level)).ToString(), TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(300), TextAnchor.MiddleCenter, "Step");
+                d.raycastTarget = false;
+                d.rectTransform.Centered(cx, GraphY(level) + dy, Mathf.Max(span, size) + 4f, size * 1.3f);
+                _digits.Add(d);
+            }
+        }
+
+        /// <summary>
+        /// Writes two levels of a stepped line at its left, in a narrow margin, so
+        /// the line reads as numbers: 1 and 0 for bits, and for digits too many to
+        /// write on each step, the highest and lowest digit.
+        /// </summary>
+        void LabelGraph(float hi, float lo)
+        {
             float size = Mathf.Clamp(_h * 0.24f, 9f, 13f);
             float margin = size * 0.9f + 4f;
             _graph.rectTransform.Centered(margin * 0.5f, 0f, _w - margin, _h);
-            float pad = Mathf.Clamp(_h * 0.05f, 1.4f, 2.4f);
-            float Y(float level) => -_h * 0.5f + pad + (level + 0.5f) / 10f * (_h - 2f * pad);
-            float yHi = Y(hi), yLo = Y(lo);
+            float yHi = GraphY(hi), yLo = GraphY(lo);
             if (yHi - yLo < size)
             {
                 float mid = (yHi + yLo) * 0.5f;

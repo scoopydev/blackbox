@@ -5,7 +5,7 @@
   "mode": "wiring",
   "medium": "binary",
   "tagline": "Every block keeps a rule. Wire it to find out.",
-  "signals": "Signals here are bits, 0 or 1. At first each one stays put; later they switch between 0 and 1 as the loop plays. A 1 sounds as a beep; a 0 is only a soft tap.",
+  "signals": "Signals here are bits, 0 or 1, drawn as a line: above the middle for 1, below it for 0. At first each one stays put; later they switch between 0 and 1 as the loop plays. A 1 sounds as a beep; a 0 is only a soft tap.",
   "circuits": [
     {
       "id": "first-light-01",

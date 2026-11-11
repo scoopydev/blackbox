@@ -46,7 +46,7 @@
           "signal": "decimal 2"
         },
         "B": {
-          "signal": "shape solid hexagon"
+          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -54,7 +54,7 @@
           "kind": "MIRROR"
         },
         "h": {
-          "kind": "NEXT"
+          "kind": "NOT"
         }
       },
       "outputs": {
@@ -175,22 +175,22 @@
     },
     {
       "id": "unmarked-06",
-      "name": "Colours",
+      "name": "Reflections",
       "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {
-          "signal": "shape solid pink triangle, solid amber hexagon"
+          "signal": "binary 0011"
         },
         "B": {
-          "signal": "shape hollow green square"
+          "signal": "binary 0101"
         }
       },
       "blocks": {
         "g": {
-          "kind": "TAKECOLOUR"
+          "kind": "XOR"
         },
         "h": {
-          "kind": "NEXT"
+          "kind": "MIRROR"
         }
       },
       "outputs": {

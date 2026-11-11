@@ -66,7 +66,9 @@ namespace Blackbox.Tests
                 Assert.Throws<System.InvalidOperationException>(() => kind.Apply(new int[kind.InputCount]), id);
             }
             Assert.That(KindCatalog.Get("STEPS").Shelved, Is.True);
-            Assert.That(KindCatalog.All.Where(k => k.Shelved).Select(k => k.Id), Is.EqualTo(new[] { "STEPS" }));
+            Assert.That(KindCatalog.All.Where(k => k.Shelved).Select(k => k.Id), Is.EquivalentTo(new[] { "FILL", "NEXT", "TAKEFILL", "TAKECOLOUR", "STEPS" }), "shapes and stepped waves are set aside");
+            Assert.That(KindCatalog.MediumShelved(Medium.Shape) && KindCatalog.MediumShelved(Medium.Sampled), Is.True);
+            Assert.That(KindCatalog.MediumShelved(Medium.Binary) || KindCatalog.MediumShelved(Medium.Decimal) || KindCatalog.MediumShelved(Medium.Wave), Is.False);
         }
 
         [TestCaseSource(nameof(ValueKinds))]

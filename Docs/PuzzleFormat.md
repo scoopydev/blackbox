@@ -15,9 +15,9 @@ The game in parts, each a list of chapter files (names without `.json`) in play 
 {
   "parts": [
     { "id": "learn", "title": "Learn", "tagline": "PART ONE  ·  WHAT EACH SIGNAL AND BLOCK DOES",
-      "chapters": ["chapter-1-first-light", "chapter-2-tally"] },
+      "chapters": ["chapter-1-first-light", "chapter-2-tally", "chapter-3-resonance"] },
     { "id": "combine", "title": "Combine", "tagline": "PART TWO  ·  WIRING, AND HOW SIGNALS COMBINE",
-      "afterPrevious": true, "chapters": ["chapter-5-patch", "chapter-6-junction", "chapter-7-blend"] }
+      "afterPrevious": true, "chapters": ["chapter-4-patch", "chapter-5-junction", "chapter-6-blend"] }
   ]
 }
 ```
@@ -50,7 +50,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 |---|---|---|
 | `id` | yes | Stable id. Saves refer to it, so don't rename it once players have it. |
 | `title` | yes | Shown on the chapter map and the title card. |
-| `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal`, `shape`, `wave` (analog) or `sampled` (set aside for now, see below). A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
+| `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal` or `wave` (analog). `shape` and `sampled` are set aside for now (see below). A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
@@ -144,7 +144,7 @@ Write values the way the player sees them:
 |---|---|---|
 | `binary` | 0 and 1 | `1` |
 | `decimal` | 0 to 9 | `7` |
-| `shape` | `hollow` or `solid`, then `circle`, `triangle`, `square` or `hexagon` | `"solid triangle"` |
+| `shape` (set aside) | `hollow` or `solid`, then `circle`, `triangle`, `square` or `hexagon` | `"solid triangle"` |
 | `wave` | `sine`, `square` or `saw`, then `f1` to `f7` (frequency) and `a1` to `a7` (amplitude), and optionally `p1`, `p2` or `p3` (quarter cycles late), in any order | `"sine f3 a5"`, `"square f1 a7 p2"` |
 | `sampled` | the same form, frequency and amplitude, then `s3`, `s6` or `s12` (steps a cycle) | `"saw f2 a6 s6"` |
 
@@ -214,12 +214,13 @@ A signal is its type and its value, or a pattern of values played in turn throug
 "binary 1"                          a steady 1
 "binary 0110"                       0 for a quarter of the loop, then 1, 1, 0
 "decimal 3141"                      digits; a run of digits is one per step
-"shape solid triangle, hollow circle"   cyan unless a colour is named
-"shape solid pink triangle"         colours: cyan, pink, amber, green
 "wave sine f2 a7"                   an analog wave: form, frequency f1 to f7, height a1 to a7
 "wave sine f2 a7 p2"                the same wave half a cycle later (p1 to p3 are quarter cycles)
 "sampled saw f1 a7 s6"              a sampled wave, read 3, 6 or 12 times a cycle (set aside)
+"shape solid pink triangle"         a shape: fill, colour (cyan, pink, amber, green), form (set aside)
 ```
+
+Shapes and sampled waves were set aside on 11 Nov 2026, so the game is bits, digits and waves, all drawn as lines. The loader refuses a circuit that sends either (`KindCatalog.MediumShelved`).
 
 A pattern must divide the loop evenly: 1, 2, 3, 4, 6, 8, 9, 12 or 16 values (and others that divide 288). Waves are always steady: their settings don't change.
 
@@ -240,7 +241,7 @@ Devices compare what they do, not the signal, so a digit display wanting 3 is me
 
 ### Mixing kinds
 
-Bit, digit and shape blocks read any signal as their own kind, at every step of the loop: a digit is 1 unless it's 0, a shape is 1 when solid, a wave is 1 above its middle; a shape read as a digit is its corners, a wave its height from 0 to 9; a bit, digit or wave read as a shape is a circle, solid when it would read as 1. Wave blocks read any signal as a wave: a bit or a shape's fill at the top or bottom, a digit as a flat level from 0 at the bottom to 9 at the top. The mixing kinds (GATE, COUNT, COMPARE) work on any signal; their rules are in [Design.md](Design.md#spoilers-the-rules).
+Bit and digit blocks read any signal as their own kind, at every step of the loop: a digit is 1 unless it's 0, and a wave is 1 above its middle; a bit read as a digit is 0 or 1, and a wave its height from 0 to 9. Wave blocks read any signal as a wave: a bit at the top for 1 or the bottom for 0, and a digit as a flat level from 0 at the bottom to 9 at the top. (Set aside: a shape read as a bit is 1 when solid and as a digit its corners; anything read as a shape is a circle, solid when it would read as 1.) The mixing kinds (GATE, COUNT, COMPARE) work on any signal; their rules are in [Design.md](Design.md#spoilers-the-rules).
 
 ## Block kinds
 
@@ -252,8 +253,8 @@ The player never sees a kind, only the block's label (K1, K2...) and its ports. 
 | binary | AND, OR, XOR | 2 |
 | decimal | MIRROR | 1 |
 | decimal | MAX, MIN, DIFF | 2 |
-| shape | FILL, NEXT | 1 |
-| shape | TAKEFILL, TAKECOLOUR | 2 |
+| shape | FILL, NEXT (set aside) | 1 |
+| shape | TAKEFILL, TAKECOLOUR (set aside) | 2 |
 | wave | FLIP, FASTER, LATER | 1 |
 | wave | MIX | 2 |
 | the top input's kind | GATE | 2 |

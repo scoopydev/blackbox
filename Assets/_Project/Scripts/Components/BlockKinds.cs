@@ -278,15 +278,28 @@ namespace Blackbox.Components
         public static IReadOnlyList<BlockKind> All => s_Ordered;
 
         /// <summary>
-        /// Kinds set aside for now (11 Nov 2026): STEPS, which turns any signal into
-        /// a stepped wave. Its code and tests stay. The old stepped-wave blocks went
-        /// when every block got one fixed rule, so Grain (kept in Puzzles/Shelved)
-        /// needs new blocks before it can come back.
+        /// Kinds set aside for now. Their code and tests stay, and the loader
+        /// refuses a circuit that uses one.
+        /// <list type="bullet">
+        /// <item>STEPS, which turns any signal into a stepped wave (11 Nov 2026,
+        /// with stepped waves). The old stepped-wave blocks went when every block
+        /// got one fixed rule, so Grain (kept in Puzzles/Shelved) needs new blocks
+        /// before it can come back.</item>
+        /// <item>The shape blocks (11 Nov 2026, when shapes were set aside and every
+        /// signal became a waveform: bits, digits and waves).</item>
+        /// </list>
         /// </summary>
-        public static readonly HashSet<string> Shelved = new HashSet<string> { "STEPS" };
+        public static readonly HashSet<string> Shelved = new HashSet<string>
+        {
+            "STEPS",
+            "FILL", "NEXT", "TAKEFILL", "TAKECOLOUR",
+        };
 
-        /// <summary>Signal kinds set aside for now, with <see cref="Shelved"/>: stepped (sampled) waves.</summary>
-        public static bool MediumShelved(Medium m) => m == Medium.Sampled;
+        /// <summary>
+        /// Signal kinds set aside for now, with <see cref="Shelved"/>: stepped
+        /// (sampled) waves and shapes. The game is bits, digits and waves.
+        /// </summary>
+        public static bool MediumShelved(Medium m) => m == Medium.Sampled || m == Medium.Shape;
 
         public static bool TryGet(string id, out BlockKind kind) => s_Kinds.TryGetValue(id ?? string.Empty, out kind);
 

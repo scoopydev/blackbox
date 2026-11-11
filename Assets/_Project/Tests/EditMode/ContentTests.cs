@@ -24,7 +24,8 @@ namespace Blackbox.Tests
             Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
             Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
-            Assert.That(library.Chapters.Count, Is.EqualTo(9));
+            Assert.That(library.Chapters.Count, Is.EqualTo(8));
+            Assert.That(library.Parts[0].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "first-light", "tally", "resonance" }), "bits, digits, then waves; shapes are set aside");
             Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend" }), "Combine reads, then meets, then mixes");
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
             Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
@@ -58,9 +59,10 @@ namespace Blackbox.Tests
         [Test]
         public void NothingShippedUsesWhatIsSetAside()
         {
-            // Stepped waves and every output device but the display were set aside
-            // on 11 Nov 2026: no circuit may send or want a stepped wave, hold a
-            // block that only makes sense with them, or end in anything but a display.
+            // Stepped waves, shapes and every output device but the display were
+            // set aside on 11 Nov 2026: no circuit may send or want a stepped wave
+            // or a shape, hold a block set aside with them, or end in anything but
+            // a display.
             Assert.That(KindCatalog.MediumShelved(Medium.Sampled), Is.True);
             foreach (var p in TestContent.Library.AllPuzzles)
             {
@@ -68,7 +70,7 @@ namespace Blackbox.Tests
                 foreach (var o in p.Outputs) Assert.That(o.Device, Is.EqualTo(Device.Display), $"{p.Id}: output {o.Id} is a {Devices.Noun(o.Device)}, which is set aside");
                 // Every input, block and output along the intended wiring.
                 foreach (var t in WiringSession.Evaluate(p, p.Solution))
-                    if (t != null) Assert.That(t.Medium, Is.Not.EqualTo(Medium.Sampled), $"{p.Id}: a stepped wave");
+                    if (t != null) Assert.That(KindCatalog.MediumShelved(t.Medium), Is.False, $"{p.Id}: a {Media.Noun(t.Medium)}, which is set aside");
             }
             Assert.That(KindCatalog.Get("STEPS").Shelved, Is.True);
         }

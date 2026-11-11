@@ -3,18 +3,18 @@
   "title": "Patch",
   "mode": "wiring",
   "tagline": "Every block reads every signal.",
-  "signals": "A block reads any signal as its own kind: a digit is 1 unless it's 0, a shape is 1 when solid, and as a digit a shape is its corners. A bit or digit read as a shape is a circle, solid for anything but 0.",
+  "signals": "A block reads any signal as its own kind. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle. A digit block reads a bit as 0 or 1, and a wave by its height, 0 at the bottom up to 9 at the top. A wave block reads a bit as the top for 1 and the bottom for 0, and a digit as a level, 0 at the bottom up to 9 at the top.",
   "circuits": [
     {
       "id": "patch-01",
       "name": "Cross Talk",
-      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, and a shape is 1 when it's solid.",
+      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0. One input can feed both of a block's inputs.",
       "inputs": {
         "A": {
           "signal": "decimal 0"
         },
         "B": {
-          "signal": "shape solid amber circle"
+          "signal": "decimal 4"
         },
         "C": {
           "signal": "binary 0"
@@ -38,17 +38,14 @@
     },
     {
       "id": "patch-02",
-      "name": "Corner Count",
-      "hint": "A digit block reads a shape as its number of corners.",
+      "name": "Reading",
+      "hint": "A digit block reads a bit as the digit 0 or 1.",
       "inputs": {
         "A": {
-          "signal": "shape solid hexagon"
+          "signal": "binary 0101"
         },
         "B": {
           "signal": "decimal 2"
-        },
-        "C": {
-          "signal": "shape hollow triangle"
         }
       },
       "blocks": {
@@ -68,55 +65,46 @@
     },
     {
       "id": "patch-03",
-      "name": "Branch",
-      "hint": "One signal can feed many wires.",
+      "name": "Height",
+      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
-          "signal": "shape solid triangle"
+          "signal": "wave saw f1 a7"
         },
         "B": {
-          "signal": "decimal 5"
+          "signal": "decimal 4"
         }
       },
       "blocks": {
         "g": {
-          "kind": "FILL"
-        },
-        "h": {
-          "kind": "DIFF"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
-        },
-        "Y": {
-          "device": "display"
         }
       },
       "solution": [
         "A -> g",
-        "g -> X",
-        "A -> h.0",
-        "B -> h.1",
-        "h -> Y"
+        "g -> X"
       ]
     },
     {
       "id": "patch-04",
-      "name": "Bit Shapes",
-      "hint": "A shape block reads a bit as a circle: solid for 1, hollow for 0.",
+      "name": "Level",
+      "hint": "A wave block reads a digit as a level, 0 at the bottom up to 9 at the top, and a bit as the top for 1, the bottom for 0.",
       "inputs": {
         "A": {
-          "signal": "binary 0101"
+          "signal": "decimal 1357"
         },
         "B": {
-          "signal": "decimal 3"
+          "signal": "binary 0011"
         }
       },
       "blocks": {
         "g": {
-          "kind": "NEXT"
+          "kind": "LATER"
         }
       },
       "outputs": {
@@ -135,7 +123,7 @@
       "hint": "Look at each target and ask which input could have made it.",
       "inputs": {
         "A": {
-          "signal": "shape solid square"
+          "signal": "wave sine f2 a7"
         },
         "B": {
           "signal": "binary 0101"
@@ -143,10 +131,10 @@
       },
       "blocks": {
         "g": {
-          "kind": "NEXT"
+          "kind": "NOT"
         },
         "h": {
-          "kind": "NOT"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -158,9 +146,9 @@
         }
       },
       "solution": [
-        "B -> g",
+        "A -> g",
         "g -> X",
-        "A -> h",
+        "B -> h",
         "h -> Y"
       ]
     }

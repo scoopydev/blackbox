@@ -18,8 +18,11 @@ namespace Blackbox.UI.Board
 
     /// <summary>
     /// One signal value in any medium, drawn to fit a square of side <c>Size</c>:
-    /// a digit for binary and decimal, a filled or outlined form for shapes, and a
-    /// few cycles of the waveform (wider than tall) for waves, smooth or in steps. A
+    /// a level line for a bit (above a faint middle line for 1, below it for 0)
+    /// and for a digit (its height, 0 at the bottom to 9 at the top, with the
+    /// digit written beside it), so every signal is a waveform; a filled or
+    /// outlined form for shapes; and a few cycles of the waveform (wider than
+    /// tall) for waves, smooth or in steps. A
     /// value that isn't known yet (-1), such as an output before the circuit has
     /// run, shows a faint ?.
     /// </summary>
@@ -34,6 +37,7 @@ namespace Blackbox.UI.Board
         VoidText _digit;
         ShapeGraphic _shape;
         WaveGraphic _wave;
+        TraceGraphic _bit;
         VoidText _settings;
         VoidText _unknown;
         GlyphGraphic _speaker;
@@ -46,7 +50,7 @@ namespace Blackbox.UI.Board
         public Medium Medium => _medium;
 
         /// <summary>The width the value takes up, for laying out cards around it.</summary>
-        public static float WidthFor(Medium m, float size) => Media.IsWave(m) ? size * 1.7f : size;
+        public static float WidthFor(Medium m, float size) => m == Medium.Shape ? size : size * 1.7f;
 
         /// <param name="caption">For waves: write the settings (frequency, amplitude, phase or steps) under the line.</param>
         public static ValueView Create(Transform parent, Medium medium, float size, bool caption = false, string name = "Value")
@@ -76,11 +80,24 @@ namespace Blackbox.UI.Board
                     }
                     break;
                 default:
-                    view._digit = UIKit.Text(rt, "", TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(size >= 36f ? 200 : 300), TextAnchor.MiddleCenter, "Digit");
-                    view._digit.rectTransform.Centered(0f, 0f, w + 20f, size * 1.2f);
+                {
+                    bool digit = medium == Medium.Decimal;
+                    float gutter = digit ? size * 0.36f : 0f;
+                    view._bit = UIKit.Add<TraceGraphic>(rt, "Level");
+                    view._bit.raycastTarget = false;
+                    view._bit.rectTransform.Centered(gutter * 0.5f, 0f, w - gutter, size * 0.8f);
+                    view._bit.Min = digit ? -0.5f : -0.3f;
+                    view._bit.Max = digit ? 9.5f : 1.3f;
+                    view._bit.Stepped = true;
+                    view._bit.Midline = !digit;
+                    if (digit)
+                    {
+                        view._digit = UIKit.Text(rt, "", TextStyle.Value.WithSize(Mathf.RoundToInt(size * 0.4f)).WithWeight(300), TextAnchor.MiddleCenter, "Digit");
+                        view._digit.rectTransform.Centered(-w * 0.5f + gutter * 0.5f, 0f, gutter + 8f, size * 0.5f);
+                    }
                     break;
+                }
             }
-            if (medium == Medium.Shape || Media.IsWave(medium))
             {
                 view._unknown = UIKit.Text(rt, "?", TextStyle.Value.WithSize(Mathf.RoundToInt(size * 0.8f)).WithWeight(200).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Unknown");
                 view._unknown.rectTransform.Centered(0f, 0f, w, size * 1.2f);
@@ -222,10 +239,28 @@ namespace Blackbox.UI.Board
                     break;
                 }
                 default:
-                    _digit.text = has ? _value.ToString() : "?";
-                    _digit.SignalFill = live && has;
-                    _digit.color = !has ? Palette.Faint : live ? Color.white : quiet;
+                {
+                    _bit.enabled = has;
+                    if (_digit != null) _digit.enabled = has;
+                    if (!has) break;
+                    _bit.SetLevels(new float[] { _value, _value });
+                    _bit.LineWidth = Mathf.Max(1.4f, _size * 0.045f);
+                    _bit.Paint = live ? Paint.Signal : Paint.Solid;
+                    _bit.Tint = live ? Color.white : quiet;
+                    _bit.GlowAmount = live ? 0.3f + 0.4f * _ping : 0.3f * _ping;
+                    if (_digit != null)
+                    {
+                        // Beside the line, at its height.
+                        float h = _size * 0.8f, pad = _bit.LineWidth;
+                        float y = -h * 0.5f + pad + (_value + 0.5f) / 10f * (h - 2f * pad);
+                        var drt = _digit.rectTransform;
+                        drt.anchoredPosition = new Vector2(drt.anchoredPosition.x, y);
+                        _digit.text = _value.ToString();
+                        _digit.SignalFill = live;
+                        _digit.color = live ? Color.white : quiet;
+                    }
                     break;
+                }
             }
         }
     }

@@ -26,7 +26,7 @@ Blocks have no settings. Each kind of block does **one simple thing**, the same 
 | Device | Does | Matches its target when |
 |---|---|---|
 | Display | Shows the signal itself, as a value, a strip of values or a graph | it is the same signal |
-| Light | Lit on a 1; brighter for a bigger digit (9 is full); follows a wave above its middle and is dark below it; lit in a shape's colour, whatever its form or fill | it is as bright, in the same colour, at every moment |
+| Light | Lit on a 1; brighter for a bigger digit (9 is full); follows a wave above its middle and is dark below it; lit in a shape's colour, whatever its form or fill (shapes are set aside too) | it is as bright, in the same colour, at every moment |
 | Speaker | Plays the signal | it is the same signal |
 | Digit display | Shows a number: a digit, a bit, a shape's corners, a wave's height rounded | it shows the same numbers |
 | Fan | Spins faster for more signal; a wave below its middle spins it backwards | it spins the same way at the same speed |
@@ -36,12 +36,13 @@ A device matches on what it does, not on the signal, so a digit display wanting 
 
 ### Signal media
 
+The game has three kinds of signal, and **every signal is drawn as a waveform**: a line through the loop, even when it never changes. Shapes are set aside for now (see "Set aside: shapes" at the end).
+
 | Chapter | Medium | Values | Drawn as |
 |---|---|---|---|
-| I First Light | binary | 0 and 1 | Digits |
-| II Tally | decimal | 0 to 9 | Digits |
-| III Forms | shape | circle, triangle, square or hexagon; hollow or solid; cyan, pink, amber or green | The shape itself, outlined or filled, in its colour (cyan in the signal gradient) |
-| IV Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
+| I First Light | binary | 0 and 1 | A line above a faint midline for 1 and below it for 0, square where it switches |
+| II Tally | decimal | 0 to 9 | A line whose height is the digit, 0 at the bottom up to 9 at the top, stepped where it changes, with the digit written beside it |
+| III Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
 
 ### Signals over time
 
@@ -51,20 +52,19 @@ Every signal is a **trace**: its level at each of the 288 steps of one loop of a
 * **Amplitude** A1 to A7 is the peak, 1 to 7 levels from the middle.
 * **Phase** moves an analog wave a quarter cycle at a time. A sine half a cycle late is the same sine upside down, so the two cancel when added; a sine and a cosine (a quarter apart) don't.
 
-Bit, digit and shape blocks work step by step through the loop, and read any signal as their own kind:
+Bit and digit blocks work step by step through the loop, and read any signal as their own kind:
 
-| Read as | From a bit | From a digit | From a shape | From a wave |
-|---|---|---|---|---|
-| bit | itself | 1 unless 0 | 1 when solid | 1 while above the middle |
-| digit | 0 or 1 | itself | its corners | its height, 0 (bottom) to 9 (top) |
-| shape | a cyan circle, solid when 1 | a cyan circle, solid unless 0 | itself | a cyan circle, solid while above the middle |
-| analog wave | top when 1, bottom when 0 | a flat level, 0 at the bottom and 9 at the top | top when solid, bottom when hollow | itself |
+| Read as | From a bit | From a digit | From a wave |
+|---|---|---|---|
+| bit | itself | 1 unless 0 | 1 while above the middle |
+| digit | 0 or 1 | itself | its height, 0 (bottom) to 9 (top) |
+| analog wave | top when 1, bottom when 0 | a flat level, 0 at the bottom and 9 at the top | itself |
 
-Wave blocks read any signal as a wave (the last row) and send a wave, so they chain in any order and never refuse a signal.
+Wave blocks read any signal as a wave (the last row) and send a wave, so they chain in any order and never refuse a signal. Because every signal is drawn as a line, these readings can be seen: a digit read as a wave is the same line, and a wave read as a digit is the wave in steps.
 
 Once the player has seen a block send something, pointing at a wire into it says how that block reads the wire when the kinds differ, such as "K3 reads this wave as a digit: 0 at the bottom up to 9 at the top." (`Media.HowRead`, `BlockKind.Reads`). It waits for a run so it never gives away what kind of block it is.
 
-A signal that changes is drawn as a strip of its values along the loop, all the same size, or as a line when it changes too often to list. A line of digits is stepped, from 0 at the bottom to 9 at the top, with its highest and lowest digits written at its left.
+A steady bit or digit is a flat line at its height (a digit has the number written beside it). A signal that changes is drawn across the loop: bits as a square line about the midline, with 1 and 0 written at its left; digits as a stepped line, each step with its digit written on it, or, when it changes more than eight times, with only its highest and lowest digits written at its left; waves as themselves.
 
 ### Signal sounds
 
@@ -74,14 +74,13 @@ Each medium is heard in its own way, so a player can follow a circuit by ear as 
 |---|---|
 | binary | A 1 is a clear beep. A 0 is only a soft, dull tap, so the player knows it played. |
 | decimal | One short tone whose pitch is the digit, climbing a major scale: 0 is C4 (do), 7 is C5, 9 is E5. Every digit lasts as long. |
-| shape | One click per corner: a circle is a single smooth note, a triangle three clicks, a square four and a hexagon six. Solid shapes are low and warm, hollow ones high and thin. Colour lifts the pitch: pink a third, amber a fifth, green a sixth above cyan. |
 | wave | The wave itself. Its frequency is its pitch (F1 is D3, F3 is A4, F7 is A6) and its amplitude its loudness, 2.5 dB a step. Phase can't be heard. |
 
 A signal that changes through the loop plays each of its values in turn. Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead. Clicking a signal always plays it. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
 
 ## Progression
 
-* Three parts. **Learn** has four chapters, one per medium, with six circuits each, and teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks. **Build** (Unmarked, Blackbox) is the main game. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has three chapters, one per medium (bits, digits, waves), and teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks. **Build** (Unmarked, Blackbox) is the main game. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -127,20 +126,7 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 | 05 | Retrace | A pattern of digits | 27 | 2 |
 | 06 | Ledger | Four blocks, two outputs | 279,936 | 24 |
 
-### Chapter III: Forms
-
-*Every shape is a message.* Shapes: FILL, NEXT, TAKEFILL, TAKECOLOUR.
-
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Fill | Pre-wired, and FILL | 2 | 1 |
-| 02 | Graft | Half wired, and TAKEFILL | 4 | 1 |
-| 03 | Repaint | TAKECOLOUR, on a pattern of shapes | 4 | 1 |
-| 04 | Turn | NEXT, beside FILL on the same input | 9 | 1 |
-| 05 | Homecoming | Colour stays with the form | 625 | 16 |
-| 06 | Lattice | Four blocks, three outputs | 46,656 | 22 |
-
-### Chapter IV: Resonance
+### Chapter III: Resonance
 
 *Listen closely.* Analog waves: FLIP, FASTER, LATER, MIX.
 
@@ -155,32 +141,32 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 
 Every circuit is checked by trying every way to wire it, in the tests and from **BLACKBOX → Validate Puzzles**. Each one's solution must work, it must not be solved as it starts, and no input wired straight to an output may already meet that output's target.
 
-### Chapter V: Patch
+### Chapter IV: Patch
 
 *Every block reads every signal.* Blocks of one kind, fed signals of another.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Cross Talk | AND reads a shape as a bit; one input into both ports | 9 | 1 |
-| 02 | Corner Count | MIRROR reads a shape as its corners | 3 | 1 |
-| 03 | Branch | One shape feeding a shape block and a digit block | 27 | 4 |
-| 04 | Bit Shapes | NEXT reads a bit as a circle | 2 | 1 |
-| 05 | Crossover | Each block fed the other kind of signal | 9 | 1 |
+| 01 | Cross Talk | AND reads a digit as a bit; one input into both ports | 9 | 1 |
+| 02 | Reading | MIRROR reads bits as the digits 0 and 1 | 2 | 1 |
+| 03 | Height | MIRROR reads a wave by its height | 2 | 1 |
+| 04 | Level | LATER reads a pattern of digits as a stepped wave | 2 | 1 |
+| 05 | Crossover | Each block fed the other kind of signal: a wave into NOT, bits into MIRROR | 9 | 1 |
 
-### Chapter VI: Junction
+### Chapter V: Junction
 
 *Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No mixing blocks yet; a test checks that every solution feeds some block two kinds at once.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | Corners | DIFF of a digit and a shape: the shape counts as its corners | 9 | 2 |
-| 02 | Solid State | TAKEFILL: a shape's form with a bit's fill | 9 | 1 |
+| 01 | Both On | AND of a pattern of digits and a pattern of bits | 9 | 2 |
+| 02 | Step Down | DIFF of a digit and a bit: the bit takes 0 or 1 off | 9 | 2 |
 | 03 | Cut Off | XOR of a digit and a wave | 9 | 2 |
 | 04 | Staircase | MAX of a wave read as a digit and a steady digit | 9 | 2 |
-| 05 | Flicker | A wave giving a shape its fill, so it flickers | 9 | 1 |
-| 06 | Junction | A shape, a digit and a wave, three blocks, three outputs | 15,625 | 8 |
+| 05 | Lift | MIX of a wave and a steady 1 lifts the wave | 9 | 2 |
+| 06 | Junction | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 8 |
 
-### Chapter VII: Blend
+### Chapter VI: Blend
 
 *Signals of different kinds, mixed together.* Wave blocks meet other kinds, then the three mixing blocks: GATE, COUNT and COMPARE.
 
@@ -195,7 +181,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 07 | Threshold | COMPARE against a digit makes a pulse | 9 | 1 |
 | 08 | Counter | COMPARE, then COUNT the pulses | 64 | 1 |
 
-### Chapter VIII: Unmarked
+### Chapter VII: Unmarked
 
 *Every block you've met, all mixed up.* Two blocks each, any kind of signal and any block met so far.
 
@@ -206,9 +192,9 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 03 | Sweep | A wave sped up, then delayed | 9 | 1 |
 | 04 | Strobe | Two outputs from one chain | 64 | 6 |
 | 05 | Countdown | A count, mirrored | 9 | 1 |
-| 06 | Colours | One block feeding an output and another block | 27 | 1 |
+| 06 | Reflections | XOR, then MIRROR: one block feeding an output and another block | 27 | 2 |
 
-### Chapter IX: Blackbox
+### Chapter VIII: Blackbox
 
 *Everything at once.* Three to five blocks, two or three outputs.
 
@@ -217,7 +203,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 01 | Metronome | Speed up twice, compare, count the blinks | 7,776 | 2 |
 | 02 | Mixing Desk | Mix two waves, gate the mix, flip the gate | 3,125 | 2 |
 | 03 | Downhill | A flipped saw, sped up, beside a digit | 125 | 2 |
-| 04 | Signal Box | Shapes, bits and digits at once, three outputs | 279,936 | 104 |
+| 04 | Signal Box | One wave read as bits by two blocks and as a digit by a third, three outputs | 279,936 | 16 |
 | 05 | Pulse Width | A threshold from a difference, three readers of one pulse | 46,656 | 2 |
 | 06 | Black Box | Three separate machines in one circuit, five blocks | 2,097,152 | 2 |
 
@@ -265,11 +251,11 @@ Tests/EditMode/ NUnit tests for everything in Core, Components, Circuit and Puzz
 
 ### Evaluation
 
-Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 32 shapes ((colour × 4 + form) × 2 + fill), 588 analog waves (((form × 7 + frequency) × 7 + amplitude) × 4 + phase) and 441 sampled waves (((form × 7 + frequency) × 7 + amplitude) × 3 + steps), which are set aside for now. Inputs are traces: 288 steps of one loop, each a level of the signal's medium. `WiringSession` evaluates the wires from the inputs on, and `WiringSolver` tries every way to wire a circuit's blocks (skipping loops), then every source each output could take, to count the solutions. Circuits have no memory and no loops; a wire that would make one is refused.
+Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 588 analog waves (((form × 7 + frequency) × 7 + amplitude) × 4 + phase), and, set aside for now, 32 shapes ((colour × 4 + form) × 2 + fill) and 441 sampled waves (((form × 7 + frequency) × 7 + amplitude) × 3 + steps). Inputs are traces: 288 steps of one loop, each a level of the signal's medium. `WiringSession` evaluates the wires from the inputs on, and `WiringSolver` tries every way to wire a circuit's blocks (skipping loops), then every source each output could take, to count the solutions. Circuits have no memory and no loops; a wire that would make one is refused.
 
 ### Adding a chapter
 
-1. Write `chapter-10-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
+1. Write `chapter-9-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to a part in `chapters.json`.
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.
@@ -280,7 +266,7 @@ New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTes
 
 A block shows only its label (K1, K2...) and its ports. The kind ids below are for puzzle files and designers; players never see them. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule written under it (`BlockKind.ShortRule`, the short form below, in plain words that fit two short lines; pointing at the block shows the whole rule), and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
 
-Each kind of signal has four blocks, and each set starts with one that flips the signal, so a player who has learned one set has a head start on the next.
+Each kind of signal has four blocks, and each set starts with one that flips the signal, so a player who has learned one set has a head start on the next. The shape blocks (FILL, NEXT, TAKEFILL, TAKECOLOUR) are set aside with shapes, and no circuit uses them for now.
 
 | Kind | Signal | Inputs | Rule | Short form |
 |---|---|---|---|---|
@@ -292,21 +278,21 @@ Each kind of signal has four blocks, and each set starts with one that flips the
 | MAX | digit | 2 | the larger digit | the larger of the two digits |
 | MIN | digit | 2 | the smaller digit | the smaller of the two digits |
 | DIFF | digit | 2 | how far apart they are: the larger minus the smaller | the larger digit minus the smaller |
-| FILL | shape | 1 | hollow becomes solid, solid becomes hollow | swaps solid and hollow |
-| NEXT | shape | 1 | the next shape along: circle, triangle, square, hexagon, then circle again; fill and colour kept | next shape: circle, triangle, square, hexagon |
-| TAKEFILL | shape | 2 | the top shape, with the bottom shape's fill | top shape, filled like the bottom one |
-| TAKECOLOUR | shape | 2 | the top shape, in the bottom shape's colour | top shape, coloured like the bottom one |
+| FILL (set aside) | shape | 1 | hollow becomes solid, solid becomes hollow | swaps solid and hollow |
+| NEXT (set aside) | shape | 1 | the next shape along: circle, triangle, square, hexagon, then circle again; fill and colour kept | next shape: circle, triangle, square, hexagon |
+| TAKEFILL (set aside) | shape | 2 | the top shape, with the bottom shape's fill | top shape, filled like the bottom one |
+| TAKECOLOUR (set aside) | shape | 2 | the top shape, in the bottom shape's colour | top shape, coloured like the bottom one |
 | FLIP | wave | 1 | the wave upside down | turns the wave upside down |
 | FASTER | wave | 1 | twice as fast, so it repeats twice as often | plays the wave twice as fast |
 | LATER | wave | 1 | a quarter of the loop later | delays the wave by a quarter loop |
 | MIX | wave | 2 | halfway between the two waves at every moment | halfway between the two waves |
-| GATE | any | 2 | the top signal while the bottom is on; otherwise off (0, a flat line or a hollow circle) | lets the top through while the bottom is on |
+| GATE | any | 2 | the top signal while the bottom is on; otherwise off (0, or a flat line) | lets the top through while the bottom is on |
 | COUNT | digit | 1 | how many times its input has switched on so far this loop, stopping at 9 | counts each switch-on, up to 9 |
 | COMPARE | bit | 2 | 1 while the top is higher than the bottom, both read as waves; otherwise 0 | 1 while the top is higher than the bottom |
 
-Bit, digit and shape blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave. GATE sends whatever kind its top input is; COUNT reads its input as a bit.
+Bit and digit blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave. GATE sends whatever kind its top input is; COUNT reads its input as a bit.
 
-The few edges a player can bump into, all kept because they follow from the rule rather than add to it: NEXT goes round from hexagon to circle, COUNT stops at 9 (a digit has nowhere further to go), and a mixed or flipped wave is still a wave, so FASTER and LATER work on it.
+The few edges a player can bump into, all kept because they follow from the rule rather than add to it: COUNT stops at 9 (a digit has nowhere further to go), and a mixed or flipped wave is still a wave, so FASTER and LATER work on it.
 
 Until 11 Nov 2026 blocks had settings: the old kinds (B1 to B4, D1 to D4, S1 to S4, W1 to W4, M1 to M8) each had two to four rules, shown as dots on the block. They were replaced by the single-rule kinds above because a block the player can't change should do one thing they can name.
 
@@ -326,6 +312,25 @@ On 11 Nov 2026 stepped (sampled) waves were taken out of the game for now. A ste
 The code that makes, draws, sounds and checks stepped waves is all still there, with its tests. `KindCatalog.Shelved` lists STEPS and `KindCatalog.MediumShelved` the medium, and the loader refuses any circuit that uses them. Grain's file is kept in `Assets/_Project/Puzzles/Shelved/`, outside `Resources`, so the game never loads it.
 
 To bring them back: empty both checks in `KindCatalog`, design four single-rule stepped-wave blocks, rewrite Grain's circuits with them (its file still uses the old Q kinds, which the loader no longer knows), move it back into `BlackboxPuzzles`, list it in `chapters.json` after Resonance, renumber the chapters after it, and teach STEPS somewhere in Blend.
+
+## Set aside: shapes
+
+On 11 Nov 2026 shapes were taken out of the game for now, so that every signal can be drawn as a waveform: bits and digits as lines, steady or changing, beside the waves. A shape was a circle, triangle, square or hexagon, hollow or solid, in cyan, pink, amber or green, drawn as itself and heard as one click per corner. Shapes had Chapter III, *Forms* ("Every shape is a message."), and four blocks: FILL, NEXT, TAKEFILL and TAKECOLOUR. Forms' circuits were:
+
+|# | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Fill | Pre-wired, and FILL | 2 | 1 |
+| 02 | Graft | Half wired, and TAKEFILL | 4 | 1 |
+| 03 | Repaint | TAKECOLOUR, on a pattern of shapes | 4 | 1 |
+| 04 | Turn | NEXT, beside FILL on the same input | 9 | 1 |
+| 05 | Homecoming | Colour stays with the form | 625 | 16 |
+| 06 | Lattice | Four blocks, three outputs | 46,656 | 22 |
+
+The circuits in Patch, Junction, Unmarked and Blackbox that used shapes were rebuilt with bits, digits and waves: Patch 02 to 04 (*Corner Count*, *Branch* and *Bit Shapes* became *Reading*, *Height* and *Level*), Junction 01, 02 and 05 (*Corners*, *Solid State* and *Flicker* became *Both On*, *Step Down* and *Lift*), Unmarked 06 (*Colours* became *Reflections*), and new signals or blocks in Patch 01 and 05, Junction 04 and 06, Unmarked 02 and Blackbox 04 and 06. The chapters after Forms moved up a number, and their files were renamed to match. Commit 35d2202 is the last with shapes in play.
+
+The code that makes, draws, sounds and reads shapes is all still there, with its tests. `KindCatalog.Shelved` lists the four shape blocks and `KindCatalog.MediumShelved` the medium, and the loader refuses any circuit that uses them. Forms' file is kept in `Assets/_Project/Puzzles/Shelved/`, outside `Resources`, so the game never loads it.
+
+To bring them back: take shapes and their blocks out of both checks in `KindCatalog`, move Forms back into `BlackboxPuzzles`, list it in `chapters.json` after Tally, renumber the chapters after it, add a shape sample back to the HOW IT WORKS overlay (`Overlays.cs`), and check every circuit with **BLACKBOX → Validate Puzzles**.
 
 ## Set aside: output devices
 

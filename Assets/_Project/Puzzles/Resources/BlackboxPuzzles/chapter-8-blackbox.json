@@ -141,10 +141,10 @@
     {
       "id": "blackbox-04",
       "name": "Signal Box",
-      "hint": "A shape read as a digit is its number of corners.",
+      "hint": "One wave, read three ways: as a bit by two blocks and as a digit by another.",
       "inputs": {
         "A": {
-          "signal": "shape solid pink square"
+          "signal": "wave saw f1 a7"
         },
         "B": {
           "signal": "binary 0110"
@@ -155,7 +155,7 @@
       },
       "blocks": {
         "g": {
-          "kind": "NEXT"
+          "kind": "NOT"
         },
         "h": {
           "kind": "XOR"
@@ -164,7 +164,7 @@
           "kind": "DIFF"
         },
         "m": {
-          "kind": "TAKEFILL"
+          "kind": "AND"
         }
       },
       "outputs": {
@@ -255,7 +255,7 @@
           "signal": "wave sine f1 a7 p2"
         },
         "C": {
-          "signal": "shape hollow pink triangle"
+          "signal": "decimal 4"
         },
         "D": {
           "signal": "binary 01"
@@ -269,7 +269,7 @@
           "kind": "MIX"
         },
         "k": {
-          "kind": "FILL"
+          "kind": "MIRROR"
         },
         "m": {
           "kind": "GATE"
