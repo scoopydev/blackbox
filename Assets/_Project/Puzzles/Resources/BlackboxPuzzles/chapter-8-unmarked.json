@@ -25,7 +25,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -36,8 +36,8 @@
     },
     {
       "id": "unmarked-02",
-      "name": "Dim",
-      "hint": "A light glows brighter for a bigger digit. A digit display counts a shape's corners.",
+      "name": "Matchmaker",
+      "hint": "Two inputs, two blocks, two outputs. Try each block with each input.",
       "inputs": {
         "A": {
           "signal": "decimal 2"
@@ -58,10 +58,10 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -74,7 +74,7 @@
     {
       "id": "unmarked-03",
       "name": "Sweep",
-      "hint": "A servo's arm follows a wave: left at the bottom, right at the top.",
+      "hint": "Look at how often the target's wave repeats, and where it starts.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -93,7 +93,7 @@
       },
       "outputs": {
         "X": {
-          "device": "servo"
+          "device": "display"
         }
       },
       "solution": [
@@ -127,10 +127,10 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "fan"
+          "device": "display"
         }
       },
       "solution": [
@@ -164,7 +164,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -176,7 +176,7 @@
     {
       "id": "unmarked-06",
       "name": "Colours",
-      "hint": "A light takes a shape's colour and its fill. A digit display counts its corners.",
+      "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {
           "signal": "shape solid pink triangle, solid amber hexagon"
@@ -197,10 +197,10 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [

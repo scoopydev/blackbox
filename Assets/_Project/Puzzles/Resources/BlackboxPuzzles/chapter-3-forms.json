@@ -5,7 +5,7 @@
   "mode": "wiring",
   "medium": "shape",
   "tagline": "Every shape is a message.",
-  "signals": "Signals here are shapes: a circle, triangle, square or hexagon, hollow or solid, in cyan, pink, amber or green. A light shows only a shape's colour; a digit display counts its corners. You hear a click for each corner, low when solid and high when hollow.",
+  "signals": "Signals here are shapes: a circle, triangle, square or hexagon, hollow or solid, in cyan, pink, amber or green. You hear a click for each corner, low when solid and high when hollow.",
   "circuits": [
     {
       "id": "forms-01",
@@ -73,7 +73,7 @@
     {
       "id": "forms-03",
       "name": "Corners",
-      "hint": "A light takes a shape's colour, whatever its form or fill.",
+      "hint": "A signal can change as the loop plays: A is a triangle, then a hexagon.",
       "inputs": {
         "A": {
           "signal": "shape solid pink triangle, solid pink hexagon"
@@ -89,7 +89,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -101,7 +101,7 @@
     {
       "id": "forms-04",
       "name": "Turn",
-      "hint": "A digit display counts a shape's corners. A circle has none.",
+      "hint": "g and h are the same kind of block, fixed in different settings.",
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
@@ -121,7 +121,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         },
         "Y": {
           "device": "display"
@@ -166,7 +166,7 @@
           "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -210,13 +210,13 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
           "device": "display"
         },
         "Z": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [

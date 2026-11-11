@@ -190,7 +190,7 @@ Inputs may go unused. Blocks are fixed: the player never changes a state, so eve
     "g": { "kind": "B2", "state": 0 }
   },
   "outputs": {
-    "X": { "device": "light" }
+    "X": { "device": "display" }
   },
   "solution": ["A -> g.0", "C -> g.1", "g -> X"]
 }
@@ -200,7 +200,7 @@ Inputs may go unused. Blocks are fixed: the player never changes a state, so eve
 |---|---|
 | `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. |
 | `blocks` | Each block is `{ "kind": "B2", "state": 0, "at": [col, row] }`. Any kind can be wired. The wave kinds (W and Q) change a wave's settings, so they only read a plain wave of their own kind (straight from an input or another W or Q block) and send nothing otherwise. |
-| `outputs` | Each output is a device name, or `{ "device": "fan", "at": [col, row] }`. The default device is `display`. |
+| `outputs` | Each output is a device name, or `{ "device": "display", "at": [col, row] }`. The default device is `display`, and for now it is the only one the loader accepts (see [Devices](#devices)). |
 | `solution` | The intended wiring, as wires. It must keep the rules above. The targets come from it: each output wants what the solution sends it. |
 | `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts fully wired with one wire wrong, the second half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |
 | `goal` | Optional. The default goal names every output and its device, and states the rules. |
@@ -225,6 +225,8 @@ A signal is its type and its value, or a pattern of values played in turn throug
 A pattern must divide the loop evenly: 1, 2, 3, 4, 6, 8, 9, 12 or 16 values (and others that divide 288). Waves are always steady: their settings don't change.
 
 ### Devices
+
+**For now every output is a display.** The other devices were set aside on 11 Nov 2026: the loader refuses a circuit that uses one (`Devices.Shelved`). Their code is kept, and this table says what they did, for when they come back.
 
 | Device | `device` | Does | Matches its target when |
 |---|---|---|---|

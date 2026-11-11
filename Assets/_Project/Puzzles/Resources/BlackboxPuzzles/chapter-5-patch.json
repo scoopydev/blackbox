@@ -27,7 +27,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -58,7 +58,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -69,7 +69,7 @@
     {
       "id": "patch-03",
       "name": "Branch",
-      "hint": "One signal can feed many wires. A digit display shows a shape's corners.",
+      "hint": "One signal can feed many wires.",
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
@@ -88,7 +88,7 @@
           "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -127,8 +127,8 @@
     },
     {
       "id": "patch-05",
-      "name": "Moving Parts",
-      "hint": "A fan reads a shape by its corners: a hexagon spins it fastest.",
+      "name": "Crossover",
+      "hint": "Look at each target and ask which input could have made it.",
       "inputs": {
         "A": {
           "signal": "shape solid square"
@@ -147,16 +147,16 @@
       },
       "outputs": {
         "X": {
-          "device": "fan"
+          "device": "display"
         },
         "Y": {
-          "device": "servo"
+          "device": "display"
         }
       },
       "solution": [
-        "A -> g",
+        "B -> g",
         "g -> X",
-        "B -> h",
+        "A -> h",
         "h -> Y"
       ]
     }

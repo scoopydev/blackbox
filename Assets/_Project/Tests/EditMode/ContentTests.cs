@@ -57,12 +57,14 @@ namespace Blackbox.Tests
         [Test]
         public void NothingShippedUsesWhatIsSetAside()
         {
-            // Stepped waves were set aside on 11 Nov 2026: no circuit may send or
-            // want one, and no circuit may hold a block that only makes sense with them.
+            // Stepped waves and every output device but the display were set aside
+            // on 11 Nov 2026: no circuit may send or want a stepped wave, hold a
+            // block that only makes sense with them, or end in anything but a display.
             Assert.That(KindCatalog.MediumShelved(Medium.Sampled), Is.True);
             foreach (var p in TestContent.Library.AllPuzzles)
             {
                 foreach (var b in p.Blocks) Assert.That(b.Kind.Shelved, Is.False, $"{p.Id}: {b.Kind.Id} is set aside");
+                foreach (var o in p.Outputs) Assert.That(o.Device, Is.EqualTo(Device.Display), $"{p.Id}: output {o.Id} is a {Devices.Noun(o.Device)}, which is set aside");
                 // Every input, block and output along the intended wiring.
                 foreach (var t in WiringSession.Evaluate(p, p.Solution))
                     if (t != null) Assert.That(t.Medium, Is.Not.EqualTo(Medium.Sampled), $"{p.Id}: a stepped wave");
@@ -155,7 +157,7 @@ namespace Blackbox.Tests
         public void DevicesTurnUpInPartOne()
         {
             var used = new HashSet<Device>(LearnChapters.SelectMany(c => c.Puzzles).SelectMany(p => p.Outputs).Select(o => o.Device));
-            foreach (var d in Devices.All) Assert.That(used, Does.Contain(d), $"Part One has a {Devices.Noun(d)}");
+            foreach (var d in Devices.All.Where(d => !Devices.Shelved.Contains(d))) Assert.That(used, Does.Contain(d), $"Part One has a {Devices.Noun(d)}");
         }
 
         [Test]

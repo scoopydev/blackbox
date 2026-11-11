@@ -9,7 +9,7 @@
     {
       "id": "blackbox-01",
       "name": "Metronome",
-      "hint": "Count the blinks the target makes in one loop.",
+      "hint": "Count the pulses the target makes in one loop.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -37,10 +37,10 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -81,10 +81,10 @@
       },
       "outputs": {
         "X": {
-          "device": "speaker"
+          "device": "display"
         },
         "Y": {
-          "device": "fan"
+          "device": "display"
         }
       },
       "solution": [
@@ -99,8 +99,8 @@
     },
     {
       "id": "blackbox-03",
-      "name": "Pendulum",
-      "hint": "Count how often the target's arm swings back in one loop, and which way it sweeps.",
+      "name": "Downhill",
+      "hint": "Count how many times the target's wave repeats in one loop, and which way it slopes.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -126,10 +126,10 @@
       },
       "outputs": {
         "X": {
-          "device": "servo"
+          "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -175,10 +175,10 @@
           "device": "display"
         },
         "Y": {
-          "device": "digits"
+          "device": "display"
         },
         "Z": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -197,7 +197,7 @@
     {
       "id": "blackbox-05",
       "name": "Pulse Width",
-      "hint": "A light that's on for longer each blink is fed a lower threshold.",
+      "hint": "A pulse that stays on longer comes from a lower threshold.",
       "inputs": {
         "A": {
           "signal": "wave saw f2 a7"
@@ -226,13 +226,13 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "fan"
+          "device": "display"
         },
         "Z": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -284,13 +284,13 @@
       },
       "outputs": {
         "X": {
-          "device": "speaker"
+          "device": "display"
         },
         "Y": {
-          "device": "light"
+          "device": "display"
         },
         "Z": {
-          "device": "servo"
+          "device": "display"
         }
       },
       "solution": [

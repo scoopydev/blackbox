@@ -15,7 +15,7 @@ The core loop is experimentation:
 3. **Deduce** – form a theory about each block's rule, and write it on the circuit with the pen or the text tool.
 4. **Solve** – wire it so every output matches in one run, keeping both rules.
 
-Outputs are devices: displays, lights, speakers, digit displays, fans and servos. Signals are bits, digits, shapes (with a form, a fill and a colour), and waves, and some change as the loop plays. Every signal can be heard as well as seen.
+Every output is a display that shows the signal reaching it (lights, speakers, digit displays, fans and servos are set aside for now). Signals are bits, digits, shapes (with a form, a fill and a colour), and waves, and some change as the loop plays. Every signal can be heard as well as seen.
 
 The game has three parts:
 
@@ -42,7 +42,7 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | Drag from a port that has a wire | Pick that wire up and move it |
 | Click a wire, or right-click a dot | Take wires off |
 | Drag a block by its body | Move it; its wires follow. The circuit remembers where you put it, and RESET in the menu puts every block back |
-| RUN, or Space | Run it: the signal flows for a few seconds, every block shows what it sends, and each output works its device beside its target |
+| RUN, or Space | Run it: the signal flows for a few seconds, every block shows what it sends, and each output shows what reaches it beside its target |
 | Click a signal or a target | Hear it |
 | Z or Backspace, CLEAR | Undo a wire change, or take every wire off |
 | D, E | Pen and eraser, with the colours showing while a pen or text tool is out. Right-drag rubs out while the pen is on |

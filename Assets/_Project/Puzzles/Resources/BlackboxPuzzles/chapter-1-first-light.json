@@ -5,7 +5,7 @@
   "mode": "wiring",
   "medium": "binary",
   "tagline": "Every block keeps a rule. Wire it to find out.",
-  "signals": "Signals here are bits, 0 or 1, and some switch between them as the loop plays. A 1 lights a light and sounds as a beep; a 0 does neither.",
+  "signals": "Signals here are bits, 0 or 1, and some switch between them as the loop plays. A 1 sounds as a beep; a 0 is only a soft tap.",
   "circuits": [
     {
       "id": "first-light-01",
@@ -26,7 +26,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "start": [
@@ -57,7 +57,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "start": [
@@ -94,7 +94,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -126,7 +126,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
           "device": "display"
@@ -167,10 +167,10 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -185,7 +185,7 @@
     {
       "id": "first-light-06",
       "name": "Tangle",
-      "hint": "Work out one light at a time.",
+      "hint": "Work out one output at a time.",
       "inputs": {
         "A": {
           "signal": "binary 0011"
@@ -214,10 +214,10 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         },
         "Y": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [

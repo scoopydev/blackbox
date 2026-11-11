@@ -27,7 +27,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -58,7 +58,7 @@
       },
       "outputs": {
         "X": {
-          "device": "speaker"
+          "device": "display"
         }
       },
       "solution": [
@@ -86,7 +86,7 @@
       },
       "outputs": {
         "X": {
-          "device": "speaker"
+          "device": "display"
         }
       },
       "solution": [
@@ -118,7 +118,7 @@
       },
       "outputs": {
         "X": {
-          "device": "speaker"
+          "device": "display"
         }
       },
       "solution": [
@@ -178,7 +178,7 @@
       },
       "outputs": {
         "X": {
-          "device": "speaker"
+          "device": "display"
         }
       },
       "solution": [
@@ -190,7 +190,7 @@
     {
       "id": "blend-07",
       "name": "Count",
-      "hint": "M6 is new. A digit display shows its signal's number at every moment of the loop.",
+      "hint": "M6 is new. Watch the target's digit change through the loop.",
       "inputs": {
         "A": {
           "signal": "wave sine f4 a7"
@@ -209,7 +209,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -222,7 +222,7 @@
     {
       "id": "blend-08",
       "name": "Threshold",
-      "hint": "M8 is new. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The light is on for longer when the height is lower.",
+      "hint": "M8 is new. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The target stays at 1 for longer when the height is lower.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -241,7 +241,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [

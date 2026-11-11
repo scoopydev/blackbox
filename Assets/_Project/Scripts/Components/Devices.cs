@@ -35,6 +35,15 @@ namespace Blackbox.Components
     public static class Devices
     {
         public static readonly Device[] All = { Device.Display, Device.Light, Device.Speaker, Device.Digits, Device.Fan, Device.Servo };
+
+        /// <summary>
+        /// Devices set aside for now (11 Nov 2026): every output in the game is a
+        /// plain display, and the loader refuses a circuit with any other. The code
+        /// for each device stays. To bring them back, empty this set and give the
+        /// circuits their devices again (commit aea4196 has every circuit's device).
+        /// </summary>
+        public static readonly System.Collections.Generic.HashSet<Device> Shelved =
+            new System.Collections.Generic.HashSet<Device> { Device.Light, Device.Speaker, Device.Digits, Device.Fan, Device.Servo };
         static readonly string[] s_Keys = { "display", "light", "speaker", "digits", "fan", "servo" };
         static readonly string[] s_Nouns = { "display", "light", "speaker", "digit display", "fan", "servo" };
 

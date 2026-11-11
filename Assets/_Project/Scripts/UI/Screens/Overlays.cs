@@ -315,7 +315,7 @@ namespace Blackbox.UI.Screens
                 "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
                 "Blocks keep hidden rules. The dots under a named block show which setting it is fixed in. Wire a block between an input and an output, run it, and watch what it sends. Once you solve a circuit, each of its blocks has its rule written under it.",
                 "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
-                "Outputs are devices: lights glow, fans spin, servos swing, digit displays count, speakers play. A target is met when the device does the same thing.",
+                "Each output is a display: it shows the signal that reaches it, and plays it on a run. Its target is met only by the very same signal.",
                 "Signals can change through the loop. Each one plays across its card, and clicking any signal plays it.",
             } : new List<string>
             {

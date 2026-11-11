@@ -27,7 +27,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -69,7 +69,7 @@
     },
     {
       "id": "junction-03",
-      "name": "Lights Out",
+      "name": "Cut Off",
       "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle. Which goes on top?",
       "inputs": {
         "A": {
@@ -90,7 +90,7 @@
       },
       "outputs": {
         "X": {
-          "device": "light"
+          "device": "display"
         }
       },
       "solution": [
@@ -121,7 +121,7 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         }
       },
       "solution": [
@@ -193,13 +193,13 @@
       },
       "outputs": {
         "X": {
-          "device": "digits"
+          "device": "display"
         },
         "Y": {
           "device": "display"
         },
         "Z": {
-          "device": "fan"
+          "device": "display"
         }
       },
       "solution": [

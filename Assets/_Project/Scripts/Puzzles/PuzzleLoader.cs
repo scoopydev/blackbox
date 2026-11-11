@@ -475,6 +475,8 @@ namespace Blackbox.Puzzles
                         throw new PuzzleFormatException($"{where}: output '{m.Key}' has unknown device '{v.AsString()}' (use display, light, speaker, digits, fan or servo).");
                 }
                 else if (!v.IsNull) throw new PuzzleFormatException($"{where}: output '{m.Key}' must be [column, row], a device name or an object.");
+                if (Devices.Shelved.Contains(node.Device))
+                    throw new PuzzleFormatException($"{where}: output '{m.Key}' is a {Devices.Noun(node.Device)}, which is set aside for now: every output is a display.");
                 p.Outputs.Add(node);
             }
 

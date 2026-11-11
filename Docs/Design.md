@@ -7,9 +7,9 @@ The block rules are listed near the end, under a spoiler heading.
 
 Every circuit gives the player **inputs** on the left, **blocks** in the middle and **outputs** on the right. The player **draws the wires** so every output does what its target shows. Only the outputs count. Each block hides a rule; the player never reads it, they work it out by wiring the block into something and running it.
 
-1. **Read the goal.** The goal is one short sentence above the board ("Make light X do what its target shows."), with the two rules in small letters under it and a count of the outputs met beside it. Every output shows its target device beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
+1. **Read the goal.** The goal is one short sentence above the board ("Make display X do what its target shows."), with the two rules in small letters under it and a count of the outputs met beside it. Every output shows its target beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
 2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires. Dragging a block by its body moves it, and its wires follow, so the player can untangle a circuit; a block can't be dropped on another card. The circuit remembers where its blocks were left, and RESET in the menu puts them back.
-3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs work their devices top to bottom, each playing its sound. Any change hides the results again, so each run shows one wiring.
+3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs show what reaches them, top to bottom, each playing its sound. Any change hides the results again, so each run shows one wiring.
 4. **Keep the rules.** Every block must be used: it must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused. The verdict after a run names the first broken rule, such as "block g has an input with no wire" or "block h isn't used".
 5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
@@ -20,6 +20,8 @@ The circuit screen keeps its text down: the pen colours show only while a pen or
 Blocks are fixed: the player never changes a block's setting. A **named** block shows its kind's code (such as "B3") and a dot for each of the kind's settings, with the one it is fixed in filled, so two blocks of one kind that behave differently never look the same. In Part Three blocks are **unmarked**: no code and no dots, only their ports.
 
 ### Devices
+
+**For now every output is a plain display** (see "Set aside: output devices" at the end). The table is what each device does when it is in play.
 
 | Device | Does | Matches its target when |
 |---|---|---|
@@ -94,7 +96,7 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 
 ### Chapter I: First Light
 
-*Every block keeps a rule. Wire it to find out.* Bits, B1 to B4; lights and a display.
+*Every block keeps a rule. Wire it to find out.* Bits, B1 to B4.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
@@ -103,46 +105,46 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 | 03 | Under the Lid | Wiring it all, a chain, and B3 | 27 | 2 |
 | 04 | Fork | One input feeding two blocks, and B4 | 27 | 2 |
 | 05 | Top and Bottom | Which input is on top | 256 | 2 |
-| 06 | Tangle | Four blocks, two lights | 279,936 | 224 |
+| 06 | Tangle | Four blocks, two outputs | 279,936 | 224 |
 
 ### Chapter II: Tally
 
-*Count what changes.* Digits, D1 to D4; digit displays, a fan and a servo.
+*Count what changes.* Digits, D1 to D4.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
 | 01 | Count | Pre-wired, and D1 | 2 | 1 |
 | 02 | Balance | Half wired, and D2 | 4 | 2 |
-| 03 | Reflection | D3, order matters, a fan | 9 | 1 |
-| 04 | Larger | D4, a servo | 3,125 | 26 |
+| 03 | Reflection | D3, and order matters | 9 | 1 |
+| 04 | Larger | D4, and one block feeding two chains | 3,125 | 26 |
 | 05 | Retrace | A pattern of digits | 9 | 1 |
 | 06 | Ledger | Four blocks, two outputs | 279,936 | 12 |
 
 ### Chapter III: Forms
 
-*Every shape is a message.* Shapes, S1 to S4; displays, a light and digit displays.
+*Every shape is a message.* Shapes, S1 to S4.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
 | 01 | Fill | Pre-wired, and S1 | 2 | 1 |
 | 02 | Graft | Half wired, and S3 | 4 | 1 |
-| 03 | Corners | S4, and a light showing a shape's colour | 4 | 2 |
-| 04 | Turn | S2, and a digit display counting corners | 9 | 1 |
-| 05 | Homecoming | Colour stays with the form | 625 | 63 |
-| 06 | Lattice | Four blocks, three outputs | 46,656 | 76 |
+| 03 | Corners | S4, on a pattern of shapes | 4 | 2 |
+| 04 | Turn | S2, one kind in two settings | 9 | 1 |
+| 05 | Homecoming | Colour stays with the form | 625 | 16 |
+| 06 | Lattice | Four blocks, three outputs | 46,656 | 42 |
 
 ### Chapter IV: Resonance
 
-*Listen closely.* Analog waves, W1 to W4; speakers, a display and servos.
+*Listen closely.* Analog waves, W1 to W4.
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
 | 01 | Hum | Pre-wired, and W1 | 2 | 1 |
 | 02 | Splice | Half wired, and W3 | 4 | 1 |
 | 03 | Timbre | W2 and W4 | 9 | 2 |
-| 04 | Offset | A servo following a wave | 27 | 2 |
-| 05 | Echo | Two speakers | 64 | 2 |
-| 06 | Chorus | Four blocks, a speaker and a servo | 7,776 | 4 |
+| 04 | Offset | W3 with a shifted wave, and which goes on top | 27 | 2 |
+| 05 | Echo | Two outputs, by ear | 64 | 2 |
+| 06 | Chorus | Four blocks, two outputs | 7,776 | 4 |
 
 Every circuit is checked by trying every way to wire it, in the tests and from **BLACKBOX → Validate Puzzles**. Each one's solution must work, it must not be solved as it starts, and no input wired straight to an output may already meet that output's target.
 
@@ -154,9 +156,9 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 |---|---|---|---|---|
 | 01 | Cross Talk | A bit block reads a shape; one input into both ports | 9 | 1 |
 | 02 | Corner Count | A digit block reads a shape as its corners | 3 | 1 |
-| 03 | Branch | One source feeding two wires; a digit display counts corners | 4 | 2 |
+| 03 | Branch | One source feeding two blocks | 4 | 1 |
 | 04 | Bit Shapes | A shape block reads a bit as a circle | 2 | 1 |
-| 05 | Moving Parts | A fan driven by a shape, a servo by bits | 9 | 1 |
+| 05 | Crossover | Each block fed the other kind of signal | 9 | 1 |
 
 ### Chapter VI: Junction
 
@@ -166,7 +168,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 |---|---|---|---|---|
 | 01 | Corners | A digit and a shape summed: the shape counts as its corners | 9 | 2 |
 | 02 | Solid State | A shape's form with a bit's fill | 9 | 1 |
-| 03 | Lights Out | A digit and a wave in a bit block, and which goes on top | 9 | 1 |
+| 03 | Cut Off | A digit and a wave in a bit block, and which goes on top | 9 | 1 |
 | 04 | Staircase | A wave read as a digit, plus a steady digit | 9 | 2 |
 | 05 | Flicker | A wave giving a shape its fill, so it flickers | 9 | 1 |
 | 06 | Junction | A shape, a digit and a wave, three blocks, three outputs | 15,625 | 4 |
@@ -178,7 +180,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
 | 01 | Pulse | A wave into AND blinks a bit | 9 | 3 |
-| 02 | Silence | M1: a wave and its half-cycle twin cancel, on a speaker | 9 | 2 |
+| 02 | Silence | M1: a wave and its half-cycle twin cancel | 9 | 2 |
 | 03 | Mirror | M2: a signal plus its flip is nothing | 8 | 2 |
 | 04 | Late | M3: a quarter loop later, which is a half cycle of a twice-a-loop wave | 27 | 2 |
 | 05 | Double Time | M7, and which comes first: speeding up or delaying | 9 | 1 |
@@ -193,11 +195,11 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
 | 01 | Nameless | Order matters: double then add, not add then double | 4 | 1 |
-| 02 | Dim | Light brightness from a digit, and a shape's colour | 9 | 1 |
-| 03 | Sweep | A servo following a wave, delayed after speeding up | 9 | 1 |
+| 02 | Matchmaker | Which block goes with which input | 9 | 1 |
+| 03 | Sweep | A wave delayed after speeding up | 9 | 1 |
 | 04 | Strobe | Two outputs from one chain | 64 | 6 |
 | 05 | Countdown | A count, mirrored | 9 | 1 |
-| 06 | Colours | Shapes on a light and a digit display | 27 | 2 |
+| 06 | Colours | One block feeding an output and another block | 27 | 2 |
 
 ### Chapter IX: Blackbox
 
@@ -206,8 +208,8 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
 | 01 | Metronome | Speed up twice, threshold, count the blinks | 7,776 | 6 |
-| 02 | Mixing Desk | Add two waves, gate the sum, flip the gate onto a fan | 3,125 | 2 |
-| 03 | Pendulum | A flipped saw, sped up, on a servo beside a digit chain | 125 | 2 |
+| 02 | Mixing Desk | Add two waves, gate the sum, flip the gate | 3,125 | 2 |
+| 03 | Downhill | A flipped saw, sped up, beside a digit chain | 125 | 2 |
 | 04 | Signal Box | Shapes, bits and digits at once, three outputs | 279,936 | 16 |
 | 05 | Pulse Width | A threshold from a difference, three readers of one pulse | 46,656 | 1 |
 | 06 | Black Box | Three separate machines in one circuit, five blocks | 2,097,152 | 2 |
@@ -322,6 +324,15 @@ Grain's circuits were:
 | 05 | Replay | One input feeding two chains | 256 | 3 |
 | 06 | Mosaic | Four blocks, a servo and a speaker | 46,656 | 113 |
 
-The code that makes, draws, sounds and checks them is all still there, with its tests. `KindCatalog.Shelved` lists the five kinds and `KindCatalog.MediumShelved` the medium, and the loader refuses any circuit that uses them. Grain's file is kept in `Assets/_Project/Puzzles/Shelved/`, outside `Resources`, so the game never loads it. Blend 05 (was *Steps*, M4 and M7) became *Double Time*, and Blackbox 03 (was *Stepper*) became *Pendulum*.
+The code that makes, draws, sounds and checks them is all still there, with its tests. `KindCatalog.Shelved` lists the five kinds and `KindCatalog.MediumShelved` the medium, and the loader refuses any circuit that uses them. Grain's file is kept in `Assets/_Project/Puzzles/Shelved/`, outside `Resources`, so the game never loads it. Blend 05 (was *Steps*, M4 and M7) became *Double Time*, and Blackbox 03 (was *Stepper*) became *Pendulum*, now *Downhill*.
 
 To bring them back: empty both checks in `KindCatalog`, move Grain's file back into `BlackboxPuzzles`, list it in `chapters.json` after Resonance, renumber the chapters after it, and teach M4 again somewhere in Blend.
+
+## Set aside: output devices
+
+On 11 Nov 2026 every output became a plain display, for now. Lights, speakers, digit displays, fans and servos are listed in `Devices.Shelved`, and the loader refuses a circuit that uses one. Their drawing, matching and sound code is all kept, with its tests, and the Devices table above says what each did. Commit aea4196 has every circuit with its device.
+
+A display needs the very same signal, where a device matched on what it did, so some circuits now have fewer solutions. Every hint and chapter line that talked about a device was reworded. Four circuits were renamed because their names were about devices: Junction 03 *Lights Out* became *Cut Off*, Unmarked 02 *Dim* became *Matchmaker*, and Blackbox 03 became *Downhill*. Patch 05 *Moving Parts* became *Crossover*: it fed a shape to a fan and bits to a servo, which shows nothing on displays, so now each block is fed the other kind of signal.
+
+To bring them back: empty `Devices.Shelved`, give the circuits their devices again (from commit aea4196, or new ones), restore the device lines in the hints, chapter lines and the HOW IT WORKS overlay, and check every circuit with **BLACKBOX → Validate Puzzles**.
+

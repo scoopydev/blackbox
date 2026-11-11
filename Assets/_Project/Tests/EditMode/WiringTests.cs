@@ -262,7 +262,7 @@ namespace Blackbox.Tests
             ""id"": ""t"", ""name"": ""Test"",
             ""inputs"": { ""A"": ""binary 1"", ""B"": ""wave sine f1 a7"" },
             ""blocks"": { ""g"": { ""kind"": ""B2"" }, ""h"": { ""kind"": ""B1"" } },
-            ""outputs"": { ""X"": ""light"" },
+            ""outputs"": { ""X"": ""display"" },
             ""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]
         }";
 
@@ -359,7 +359,9 @@ namespace Blackbox.Tests
             Refused(Small.Replace(@"[ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"[ ""A -> g.0"", ""B -> g.1"", ""A -> h"", ""g -> X"" ]"), "a block that leads nowhere", "doesn't use block 'h'");
             Refused(Small.Replace(@"""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]", @"""hint"": ""none"""), "no solution", "solution");
             Refused(Small.Replace(@"""outputs"":", @"""probes"": 2, ""outputs"":"), "no probes", "probes");
-            Refused(Small.Replace(@"""X"": ""light""", @"""X"": ""toaster"""), "unknown device", "toaster");
+            Refused(Small.Replace(@"""X"": ""display""", @"""X"": ""toaster"""), "unknown device", "toaster");
+            foreach (var d in new[] { "light", "speaker", "digits", "fan", "servo" })
+                Refused(Small.Replace(@"""X"": ""display""", $@"""X"": ""{d}"""), $"a {d} is set aside", "set aside");
             Refused(Small.Replace(@"""A"": ""binary 1""", @"""A"": ""binary 11011"""), "a pattern that doesn't fit", "doesn't fit");
             Refused(Small.Replace(@"""B"": ""wave sine f1 a7""", @"""B"": ""sampled sine f1 a7 s6"""), "stepped waves are set aside", "set aside");
             Refused(Small.Replace(@"""kind"": ""B1""", @"""kind"": ""M4"""), "the sampler is set aside", "set aside");
@@ -367,9 +369,18 @@ namespace Blackbox.Tests
             var p = TestContent.ParseWired(Small);
             Assert.That(p.Wiring, Is.True);
             Assert.That(p.Blocks.All(b => b.Locked), Is.True, "the player wires blocks but never sets them");
-            Assert.That(p.Outputs[0].Device, Is.EqualTo(Device.Light));
+            Assert.That(p.Outputs[0].Device, Is.EqualTo(Device.Display));
             Assert.That(p.Outputs[0].Want, Is.Not.Null, "the target comes from the solution");
             Assert.That(TestContent.ParseWired(Small, marked: false).Marked, Is.False);
+        }
+
+        [Test]
+        public void GoalsNameTheOutputs()
+        {
+            Assert.That(GoalText.For(TestContent.ParseWired(Small)), Is.EqualTo("Make display X do what its target shows."));
+            var two = Small.Replace(@"""outputs"": { ""X"": ""display"" }", @"""outputs"": { ""X"": ""display"", ""Y"": ""display"" }")
+                           .Replace(@"""h -> X"" ]", @"""h -> X"", ""g -> Y"" ]");
+            Assert.That(GoalText.For(TestContent.ParseWired(two)), Is.EqualTo("Make displays X and Y do what their targets show."), "one noun for outputs that are all alike");
         }
 
         // ------------------------------------------------------------ shipped circuits
@@ -426,7 +437,7 @@ namespace Blackbox.Tests
         public void EveryDeviceIsUsed()
         {
             var used = new HashSet<Device>(WiredPuzzles().SelectMany(p => p.Outputs).Select(o => o.Device));
-            foreach (var d in Devices.All) Assert.That(used, Does.Contain(d), Devices.Noun(d));
+            foreach (var d in Devices.All.Where(d => !Devices.Shelved.Contains(d))) Assert.That(used, Does.Contain(d), Devices.Noun(d));
         }
     }
 }
