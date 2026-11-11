@@ -30,7 +30,6 @@ namespace Blackbox.UI.Screens
         VoidText _goal, _matchedValue, _matchedLabel;
         PillButton _pen, _eraser, _textTool, _undo, _clear;
         Clickable _clearNotes;
-        Vector2 _clearNotesAt;
         readonly List<ShapeGraphic> _swatches = new List<ShapeGraphic>();
         CanvasGroup _controls, _solved;
         VoidText _solvedStats, _solvedLabel;
@@ -52,6 +51,9 @@ namespace Blackbox.UI.Screens
         const float StatusY = 888f;
         const float FooterRule = 912f;
         const float ToolsY = 962f;
+        /// <summary>The pen colours sit in a row under the PEN (or TEXT) button while it's on.</summary>
+        const float SwatchY = 1012f;
+        const float SwatchPitch = 34f;
         const float HintsY = 1036f;
 
         protected internal override void Build()
@@ -215,9 +217,9 @@ namespace Blackbox.UI.Screens
             for (int i = 0; i < InkLayer.Inks.Length; i++)
             {
                 int index = i;
-                var rt = UIKit.Rect(Root, "Swatch " + i).At(Left + 492f + i * 36f, ToolsY, 32f, 46f);
+                var rt = UIKit.Rect(Root, "Swatch " + i).At(Left + 66f + (i - (InkLayer.Inks.Length - 1) * 0.5f) * SwatchPitch, SwatchY, SwatchPitch, 30f);
                 var dot = UIKit.Shape(rt, "Dot", ShapeKind.Circle);
-                dot.rectTransform.Centered(0f, 0f, 18f, 18f);
+                dot.rectTransform.Centered(0f, 0f, 16f, 16f);
                 _swatches.Add(dot);
                 UIKit.Hit(rt).rectTransform.Stretch();
                 var c = rt.gameObject.AddComponent<Clickable>();
@@ -231,7 +233,7 @@ namespace Blackbox.UI.Screens
                 };
             }
 
-            _clearNotes = Chrome.TextButton(Root, "CLEAR NOTES", Left + 610f, ToolsY, false, () =>
+            _clearNotes = Chrome.TextButton(Root, "CLEAR NOTES", Left + 492f, ToolsY, false, () =>
             {
                 _ink.FinishTyping();
                 if (_ink.ItemCount == 0) { Say("There are no notes on this circuit yet. Press D for the pen, or T to type.", 3f); return; }
@@ -337,17 +339,14 @@ namespace Blackbox.UI.Screens
             _textTool.Active = _ink.Tool == InkTool.Text;
             // The colours only matter while drawing or typing, and clearing only once there are notes.
             bool inking = _ink.Tool == InkTool.Pen || _ink.Tool == InkTool.Text;
-            if (_clearNotes != null)
-            {
-                var rt = (RectTransform)_clearNotes.transform;
-                if (_clearNotesAt == Vector2.zero) _clearNotesAt = rt.anchoredPosition;
-                // With the colours hidden, it moves up beside the tools.
-                rt.anchoredPosition = _clearNotesAt - new Vector2(inking ? 0f : 118f, 0f);
-                _clearNotes.gameObject.SetActive(_ink.ItemCount > 0);
-            }
+            if (_clearNotes != null) _clearNotes.gameObject.SetActive(_ink.ItemCount > 0);
+            // Under whichever of PEN and TEXT is on.
+            float under = _ink.Tool == InkTool.Text ? ((RectTransform)_textTool.transform).anchoredPosition.x : ((RectTransform)_pen.transform).anchoredPosition.x;
             for (int i = 0; i < _swatches.Count; i++)
             {
-                _swatches[i].transform.parent.gameObject.SetActive(inking);
+                var holder = (RectTransform)_swatches[i].transform.parent;
+                holder.gameObject.SetActive(inking);
+                holder.At(under + (i - (_swatches.Count - 1) * 0.5f) * SwatchPitch, SwatchY, SwatchPitch, 30f);
                 bool chosen = i == _ink.Colour;
                 var c = InkLayer.Inks[i];
                 _swatches[i].Style(Paint.Solid, chosen ? c : c.WithAlpha(0.45f), chosen ? Paint.Solid : Paint.None, Palette.Text, 1.4f);
