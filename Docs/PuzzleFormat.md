@@ -25,7 +25,7 @@ The game in parts, each a list of chapter files (names without `.json`) in play 
 | Key | Required | Meaning |
 |---|---|---|
 | `id` | yes | Stable id. |
-| `title` | yes | The part's tab on the chapter map. |
+| `title` | yes | The part's heading in the chapter list. |
 | `tagline` | no | One line under the tabs. |
 | `afterPrevious` | no | `true` keeps the part locked until every circuit of the part before it is solved. Inside an open part, every chapter's first circuit is open. |
 | `chapters` | yes | Chapter file names, in play order. |

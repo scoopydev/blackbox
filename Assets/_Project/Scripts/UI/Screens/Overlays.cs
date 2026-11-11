@@ -29,24 +29,36 @@ namespace Blackbox.UI.Screens
             var p = Puzzle;
             var name = UIKit.Text(Root, p.Name, TextStyle.Heading.WithSize(40).WithWeight(200));
             name.rectTransform.At(cx, 350f, 900f, 56f);
-            var where = UIKit.Text(Root, $"CHAPTER {p.Chapter.Numeral}  ·  CIRCUIT {p.Label}", TextStyle.Label.WithSize(12).WithColor(Palette.Faint));
+            var where = UIKit.Text(Root, $"CHAPTER {p.Chapter.Numeral}  ·  {p.Chapter.Title}  ·  CIRCUIT {p.Label}", TextStyle.Label.WithSize(12).WithColor(Palette.Faint));
             where.rectTransform.At(cx, 396f, 600f, 18f);
 
+            int solvedHere = Game.Progress.SolvedIn(p.Chapter);
+            Chrome.ProgressBar(Root, cx, 436f, 180f, solvedHere, p.Chapter.Puzzles.Count, "SOLVED IN THIS CHAPTER");
+
             _menu = new MenuList();
-            float y = 490f;
+            float y = 520f;
             const float step = 58f;
             _menu.Add(MenuItem.Create(Root, "RESUME", cx, y), () => { App.Sound(Sfx.Close); Close(); });
+            _menu.Add(MenuItem.Create(Root, "HOW IT WORKS", cx, y += step), OpenHelp);
             _menu.Add(MenuItem.Create(Root, "RESET CIRCUIT", cx, y += step), () =>
                 Game.Confirm(ResetQuestion, "RESET", false, () =>
                 {
                     Close();
                     Reset?.Invoke();
                 }));
-            _menu.Add(MenuItem.Create(Root, "CIRCUITS", cx, y += step), () => Game.GoChapters(Puzzle.Chapter));
             _menu.Add(MenuItem.Create(Root, "SETTINGS", cx, y += step), Game.OpenSettings);
-            _menu.Add(MenuItem.Create(Root, "TITLE", cx, y += step), Game.GoTitle);
+            _menu.Add(MenuItem.Create(Root, "CHAPTERS", cx, y += step + 16f), () => Game.GoChapters(Puzzle.Chapter));
+            _menu.Add(MenuItem.Create(Root, "MAIN MENU", cx, y += step), Game.GoTitle);
 
-            Chrome.KeyHints(Root, cx - 190f, 1000f, false, "ARROWS", "MOVE", "ENTER", "CHOOSE", "ESC", "RESUME");
+            Chrome.KeyHintsCentred(Root, cx, 1000f, "UP DOWN", "MOVE", "ENTER", "CHOOSE", "H", "HELP", "ESC", "RESUME");
+        }
+
+        void OpenHelp()
+        {
+            var help = Game.Screens.Create<HelpOverlay>();
+            help.Chapter = Puzzle.Chapter;
+            help.Wiring = Puzzle.Wiring;
+            Game.Screens.Push(help);
         }
 
         public override void HandleInput()
@@ -57,6 +69,7 @@ namespace Blackbox.UI.Screens
                 Close();
                 return;
             }
+            if (GameInput.Down(Key.H)) { OpenHelp(); return; }
             _menu.HandleKeys();
         }
     }
@@ -73,59 +86,66 @@ namespace Blackbox.UI.Screens
             public VoidToggle Toggle;
             public Action Activate;
             public bool Danger;
+            public string About;
         }
 
         readonly List<Row> _rows = new List<Row>();
         int _focus;
         float _pulse;
 
-        const float LabelLeft = 680f;
+        const float SectionRight = 640f;
+        const float LabelLeft = 700f;
         const float ControlRight = 1240f;
+
+        VoidText _about;
 
         protected internal override void Build()
         {
             BuildVeil();
             float cx = VoidFrame.Width * 0.5f;
             var title = UIKit.Text(Root, "SETTINGS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
-            title.rectTransform.At(cx, 220f, 400f, 22f);
-            UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, 262f, Palette.Rule);
+            title.rectTransform.At(cx, 150f, 400f, 22f);
+            Chrome.KeyButton(Root, "ESC", "BACK", 1830f, 62f, true, () => { App.Sound(Sfx.Close); Close(); });
+            UIKit.Rule(Root, SectionRight - 160f, ControlRight + 80f, 190f, Palette.Rule);
 
             var prefs = Game.Save.Prefs;
-            float y = 296f;
-            const float step = 62f;
-            AddSlider("MASTER VOLUME", y, prefs.MasterVolume, v => { prefs.MasterVolume = v; Game.ApplyPrefs(); });
-            AddSlider("MUSIC", y += step, prefs.MusicVolume, v => { prefs.MusicVolume = v; Game.ApplyPrefs(); });
-            AddSlider("EFFECTS", y += step, prefs.EffectsVolume, v => { prefs.EffectsVolume = v; Game.ApplyPrefs(); });
-            y += 10f;
-            AddToggle("FULLSCREEN", y += step, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); });
-            AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); });
-            AddToggle("SIGNAL SOUNDS", y += step, prefs.SignalSounds, v => { prefs.SignalSounds = v; Game.MarkDirty(); });
-            var note = UIKit.Text(Root, "PLAYS SIGNALS AS YOU SET INPUTS AND RUN", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
-            note.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
-            y += 40f;
-            AddToggle("DEBUG: BLOCK RULES", y += step, prefs.DebugRules, v => { prefs.DebugRules = v; Game.MarkDirty(); });
-            var debugNote = UIKit.Text(Root, "WRITES WHAT EVERY BLOCK DOES UNDER IT", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
-            debugNote.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
-            y += 26f;
-            AddToggle("DEBUG: OPEN EVERYTHING", y += step, prefs.DebugOpenAll, v => { prefs.DebugOpenAll = v; Game.MarkDirty(); });
-            var openNote = UIKit.Text(Root, "EVERY PART, CHAPTER AND CIRCUIT CAN BE PLAYED", TextStyle.Label.WithSize(11).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
-            openNote.rectTransform.At(LabelLeft + 200f, y + 24f, 400f, 16f);
-            y += 26f;
-            UIKit.Rule(Root, LabelLeft - 40f, ControlRight + 80f, y + 30f, Palette.Rule);
-            AddAction("ERASE PROGRESS", y += step + 10f, true, () =>
+            const float step = 56f;
+            const float gap = 30f;
+            float y = 236f;
+            Chrome.Section(Root, "SOUND", SectionRight, y);
+            AddSlider("MASTER VOLUME", y, prefs.MasterVolume, v => { prefs.MasterVolume = v; Game.ApplyPrefs(); }, "Everything the game plays.");
+            AddSlider("MUSIC", y += step, prefs.MusicVolume, v => { prefs.MusicVolume = v; Game.ApplyPrefs(); }, "The hum under every screen.");
+            AddSlider("EFFECTS", y += step, prefs.EffectsVolume, v => { prefs.EffectsVolume = v; Game.ApplyPrefs(); }, "Clicks, wires and runs.");
+            AddToggle("SIGNAL SOUNDS", y += step, prefs.SignalSounds, v => { prefs.SignalSounds = v; Game.MarkDirty(); }, "Plays each signal as you set inputs and run a circuit.");
+
+            Chrome.Section(Root, "DISPLAY", SectionRight, y += step + gap);
+            AddToggle("FULLSCREEN", y, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); }, "Fill the screen, or play in a window.");
+            AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); }, "Stills the flowing light and the pulsing marks.");
+
+            Chrome.Section(Root, "DEBUG", SectionRight, y += step + gap);
+            AddToggle("SHOW BLOCK RULES", y, prefs.DebugRules, v => { prefs.DebugRules = v; Game.MarkDirty(); }, "Writes what every block does under it. Spoils the puzzles.");
+            AddToggle("OPEN EVERYTHING", y += step, prefs.DebugOpenAll, v => { prefs.DebugOpenAll = v; Game.MarkDirty(); }, "Every part, chapter and circuit can be played.");
+
+            Chrome.Section(Root, "PROGRESS", SectionRight, y += step + gap);
+            AddAction("ERASE PROGRESS", y, true, () =>
                 Game.Confirm("Erase every solved circuit, every circuit in progress and every note you've written? Settings are kept.", "ERASE", true, () =>
                 {
                     Game.EraseProgress();
-                }));
-            AddAction("BACK", y += step, false, () => { App.Sound(Sfx.Close); Close(); });
+                }), "Start again from the first circuit. Settings are kept.");
 
-            Chrome.KeyHints(Root, cx - 300f, 1000f, false, "ARROWS", "MOVE", "LEFT RIGHT", "ADJUST", "ENTER", "SWITCH", "ESC", "BACK");
+            UIKit.Rule(Root, SectionRight - 160f, ControlRight + 80f, y + 48f, Palette.Rule);
+            AddAction("DONE", y += step + 36f, false, () => { App.Sound(Sfx.Close); Close(); }, "Back to where you were.");
+
+            _about = UIKit.Text(Root, "", TextStyle.Body.WithSize(19).WithColor(Palette.Dim));
+            _about.rectTransform.At(cx, 952f, 1200f, 28f);
+
+            Chrome.KeyHintsCentred(Root, cx, 1032f, "UP DOWN", "MOVE", "LEFT RIGHT", "ADJUST", "ENTER", "SWITCH", "ESC", "BACK");
             Focus(0, false);
         }
 
-        Row AddRow(string text, float y)
+        Row AddRow(string text, float y, string about)
         {
-            var row = new Row();
+            var row = new Row { About = about };
             int index = _rows.Count;
             var hitRt = UIKit.Rect(Root, "Row " + text).At((LabelLeft - 40f + ControlRight + 80f) * 0.5f, y, ControlRight + 120f - LabelLeft, 52f);
             UIKit.Hit(hitRt).rectTransform.Stretch();
@@ -148,9 +168,9 @@ namespace Blackbox.UI.Screens
             return row;
         }
 
-        void AddSlider(string text, float y, float value, Action<float> changed)
+        void AddSlider(string text, float y, float value, Action<float> changed, string about)
         {
-            var row = AddRow(text, y);
+            var row = AddRow(text, y, about);
             const float width = 240f;
             row.Slider = VoidSlider.Create(Root, ControlRight - width * 0.5f, y, width);
             row.Slider.Value = value;
@@ -166,9 +186,9 @@ namespace Blackbox.UI.Screens
 
         static string Percent(float v) => Mathf.RoundToInt(v * 100f).ToString();
 
-        void AddToggle(string text, float y, bool on, Action<bool> changed)
+        void AddToggle(string text, float y, bool on, Action<bool> changed, string about)
         {
-            var row = AddRow(text, y);
+            var row = AddRow(text, y, about);
             row.Toggle = VoidToggle.Create(Root, ControlRight - 29f, y);
             row.Toggle.On = on;
             row.Toggle.Changed = changed;
@@ -176,9 +196,9 @@ namespace Blackbox.UI.Screens
             row.Activate = () => { App.Sound(Sfx.Dial); r.Toggle.Flip(); };
         }
 
-        void AddAction(string text, float y, bool danger, Action action)
+        void AddAction(string text, float y, bool danger, Action action, string about)
         {
-            var row = AddRow(text, y);
+            var row = AddRow(text, y, about);
             row.Danger = danger;
             row.Activate = () => { App.Sound(Sfx.Click); action(); };
         }
@@ -198,6 +218,12 @@ namespace Blackbox.UI.Screens
                 row.Dot.GlowColor = row.Dot.FillColor;
                 if (row.Slider != null) row.Slider.Focused = f;
                 if (row.Toggle != null) row.Toggle.Focused = f;
+            }
+            if (_about != null)
+            {
+                var focused = _rows[_focus];
+                _about.text = focused.About ?? "";
+                _about.color = focused.Danger ? Palette.Violet : Palette.Dim;
             }
         }
 
@@ -249,6 +275,10 @@ namespace Blackbox.UI.Screens
         {
             BuildVeil();
             float cx = VoidFrame.Width * 0.5f;
+            var panel = UIKit.Shape(Root, "Panel");
+            panel.Radius = 18f;
+            panel.rectTransform.At(cx, 515f, 980f, 330f);
+            panel.Style(Paint.Solid, Palette.Surface, Paint.Solid, Danger ? Palette.Violet.WithAlpha(0.45f) : Palette.Outline, 1.2f);
             var q = UIKit.Text(Root, Question, TextStyle.Body.WithSize(26).WithColor(Palette.Text));
             q.horizontalOverflow = HorizontalWrapMode.Wrap;
             q.rectTransform.At(cx, 460f, 820f, 120f);
@@ -262,7 +292,7 @@ namespace Blackbox.UI.Screens
             _yes.Click.HoverChanged += on => { if (on) SetFocus(true); };
             SetFocus(!Danger);
 
-            Chrome.KeyHints(Root, cx - 190f, 1000f, false, "LEFT RIGHT", "CHOOSE", "ENTER", "OK", "ESC", "CANCEL");
+            Chrome.KeyHintsCentred(Root, cx, 1032f, "LEFT RIGHT", "CHOOSE", "ENTER", "OK", "ESC", "CANCEL");
             App.Sound(Sfx.Open, 0.9f, 0.6f);
         }
 
@@ -307,7 +337,12 @@ namespace Blackbox.UI.Screens
         {
             BuildVeil();
             var title = UIKit.Text(Root, "HOW IT WORKS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
-            title.rectTransform.At(VoidFrame.Width * 0.5f, 170f, 400f, 22f);
+            title.rectTransform.At(VoidFrame.Width * 0.5f, 150f, 400f, 22f);
+            UIKit.Rule(Root, 200f, 1720f, 190f, Palette.Rule);
+            var ideaHead = UIKit.Text(Root, "THE IDEA", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            ideaHead.rectTransform.At(220f + 200f, 226f, 400f, 18f);
+            var keysHead = UIKit.Text(Root, "CONTROLS", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleRight);
+            keysHead.rectTransform.At(1230f - 200f, 226f, 400f, 18f);
 
             var ideas = Wiring ? new List<string>
             {
@@ -327,7 +362,7 @@ namespace Blackbox.UI.Screens
                 "Draw with the pen, or type with the text tool, to label blocks and note down what you learn. Notes stay with the circuit.",
             };
             if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
-            float y = 240f;
+            float y = 252f;
             foreach (var idea in ideas)
             {
                 var t = UIKit.Text(Root, idea, TextStyle.Body.WithSize(21), TextAnchor.UpperLeft);
@@ -367,7 +402,7 @@ namespace Blackbox.UI.Screens
                 "TAB  ·  LEFT RIGHT", "choose something, change it",
                 "ESC", "menu",
             };
-            float ky = 280f;
+            float ky = 270f;
             for (int i = 0; i + 1 < keys.Length; i += 2)
             {
                 var k = UIKit.Text(Root, keys[i], TextStyle.Label.WithSize(13).WithTracking(0.16f).WithColor(Palette.Dim), TextAnchor.MiddleRight);
@@ -377,7 +412,6 @@ namespace Blackbox.UI.Screens
                 ky += 52f;
             }
 
-            Chrome.KeyHints(Root, VoidFrame.Width * 0.5f - 60f, 1000f, false, "ESC", "CLOSE");
             var close = UIKit.Hit(Root, "Close");
             close.rectTransform.Stretch();
             close.transform.SetSiblingIndex(1);
@@ -385,6 +419,8 @@ namespace Blackbox.UI.Screens
             c.HoverSound = false;
             c.ClickSound = Sfx.Close;
             c.Clicked = Close;
+            Chrome.KeyButton(Root, "ESC", "CLOSE", 1830f, 62f, true, Close);
+            Chrome.KeyHintsCentred(Root, VoidFrame.Width * 0.5f, 1032f, "ESC", "CLOSE", "CLICK", "ANYWHERE TO CLOSE");
             App.Sound(Sfx.Open, 1.2f, 0.6f);
         }
 
@@ -441,8 +477,8 @@ namespace Blackbox.UI.Screens
 
             BuildSamples(cx);
 
-            _prompt = UIKit.Text(Root, "PRESS ANY KEY", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
-            _prompt.rectTransform.At(cx, 960f, 400f, 18f);
+            _prompt = UIKit.Text(Root, "CLICK OR PRESS ENTER TO BEGIN", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
+            _prompt.rectTransform.At(cx, 960f, 700f, 18f);
             _prompt.canvasRenderer.SetAlpha(0f);
             Tweener.Run(_prompt, "show", 0.6f, t => _prompt.canvasRenderer.SetAlpha(t), Ease.OutQuad, 1.4f);
 

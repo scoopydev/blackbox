@@ -107,21 +107,75 @@ namespace Blackbox.UI.Screens
         void BuildHeader()
         {
             var p = Puzzle;
-            Chrome.Wordmark(Root, Left, 62f, 22, OpenPause);
-            var where = UIKit.Text(Root, $"{p.Chapter.Numeral}  ·  {p.Chapter.Title}  ·  {p.Label}", TextStyle.Label.WithSize(13).WithColor(Palette.Faint));
+            var chapter = p.Chapter;
+
+            // Left: the way back to this chapter, and its circuits as a row of dots.
+            Chrome.TextButton(Root, $"{chapter.Numeral}  ·  {chapter.Title}", Left - 12f, 48f, false, LeaveToChapter, "back");
+            BuildSteps(Left, 92f);
+
+            // Centre: which circuit this is, and its name.
+            var where = UIKit.Text(Root, $"CIRCUIT {p.Label}  OF  {chapter.Puzzles.Count:00}", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
             where.rectTransform.At(VoidFrame.Width * 0.5f, 44f, 700f, 20f);
             _title = UIKit.Text(Root, p.Name, TextStyle.Heading.WithSize(34).WithWeight(200), TextAnchor.MiddleCenter, "Title");
             _title.rectTransform.At(VoidFrame.Width * 0.5f, 82f, 900f, 46f);
 
-            Chrome.Counter(Root, "MOVES", Right, 62f, out _moves);
+            // Right: help and the menu, as buttons that also show their keys; moves under them.
+            Chrome.KeyButton(Root, "ESC", "MENU", Right, 48f, true, () => { App.Sound(Sfx.Open, 1.2f, 0.5f); OpenPause(); }, out float menuWidth);
+            Chrome.KeyButton(Root, "H", "HELP", Right - menuWidth - 48f, 48f, true, OpenHelp);
+
+            _moves = UIKit.Text(Root, "", TextStyle.Label.WithSize(11).WithTracking(0.3f).WithColor(Palette.Dim), TextAnchor.MiddleRight, "Moves");
+            _moves.rectTransform.At(Right - 150f - 12f, 92f, 300f, 16f);
             _record = UIKit.Text(Root, "", TextStyle.Label.WithSize(11).WithTracking(0.2f).WithColor(Palette.Faint), TextAnchor.MiddleRight, "Record");
-            _record.rectTransform.At(Right - 150f, 92f, 300f, 16f);
+            _record.rectTransform.At(Right - 150f - 12f - 130f, 92f, 300f, 16f);
             if (Game.Progress.IsSolved(p))
             {
                 Game.Save.BestMoves.TryGetValue(p.Id, out int best);
-                _record.text = best > 0 ? $"SOLVED BEFORE  ·  BEST {best} MOVES" : "SOLVED BEFORE";
+                _record.text = best > 0 ? $"SOLVED BEFORE  ·  BEST {best}" : "SOLVED BEFORE";
             }
             UIKit.Rule(Root, Left, Right, HeaderRule, Palette.Rule);
+        }
+
+        /// <summary>
+        /// One dot for each circuit in the chapter: lit once solved, a ring for
+        /// this one. Clicking an open circuit's dot goes straight to it.
+        /// </summary>
+        void BuildSteps(float left, float y)
+        {
+            var chapter = Puzzle.Chapter;
+            const float pitch = 22f;
+            for (int i = 0; i < chapter.Puzzles.Count; i++)
+            {
+                var other = chapter.Puzzles[i];
+                bool here = other == Puzzle;
+                bool solved = Game.Progress.IsSolved(other);
+                bool open = Game.Progress.IsUnlocked(other);
+                var rt = UIKit.Rect(Root, "Step " + other.Label).At(left + 6f + i * pitch, y, pitch, 26f);
+                var dot = UIKit.Shape(rt, "Dot", ShapeKind.Circle);
+                float size = here ? 12f : 8f;
+                dot.rectTransform.Centered(0f, 0f, size, size);
+                if (here) dot.Style(solved ? Paint.Signal : Paint.Solid, solved ? Color.white : Color.black, Paint.Signal, Color.white, 1.6f);
+                else if (solved) dot.Style(Paint.Signal, Color.white, Paint.None, Color.clear);
+                else dot.Style(Paint.None, Color.clear, Paint.Solid, open ? Palette.Dim : Palette.Outline, 1.2f);
+                dot.Glow = here || solved ? 0.35f : 0f;
+                dot.GlowPaint = Paint.Signal;
+                dot.GlowRadius = 8f;
+                if (here || !open) continue;
+                UIKit.Hit(rt).rectTransform.Stretch();
+                var c = rt.gameObject.AddComponent<Clickable>();
+                c.HoverSound = false;
+                c.HoverChanged = on =>
+                {
+                    dot.rectTransform.Centered(0f, 0f, on ? 11f : 8f, on ? 11f : 8f);
+                    if (on) Say($"Circuit {other.Label}: {other.Name}{(solved ? ", solved" : "")}. Click to go to it.", 2.5f);
+                };
+                c.Clicked = () => Game.GoPuzzle(other);
+            }
+        }
+
+        void LeaveToChapter()
+        {
+            App.Sound(Sfx.Close);
+            Game.GoChapters(Puzzle.Chapter);
         }
 
         void BuildGoal()
@@ -199,7 +253,7 @@ namespace Blackbox.UI.Screens
             _clear = PillButton.Create(rt, "CLEAR", Right - 75f, ToolsY, 150f, 46f, false, "reset");
             _clear.Click.ClickSound = Sfx.Hover;
             _clear.Click.Clicked = AskClear;
-            Chrome.KeyHints(rt, Right, HintsY, true, "SPACE", "RUN", "Z", "UNDO", "H", "HELP", "ESC", "MENU");
+            Chrome.KeyHints(rt, Right, HintsY, true, "SPACE", "RUN", "Z", "UNDO", "D", "PEN", "T", "TEXT");
         }
 
         void BuildSolvedPanel()
@@ -226,7 +280,7 @@ namespace Blackbox.UI.Screens
 
         void RefreshCounters()
         {
-            _moves.text = _session.Moves.ToString("00");
+            _moves.text = _session.Moves == 1 ? "1 MOVE" : $"{_session.Moves} MOVES";
             int total = Puzzle.Outputs.Count;
             if (_session.HasRun && !_running)
             {

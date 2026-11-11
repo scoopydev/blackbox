@@ -47,21 +47,27 @@ namespace Blackbox.UI.Screens
             _menu = new MenuList();
             var progress = Game.Progress;
             bool started = progress.TotalSolved > 0 || !string.IsNullOrEmpty(Game.Save.LastPuzzle);
+            var target = progress.ContinueTarget();
             float y = 652f;
             const float step = 58f;
-            _menu.Add(MenuItem.Create(Root, started ? "CONTINUE" : "START", cx, y), () => Game.GoPuzzle(progress.ContinueTarget()));
-            _menu.Add(MenuItem.Create(Root, "CIRCUITS", cx, y += step), () => Game.GoChapters(null));
+            _menu.Add(MenuItem.Create(Root, started ? "CONTINUE" : "START", cx, y), () => Game.GoPuzzle(target));
+            if (target != null && target.Chapter != null)
+            {
+                // Where Continue goes, so the player knows before pressing it.
+                var where = UIKit.Text(Root, $"{target.Chapter.Numeral}  ·  {target.Chapter.Title}  ·  CIRCUIT {target.Label}  ·  {target.Name}",
+                    TextStyle.Label.WithSize(11).WithTracking(0.26f).WithColor(Palette.Faint));
+                where.rectTransform.At(cx, y + 28f, 900f, 16f);
+                y += 22f;
+            }
+            _menu.Add(MenuItem.Create(Root, "CHAPTERS", cx, y += step), () => Game.GoChapters(null));
+            _menu.Add(MenuItem.Create(Root, "HOW TO PLAY", cx, y += step), OpenHelp);
             _menu.Add(MenuItem.Create(Root, "SETTINGS", cx, y += step), Game.OpenSettings);
             if (Application.platform != RuntimePlatform.WebGLPlayer)
                 _menu.Add(MenuItem.Create(Root, "QUIT", cx, y += step), Game.Quit);
 
             int total = 0;
             foreach (var c in Game.Library.Chapters) total += c.Puzzles.Count;
-            if (progress.TotalSolved > 0)
-            {
-                var solved = UIKit.Text(Root, $"{progress.TotalSolved} OF {total} CIRCUITS SOLVED", TextStyle.Label.WithSize(11).WithTracking(0.3f).WithColor(Palette.Faint));
-                solved.rectTransform.At(cx, 1032f, 600f, 16f);
-            }
+            if (progress.TotalSolved > 0 && total > 0) Chrome.ProgressBar(Root, cx, 1032f, 260f, progress.TotalSolved, total, "CIRCUITS SOLVED");
             var version = UIKit.Text(Root, "V" + Application.version, TextStyle.Label.WithSize(11).WithTracking(0.2f).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
             version.rectTransform.At(90f + 100f, 1032f, 200f, 16f);
             Chrome.KeyHints(Root, 1830f, 1032f, true, "ARROWS", "MOVE", "ENTER", "CHOOSE");
@@ -98,8 +104,16 @@ namespace Blackbox.UI.Screens
             _auto = false;
         }
 
+        void OpenHelp()
+        {
+            var help = Game.Screens.Create<HelpOverlay>();
+            help.Wiring = true;
+            Game.Screens.Push(help);
+        }
+
         public override void HandleInput()
         {
+            if (GameInput.Down(Key.H)) { OpenHelp(); return; }
             _menu.HandleKeys();
         }
 
@@ -130,20 +144,25 @@ namespace Blackbox.UI.Screens
     }
 
     /// <summary>
-    /// The map of a chapter: its circuits strung along one wire. The wire lights
-    /// up as far as the player has solved.
+    /// Every chapter at once. The list down the left holds the parts and their
+    /// chapters with how far the player has got in each; the right shows the
+    /// chosen chapter: its circuits strung along one wire that lights up as far
+    /// as the player has solved, and the chosen circuit with a PLAY button.
+    /// Up and down choose a chapter, left and right a circuit, Enter plays.
     /// </summary>
     public sealed class ChapterScreen : GameScreen
     {
         public ChapterDef Chapter;
 
-        sealed class Tab
+        sealed class Row
         {
             public ChapterDef Chapter;
-            public VoidText Label;
-            public GlyphGraphic Lock;
-            public PathGraphic Underline;
+            public RectTransform Rect;
+            public ShapeGraphic Back;
+            public PathGraphic Bar;
+            public VoidText Numeral, Title, Count;
             public Clickable Click;
+            public bool Open, Done;
         }
 
         sealed class Node
@@ -153,174 +172,148 @@ namespace Blackbox.UI.Screens
             public ShapeGraphic Ring;
             public VoidText Number;
             public GlyphGraphic Lock;
-            public VoidText Name;
             public Clickable Click;
             public bool Solved, Open, Current;
         }
 
-        sealed class PartTab
-        {
-            public PartDef Part;
-            public VoidText Label;
-            public Clickable Click;
-        }
-
-        readonly List<Tab> _tabs = new List<Tab>();
-        readonly List<PartTab> _partTabs = new List<PartTab>();
+        readonly List<Row> _rows = new List<Row>();
         readonly List<Node> _nodes = new List<Node>();
-        RectTransform _page, _tabRoot;
-        PartDef _part;
+        RectTransform _page;
         int _focus;
         float _pulse;
         VoidText _infoNumber, _infoName, _infoStatus;
+        GlyphGraphic _caret;
+        PillButton _play;
 
-        const float RowA = 560f;
-        const float RowB = 760f;
+        const float ListLeft = 90f;
+        const float ListRight = 520f;
+        const float Divider = 590f;
+        const float PanelX = 1210f; // the centre of the panel right of the list
+        const float MapY = 560f;
+
+        static readonly string[] PartWords = { "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX" };
 
         protected internal override void Build()
         {
             if (Chapter == null) Chapter = Game.Progress.CurrentChapter();
-            Chrome.Wordmark(Root, 90f, 62f, 22, Game.GoTitle);
-            BuildPartTabs();
-            Chrome.TextButton(Root, "BACK", 1830f, 62f, true, Game.GoTitle, "back");
-            UIKit.Rule(Root, 90f, 1830f, 122f, Palette.Rule);
+            Chrome.Header(Root, "CHAPTERS", "BACK", () => { App.Sound(Sfx.Close); Game.GoTitle(); });
 
-            Chrome.KeyHints(Root, VoidFrame.Width * 0.5f - 330f, 1032f, false, "ARROWS", "MOVE", "ENTER", "PLAY", "TAB", "CHAPTER", "ESC", "BACK");
+            var divider = UIKit.Add<PathGraphic>(Root, "Divider");
+            divider.raycastTarget = false;
+            divider.rectTransform.At(Divider, 570f, 4f, 820f);
+            divider.BaseColor = Palette.Rule;
+            divider.BaseWidth = 1f;
+            divider.SetPoints(new List<Vector2> { new Vector2(0f, 410f), new Vector2(0f, -410f) });
+
+            BuildList();
+            Chrome.KeyHintsCentred(Root, VoidFrame.Width * 0.5f, 1032f, "UP DOWN", "CHAPTER", "LEFT RIGHT", "CIRCUIT", "ENTER", "PLAY", "ESC", "BACK");
             ShowChapter(Chapter, false);
         }
 
-        /// <summary>The parts of the game along the top: the tutorials, then the main game. A locked part shows a padlock.</summary>
-        void BuildPartTabs()
+        // ------------------------------------------------------------------ the list of chapters
+
+        void BuildList()
         {
             var parts = Game.Library.Parts;
-            if (parts.Count <= 1)
+            bool headed = parts.Count > 1;
+            float y = 176f;
+            if (headed)
             {
-                var title = UIKit.Text(Root, "CIRCUITS", TextStyle.Label.WithSize(13).WithTracking(0.4f).WithColor(Palette.Dim));
-                title.rectTransform.At(VoidFrame.Width * 0.5f, 62f, 400f, 20f);
-                return;
-            }
-            var style = TextStyle.Label.WithSize(13).WithTracking(0.4f);
-            const float pitch = 230f;
-            float x0 = VoidFrame.Width * 0.5f - pitch * (parts.Count - 1) * 0.5f;
-            for (int i = 0; i < parts.Count; i++)
-            {
-                var part = parts[i];
-                bool open = Game.Progress.IsUnlocked(part);
-                var rt = UIKit.Rect(Root, "Part " + part.Id).At(x0 + i * pitch, 62f, 210f, 40f);
-                var tab = new PartTab { Part = part };
-                tab.Label = UIKit.Text(rt, part.Title, style);
-                tab.Label.rectTransform.Centered(open ? 0f : 10f, 0f, 200f, 20f);
-                if (!open)
+                for (int i = 0; i < parts.Count; i++)
                 {
-                    var lockGlyph = UIKit.Glyph(rt, "lock", Palette.Faint, 1.2f);
-                    float w = tab.Label.MeasureWidth();
-                    lockGlyph.rectTransform.Centered(10f - w * 0.5f - 14f, 1f, 12f, 12f);
+                    var part = parts[i];
+                    if (i > 0) y += 20f;
+                    string word = part.Number >= 0 && part.Number < PartWords.Length ? PartWords[part.Number] : (part.Number + 1).ToString();
+                    bool open = Game.Progress.IsUnlocked(part);
+                    var head = UIKit.Text(Root, $"PART {word}  ·  {part.Title}", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(open ? Palette.Dim : Palette.Faint), TextAnchor.MiddleLeft, "Part " + part.Id);
+                    head.rectTransform.At(ListLeft + 20f + 200f, y, 400f, 18f);
+                    if (!open)
+                    {
+                        var lockGlyph = UIKit.Glyph(Root, "lock", Palette.Faint, 1.2f);
+                        lockGlyph.rectTransform.At(ListRight - 6f, y, 12f, 12f);
+                    }
+                    y += 40f;
+                    foreach (var c in part.Chapters) { AddRow(c, y); y += 52f; }
                 }
-                UIKit.Hit(rt).rectTransform.Stretch();
-                tab.Click = rt.gameObject.AddComponent<Clickable>();
-                tab.Click.Clicked = () => ShowPart(part);
-                tab.Click.HoverChanged = _ => StylePartTabs();
-                _partTabs.Add(tab);
+            }
+            else
+            {
+                foreach (var c in Game.Library.Chapters) { AddRow(c, y); y += 52f; }
             }
         }
 
-        void StylePartTabs()
+        void AddRow(ChapterDef chapter, float y)
         {
-            foreach (var tab in _partTabs)
+            var row = new Row { Chapter = chapter };
+            row.Open = Game.Progress.IsUnlocked(chapter);
+            int solved = row.Open ? Game.Progress.SolvedIn(chapter) : 0;
+            row.Done = row.Open && solved >= chapter.Puzzles.Count;
+            float w = ListRight - ListLeft;
+            row.Rect = UIKit.Rect(Root, "Chapter " + chapter.Numeral).At((ListLeft + ListRight) * 0.5f, y, w, 46f);
+
+            row.Back = UIKit.Shape(row.Rect, "Back");
+            row.Back.Radius = 8f;
+            row.Back.rectTransform.Stretch();
+            row.Bar = UIKit.Add<PathGraphic>(row.Rect, "Mark");
+            row.Bar.raycastTarget = false;
+            row.Bar.rectTransform.Centered(-w * 0.5f + 1f, 0f, 6f, 26f);
+            row.Bar.BaseColor = Color.clear;
+            row.Bar.LitWidth = 2f;
+            row.Bar.Glow = 0.5f;
+            row.Bar.GlowRadius = 10f;
+            row.Bar.SetPoints(new List<Vector2> { new Vector2(0f, 13f), new Vector2(0f, -13f) });
+
+            row.Numeral = UIKit.Text(row.Rect, chapter.Numeral, TextStyle.Label.WithSize(12).WithTracking(0.2f), TextAnchor.MiddleLeft, "Numeral");
+            row.Numeral.rectTransform.Centered(-w * 0.5f + 20f + 25f, 0f, 50f, 24f);
+            row.Title = UIKit.Text(row.Rect, chapter.Title, TextStyle.Label.WithSize(15).WithTracking(0.26f), TextAnchor.MiddleLeft, "Title");
+            row.Title.rectTransform.Centered(-w * 0.5f + 74f + 140f, 0f, 280f, 24f);
+            if (row.Open)
             {
-                bool active = tab.Part == _part;
-                bool open = Game.Progress.IsUnlocked(tab.Part);
-                tab.Label.color = active ? Palette.Text : tab.Click.Hovered ? Palette.Dim : open ? Palette.Dim : Palette.Faint;
-                tab.Label.SignalFill = active && open;
+                row.Count = UIKit.Text(row.Rect, $"{solved}/{chapter.Puzzles.Count}", TextStyle.Digit.WithSize(14), TextAnchor.MiddleRight, "Count");
+                row.Count.rectTransform.Centered(w * 0.5f - 16f - 30f, 0f, 60f, 24f);
+                row.Count.SignalFill = row.Done;
             }
+            else
+            {
+                var lockGlyph = UIKit.Glyph(row.Rect, "lock", Palette.Faint, 1.2f);
+                lockGlyph.rectTransform.Centered(w * 0.5f - 22f, 0f, 12f, 12f);
+            }
+
+            UIKit.Hit(row.Rect).rectTransform.Stretch();
+            row.Click = row.Rect.gameObject.AddComponent<Clickable>();
+            row.Click.ClickSound = Sfx.Hover;
+            row.Click.Clicked = () => { if (Chapter != chapter) App.Sound(Sfx.Click); ShowChapter(chapter, true); };
+            row.Click.HoverChanged = _ => StyleRows();
+            _rows.Add(row);
         }
 
-        void ShowPart(PartDef part)
+        void StyleRows()
         {
-            if (part == _part || part.Chapters.Count == 0) return;
-            App.Sound(Sfx.Click);
-            ChapterDef target = null;
-            foreach (var c in part.Chapters)
-                if (Game.Progress.CurrentIn(c) != null) { target = c; break; }
-            ShowChapter(target ?? part.Chapters[0], true);
-        }
-
-        void BuildTabs()
-        {
-            if (_tabRoot != null) Destroy(_tabRoot.gameObject);
-            _tabs.Clear();
-            _tabRoot = UIKit.Rect(Root, "Chapter tabs").Stretch();
-            var style = TextStyle.Label.WithSize(14).WithTracking(0.32f);
-            float total = 0f;
-            var widths = new List<float>();
-            var chapters = _part != null ? _part.Chapters : Game.Library.Chapters;
-            foreach (var c in chapters)
+            foreach (var row in _rows)
             {
-                var probe = UIKit.Text(_tabRoot, $"{c.Numeral}    {c.Title}", style);
-                probe.enabled = false;
-                float w = probe.MeasureWidth() + (Game.Progress.IsUnlocked(c) ? 0f : 26f);
-                Destroy(probe.gameObject);
-                widths.Add(w);
-                total += w;
-            }
-            const float gap = 84f;
-            total += gap * (widths.Count - 1);
-            float x = VoidFrame.Width * 0.5f - total * 0.5f;
-            for (int i = 0; i < chapters.Count; i++)
-            {
-                var c = chapters[i];
-                float w = widths[i];
-                var rt = UIKit.Rect(_tabRoot, "Tab " + c.Numeral).At(x + w * 0.5f, 176f, w + 30f, 48f);
-                var tab = new Tab { Chapter = c };
-                bool open = Game.Progress.IsUnlocked(c);
-                tab.Label = UIKit.Text(rt, $"{c.Numeral}    {c.Title}", style);
-                tab.Label.rectTransform.Centered(open ? 0f : 13f, 0f, w, 30f);
-                if (!open)
+                bool active = row.Chapter == Chapter;
+                bool hot = row.Click.Hovered;
+                row.Back.Style(Paint.Solid, active ? Palette.Surface : hot ? Palette.Surface.WithAlpha(0.6f) : Color.clear, Paint.Solid, active ? Palette.Outline : Color.clear, 1f);
+                row.Bar.SetLit(0f, active ? 1f : 0f);
+                row.Bar.LitAlpha = active ? 1f : 0f;
+                Color text = active ? Palette.Text : hot ? Palette.Text : row.Open ? Palette.Dim : Palette.Faint;
+                row.Title.color = text;
+                row.Numeral.color = active ? Palette.Dim : Palette.Faint;
+                if (row.Count != null)
                 {
-                    tab.Lock = UIKit.Glyph(rt, "lock", Palette.Faint, 1.3f);
-                    tab.Lock.rectTransform.Centered(-w * 0.5f + 7f, 1f, 13f, 13f);
+                    row.Count.color = row.Done ? Color.white : active ? Palette.Text : Palette.Faint;
                 }
-                tab.Underline = UIKit.Add<PathGraphic>(rt, "Underline");
-                tab.Underline.raycastTarget = false;
-                tab.Underline.rectTransform.Centered(0f, -24f, w, 6f);
-                tab.Underline.BaseColor = Color.clear;
-                tab.Underline.LitWidth = 1.6f;
-                tab.Underline.Glow = 0.4f;
-                tab.Underline.GlowRadius = 8f;
-                tab.Underline.SetPoints(new List<Vector2> { new Vector2(-w * 0.5f, 0f), new Vector2(w * 0.5f, 0f) });
-                UIKit.Hit(rt).rectTransform.Stretch();
-                tab.Click = rt.gameObject.AddComponent<Clickable>();
-                tab.Click.Clicked = () => ShowChapter(c, true);
-                tab.Click.HoverChanged = _ => StyleTabs();
-                _tabs.Add(tab);
-                x += w + gap;
             }
         }
 
-        void StyleTabs()
-        {
-            foreach (var tab in _tabs)
-            {
-                bool active = tab.Chapter == Chapter;
-                bool open = Game.Progress.IsUnlocked(tab.Chapter);
-                tab.Label.color = active ? Palette.Text : tab.Click.Hovered ? Palette.Dim : open ? Palette.Dim : Palette.Faint;
-                tab.Underline.SetLit(0f, active ? 1f : 0f);
-                tab.Underline.LitAlpha = active ? 1f : 0f;
-            }
-        }
+        // ------------------------------------------------------------------ the chosen chapter
 
         void ShowChapter(ChapterDef chapter, bool animate)
         {
             if (chapter == null) return;
             if (animate && chapter == Chapter && _page != null) return;
             Chapter = chapter;
-            if (chapter.Part != _part || _tabRoot == null)
-            {
-                _part = chapter.Part;
-                BuildTabs();
-                StylePartTabs();
-            }
-            StyleTabs();
+            StyleRows();
             if (_page != null)
             {
                 var old = _page;
@@ -336,19 +329,17 @@ namespace Blackbox.UI.Screens
 
             bool open = Game.Progress.IsUnlocked(chapter);
             int solved = Game.Progress.SolvedIn(chapter);
-            float cx = VoidFrame.Width * 0.5f;
 
-            if (Game.Library.Parts.Count > 1 && chapter.Part != null && !string.IsNullOrEmpty(chapter.Part.Tagline))
-            {
-                var partLine = UIKit.Text(_page, chapter.Part.Tagline, TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
-                partLine.rectTransform.At(cx, 244f, 1200f, 16f);
-            }
+            string where = $"CHAPTER {chapter.Numeral}";
+            if (Game.Library.Parts.Count > 1 && chapter.Part != null) where += $"  ·  {chapter.Part.Title}";
+            var label = UIKit.Text(_page, where, TextStyle.Label.WithSize(12).WithTracking(0.46f).WithColor(Palette.Faint));
+            label.rectTransform.At(PanelX, 200f, 1100f, 18f);
             var name = UIKit.Text(_page, chapter.Title, TextStyle.Heading.WithSize(58).WithWeight(200).WithColor(open ? Palette.Text : Palette.Dim));
-            name.rectTransform.At(cx, 296f, 1200f, 80f);
+            name.rectTransform.At(PanelX, 258f, 1100f, 80f);
             var tagline = UIKit.Text(_page, chapter.Tagline, TextStyle.Body.WithSize(22).WithColor(open ? Palette.Dim : Palette.Faint));
-            tagline.rectTransform.At(cx, 356f, 1200f, 32f);
+            tagline.rectTransform.At(PanelX, 318f, 1100f, 32f);
 
-            string signals = chapter.Mixed ? "WIRE IT YOURSELF  ·  EVERY KIND OF SIGNAL" : $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
+            string signals = chapter.Mixed ? "EVERY KIND OF SIGNAL" : $"SIGNALS: {Media.Noun(chapter.Medium).ToUpperInvariant()}S";
             string countText;
             if (open) countText = $"{signals}  ·  {solved} OF {chapter.Puzzles.Count} SOLVED";
             else if (!Game.Progress.IsUnlocked(chapter.Part))
@@ -363,10 +354,10 @@ namespace Blackbox.UI.Screens
                 var before = Game.Library.FindChapter(chapter.UnlockAfter);
                 int need = Mathf.Min(chapter.UnlockSolved, before != null ? before.Puzzles.Count : 0);
                 int have = before != null ? Game.Progress.SolvedIn(before) : 0;
-                countText = before != null ? $"{signals}  ·  SOLVE {need} IN {before.Title.ToUpperInvariant()}  ·  {have} OF {need} SO FAR" : "LOCKED";
+                countText = before != null ? $"SOLVE {need} IN {before.Title.ToUpperInvariant()} TO OPEN  ·  {have} OF {need} SO FAR" : "LOCKED";
             }
             var count = UIKit.Text(_page, countText, TextStyle.Label.WithSize(12).WithTracking(0.3f).WithColor(open ? Palette.Faint : Palette.Dim));
-            count.rectTransform.At(cx, 404f, 1000f, 18f);
+            count.rectTransform.At(PanelX, 366f, 1100f, 18f);
 
             BuildMap(chapter, open, animate);
             BuildInfo();
@@ -380,44 +371,25 @@ namespace Blackbox.UI.Screens
         void BuildMap(ChapterDef chapter, bool open, bool animate)
         {
             int n = chapter.Puzzles.Count;
-            int perRow = (n + 1) / 2;
-            float spacing = perRow > 1 ? Mathf.Min(300f, 1100f / (perRow - 1)) : 0f;
-            float x0 = VoidFrame.Width * 0.5f - spacing * (perRow - 1) * 0.5f;
+            if (n == 0) return;
+            const float lead = 130f;
+            float spacing = n > 1 ? Mathf.Min(176f, 880f / (n - 1)) : 0f;
+            float x0 = PanelX - spacing * (n - 1) * 0.5f;
             for (int i = 0; i < n; i++)
-            {
-                bool second = i >= perRow;
-                int k = second ? (perRow - 1) - (i - perRow) : i;
-                _nodes.Add(new Node { Puzzle = chapter.Puzzles[i], At = new Vector2(x0 + k * spacing, second ? RowB : RowA) });
-            }
+                _nodes.Add(new Node { Puzzle = chapter.Puzzles[i], At = new Vector2(x0 + i * spacing, MapY) });
 
             var wires = UIKit.Rect(_page, "Wires").Centered(0f, 0f, VoidFrame.Width, VoidFrame.Height);
             Vector2 L(Vector2 frame) => new Vector2(frame.x - VoidFrame.Width * 0.5f, VoidFrame.Height * 0.5f - frame.y);
 
             // The signal enters on the left, runs through every circuit and leaves at the end.
             var first = _nodes[0].At;
-            var segments = new List<(List<Vector2> points, bool lit)>();
-            segments.Add((new List<Vector2> { L(first + new Vector2(-170f, 0f)), L(first) }, open));
-            float turnX = x0 + spacing * (perRow - 1) + 150f;
-            for (int i = 0; i + 1 < n; i++)
-            {
-                var a = _nodes[i].At;
-                var b = _nodes[i + 1].At;
-                var pts = new List<Vector2>();
-                if (a.y != b.y)
-                {
-                    var corners = new List<Vector2> { L(a), L(new Vector2(turnX, a.y)), L(new Vector2(turnX, b.y)), L(b) };
-                    MeshKit.RoundedPolyline(pts, corners, 60f);
-                }
-                else
-                {
-                    pts.Add(L(a));
-                    pts.Add(L(b));
-                }
-                segments.Add((pts, open && Game.Progress.IsSolved(_nodes[i].Puzzle)));
-            }
             var last = _nodes[n - 1].At;
-            float outDir = (n - 1) >= perRow ? -1f : 1f;
-            var end = last + new Vector2(170f * outDir, 0f);
+            var start = first - new Vector2(lead, 0f);
+            var end = last + new Vector2(lead, 0f);
+            var segments = new List<(List<Vector2> points, bool lit)>();
+            segments.Add((new List<Vector2> { L(start), L(first) }, open));
+            for (int i = 0; i + 1 < n; i++)
+                segments.Add((new List<Vector2> { L(_nodes[i].At), L(_nodes[i + 1].At) }, open && Game.Progress.IsSolved(_nodes[i].Puzzle)));
             bool allSolved = open && Game.Progress.SolvedIn(chapter) == n;
             segments.Add((new List<Vector2> { L(last), L(end) }, allSolved));
 
@@ -427,7 +399,7 @@ namespace Blackbox.UI.Screens
                 var path = UIKit.Add<PathGraphic>(wires, "Wire");
                 path.raycastTarget = false;
                 path.rectTransform.Stretch();
-                path.BaseColor = Palette.Rule;
+                path.BaseColor = Palette.Outline;
                 path.BaseWidth = 1.5f;
                 path.LitWidth = 2f;
                 path.Glow = 0.35f;
@@ -458,14 +430,17 @@ namespace Blackbox.UI.Screens
             ring.GlowPaint = Paint.Signal;
             ring.GlowRadius = 14f;
             var startDot = UIKit.Shape(wires, "Start", ShapeKind.Circle);
-            var s = L(first + new Vector2(-170f, 0f));
-            startDot.rectTransform.Centered(s.x, s.y, 9f, 9f);
+            startDot.rectTransform.Centered(L(start).x, L(start).y, 9f, 9f);
             startDot.Style(open ? Paint.Signal : Paint.Solid, open ? Color.white : Palette.Outline, Paint.None, Color.clear);
             startDot.Glow = open ? 0.5f : 0f;
             startDot.GlowPaint = Paint.Signal;
             startDot.GlowRadius = 10f;
 
             for (int i = 0; i < n; i++) BuildNode(_nodes[i], i, open);
+
+            // A small mark under the chosen circuit.
+            _caret = UIKit.Glyph(_page, "up", Palette.Text, 1.6f, "Caret");
+            _caret.rectTransform.At(first.x, MapY + 56f, 14f, 14f);
         }
 
         void BuildNode(Node node, int index, bool chapterOpen)
@@ -486,8 +461,6 @@ namespace Blackbox.UI.Screens
                 node.Lock.rectTransform.Centered(0f, 0f, 16f, 16f);
                 node.Number.enabled = false;
             }
-            node.Name = UIKit.Text(_page, node.Open ? p.Name : "", TextStyle.Label.WithSize(12).WithTracking(0.22f));
-            node.Name.rectTransform.At(node.At.x, node.At.y + 60f, 260f, 18f);
 
             UIKit.Hit(rt).rectTransform.Stretch();
             node.Click = rt.gameObject.AddComponent<Clickable>();
@@ -499,13 +472,15 @@ namespace Blackbox.UI.Screens
 
         void BuildInfo()
         {
-            float cx = VoidFrame.Width * 0.5f;
             _infoNumber = UIKit.Text(_page, "", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
-            _infoNumber.rectTransform.At(cx, 880f, 600f, 18f);
-            _infoName = UIKit.Text(_page, "", TextStyle.Heading.WithSize(30).WithWeight(300));
-            _infoName.rectTransform.At(cx, 918f, 900f, 44f);
+            _infoNumber.rectTransform.At(PanelX, 700f, 600f, 18f);
+            _infoName = UIKit.Text(_page, "", TextStyle.Heading.WithSize(34).WithWeight(300));
+            _infoName.rectTransform.At(PanelX, 742f, 1000f, 48f);
             _infoStatus = UIKit.Text(_page, "", TextStyle.Label.WithSize(12).WithTracking(0.3f));
-            _infoStatus.rectTransform.At(cx, 958f, 900f, 18f);
+            _infoStatus.rectTransform.At(PanelX, 786f, 1000f, 18f);
+            _play = PillButton.Create(_page, "PLAY", PanelX, 868f, 220f, 52f, true, "play");
+            _play.Click.ClickSound = Sfx.Hover;
+            _play.Click.Clicked = Open;
         }
 
         void Restyle()
@@ -535,15 +510,21 @@ namespace Blackbox.UI.Screens
                 ring.Dashed = !node.Open;
                 ring.GlowRadius = 16f;
                 node.Number.color = node.Solved || focused ? Palette.Text : Palette.Dim;
-                node.Name.color = focused ? Palette.Text : node.Solved ? Palette.Dim : Palette.Faint;
             }
 
             if (_nodes.Count == 0) return;
             var f = _nodes[Mathf.Clamp(_focus, 0, _nodes.Count - 1)];
             var p = f.Puzzle;
-            _infoNumber.text = $"CIRCUIT {p.Label}";
+            if (_caret != null)
+            {
+                _caret.rectTransform.At(f.At.x, MapY + 56f, 14f, 14f);
+                _caret.Tint = f.Open ? Palette.Text : Palette.Faint;
+            }
+            _infoNumber.text = $"CIRCUIT {p.Label}  OF  {_nodes.Count:00}";
             _infoName.text = f.Open ? p.Name : "Locked";
             _infoName.color = f.Open ? Palette.Text : Palette.Faint;
+            _play.Enabled = f.Open;
+            _play.SetText(f.Solved ? "PLAY AGAIN" : f.Open && Game.Save.Circuits.ContainsKey(p.Id) ? "CONTINUE" : f.Open ? "PLAY" : "LOCKED");
             if (f.Solved)
             {
                 Game.Save.BestMoves.TryGetValue(p.Id, out int best);
@@ -597,11 +578,11 @@ namespace Blackbox.UI.Screens
             Restyle();
         }
 
-        void SwitchChapter(int direction)
+        void SwitchChapter(int direction, bool wrap)
         {
             var chapters = Game.Library.Chapters;
             int i = chapters.IndexOf(Chapter);
-            int next = (i + direction + chapters.Count) % chapters.Count;
+            int next = wrap ? (i + direction + chapters.Count) % chapters.Count : Mathf.Clamp(i + direction, 0, chapters.Count - 1);
             if (next == i) return;
             App.Sound(Sfx.Click);
             ShowChapter(chapters[next], true);
@@ -621,16 +602,13 @@ namespace Blackbox.UI.Screens
 
         public override void HandleInput()
         {
-            if (GameInput.Down(Key.Escape)) { App.Sound(Sfx.Close); Game.GoTitle(); return; }
-            if (GameInput.Down(Key.Tab)) { SwitchChapter(GameInput.Held(Key.Shift) ? -1 : 1); return; }
+            if (GameInput.Down(Key.Escape) || GameInput.Down(Key.Backspace)) { App.Sound(Sfx.Close); Game.GoTitle(); return; }
+            if (GameInput.Down(Key.Tab)) { SwitchChapter(GameInput.Held(Key.Shift) ? -1 : 1, true); return; }
+            if (GameInput.Down(Key.Up)) { SwitchChapter(-1, false); return; }
+            if (GameInput.Down(Key.Down)) { SwitchChapter(1, false); return; }
             if (GameInput.Confirm) { Open(); return; }
-            int perRow = (_nodes.Count + 1) / 2;
-            bool second = _focus >= perRow;
-            // The second row runs right to left, so arrows follow the wire.
-            if (GameInput.Down(Key.Right)) Move(second ? -1 : 1);
-            else if (GameInput.Down(Key.Left)) Move(second ? 1 : -1);
-            else if (GameInput.Down(Key.Down) && !second) Move(Mathf.Clamp(2 * perRow - 1 - _focus, 0, _nodes.Count - 1) - _focus);
-            else if (GameInput.Down(Key.Up) && second) Move((2 * perRow - 1 - _focus) - _focus);
+            if (GameInput.Down(Key.Right)) Move(1);
+            else if (GameInput.Down(Key.Left)) Move(-1);
         }
     }
 
