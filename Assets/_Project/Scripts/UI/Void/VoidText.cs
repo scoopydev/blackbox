@@ -27,6 +27,8 @@ namespace Blackbox.UI
         public float LineHeight { get => m_LineHeight; set { if (m_LineHeight != value) { m_LineHeight = value; SetVerticesDirty(); } } }
 
         static readonly List<string> s_Lines = new List<string>();
+        /// <summary>This text's glyph quads, built in full before any of them go into the shared vertex helper.</summary>
+        static readonly List<UIVertex> s_Quads = new List<UIVertex>();
         static readonly StringBuilder s_Builder = new StringBuilder();
 
         string Display => string.IsNullOrEmpty(text) ? string.Empty : m_Uppercase ? text.ToUpperInvariant() : text;
@@ -117,9 +119,23 @@ namespace Blackbox.UI
             if (update == CanvasUpdate.PreRender && font != null)
             {
                 string s = Display;
-                if (s.Length > 0) font.RequestCharactersInTexture(s + "H", PixelSize, fontStyle);
+                if (s.Length > 0)
+                {
+                    m_DisableFontTextureRebuiltCallback = true;
+                    try { font.RequestCharactersInTexture(s + "H", PixelSize, fontStyle); }
+                    finally { m_DisableFontTextureRebuiltCallback = false; }
+                }
             }
             base.Rebuild(update);
+        }
+
+        static UIVertex Vert(float x, float y, Color c, Vector2 uv)
+        {
+            var v = UIVertex.simpleVert;
+            v.position = new Vector3(x, y);
+            v.color = c;
+            v.uv0 = uv;
+            return v;
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
@@ -137,8 +153,7 @@ namespace Blackbox.UI
                 // Normally a no-op, as Rebuild asked already. One request, so a rebuild
                 // of the font texture can't drop the first set of characters.
                 font.RequestCharactersInTexture(s + "H", px, fontStyle);
-                // If that did rebuild other texts through the shared helper, start clean.
-                vh.Clear();
+                s_Quads.Clear();
 
                 float capHeight = font.GetCharacterInfo('H', out CharacterInfo h, px, fontStyle) ? h.maxY / scale : fontSize * 0.7f;
                 Rect r = rectTransform.rect;
@@ -208,18 +223,27 @@ namespace Blackbox.UI
                                 c = Palette.SignalAtX(fx);
                                 c.a = flat.a;
                             }
-                            int i = vh.currentVertCount;
-                            vh.AddVert(new Vector3(x0, y0), c, ci.uvBottomLeft);
-                            vh.AddVert(new Vector3(x0, y1), c, ci.uvTopLeft);
-                            vh.AddVert(new Vector3(x1, y1), c, ci.uvTopRight);
-                            vh.AddVert(new Vector3(x1, y0), c, ci.uvBottomRight);
-                            vh.AddTriangle(i, i + 1, i + 2);
-                            vh.AddTriangle(i + 2, i + 3, i);
+                            s_Quads.Add(Vert(x0, y0, c, ci.uvBottomLeft));
+                            s_Quads.Add(Vert(x0, y1, c, ci.uvTopLeft));
+                            s_Quads.Add(Vert(x1, y1, c, ci.uvTopRight));
+                            s_Quads.Add(Vert(x1, y0, c, ci.uvBottomRight));
                         }
                         x += ci.advance / scale + track;
                     }
                     baseline -= step;
                 }
+
+                // Only now touch the helper Unity shares between graphics: clear out
+                // anything another graphic left in it, and write this text in one go.
+                vh.Clear();
+                for (int q = 0; q + 3 < s_Quads.Count; q += 4)
+                {
+                    int i = vh.currentVertCount;
+                    for (int k = 0; k < 4; k++) vh.AddVert(s_Quads[q + k]);
+                    vh.AddTriangle(i, i + 1, i + 2);
+                    vh.AddTriangle(i + 2, i + 3, i);
+                }
+                s_Quads.Clear();
             }
             finally
             {
