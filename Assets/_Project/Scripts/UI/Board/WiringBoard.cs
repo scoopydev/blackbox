@@ -82,7 +82,10 @@ namespace Blackbox.UI.Board
             var backClick = back.gameObject.AddComponent<Clickable>();
             backClick.HoverSound = false;
             backClick.ClickSound = Sfx.Hover;
-            backClick.Clicked = () => { if (_armed) CancelDrag(true); };
+            backClick.Clicked = () => { if (_armed) CancelDrag(true); else ClearSelection(); };
+            backClick.RightClicked = () => DeleteSelection();
+            // Dragging on empty board draws a box: left selects the wires in it, right takes them off.
+            back.gameObject.AddComponent<BoardBox>().Board = this;
 
             _linkLayer = UIKit.Rect(root, "Wires").Centered(0f, 0f, VoidFrame.Width, VoidFrame.Height);
             _nodeLayer = UIKit.Rect(root, "Nodes").Centered(0f, 0f, VoidFrame.Width, VoidFrame.Height);
@@ -104,6 +107,11 @@ namespace Blackbox.UI.Board
             _ghost.LitWidth = 2.2f;
             _ghost.enabled = false;
 
+            _box = UIKit.Shape(_dragLayer, "Selection box");
+            _box.Radius = 4f;
+            _box.Dashed = true;
+            _box.enabled = false;
+
             RebuildLinks();
             Conceal();
         }
@@ -117,6 +125,7 @@ namespace Blackbox.UI.Board
         /// <summary>Redraws every wire from the session.</summary>
         public void RebuildLinks()
         {
+            _selected.Clear();
             foreach (var l in Links) if (l != null) Destroy(l.gameObject);
             Links.Clear();
             foreach (var (from, to, port) in Session.Wires)
@@ -249,6 +258,109 @@ namespace Blackbox.UI.Board
                 return;
             }
             if (Session.Disconnect(port.Node, port.Port)) App.Sound(Sfx.Close, 1.4f, 0.5f);
+        }
+
+        // ------------------------------------------------------------------ selecting wires with a box
+
+        ShapeGraphic _box;
+        Vector2 _boxFrom;
+        bool _boxCut;
+        readonly HashSet<LinkView> _selected = new HashSet<LinkView>();
+
+        /// <summary>How many wires the last box selected.</summary>
+        public int SelectedCount => _selected.Count;
+
+        bool BoxPoint(PointerEventData e, out Vector2 local) =>
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(_linkLayer, e.position, e.pressEventCamera, out local);
+
+        internal void BoxBegin(PointerEventData e)
+        {
+            if (!Host.CanWire || Drawing || !BoxPoint(e, out _boxFrom)) return;
+            _boxCut = e.button == PointerEventData.InputButton.Right;
+            if (!_boxCut) ClearSelection();
+            Color c = _boxCut ? Palette.Violet : Palette.Cyan;
+            _box.Style(Paint.Solid, c.WithAlpha(0.06f), Paint.Solid, c.WithAlpha(0.8f), 1.2f);
+            _box.rectTransform.Centered(_boxFrom.x, _boxFrom.y, 0f, 0f);
+            _box.enabled = true;
+        }
+
+        internal void BoxDrag(PointerEventData e)
+        {
+            if (!_box.enabled || !BoxPoint(e, out var to)) return;
+            var r = BoxRect(_boxFrom, to);
+            _box.rectTransform.Centered(r.center.x, r.center.y, r.width, r.height);
+            // Light up what the box would take, as it's drawn.
+            foreach (var l in Links) l.SetSelected(Touches(l, r), _boxCut);
+        }
+
+        internal void BoxEnd(PointerEventData e)
+        {
+            if (!_box.enabled) return;
+            _box.enabled = false;
+            BoxPoint(e, out var to);
+            var r = BoxRect(_boxFrom, to);
+            _selected.Clear();
+            foreach (var l in Links)
+            {
+                bool inside = Touches(l, r);
+                l.SetSelected(inside, false);
+                if (inside) _selected.Add(l);
+            }
+            if (_boxCut)
+            {
+                if (_selected.Count == 0) { Host.Say("Right-drag a box over wires to take them all off.", 3f); return; }
+                DeleteSelection();
+                return;
+            }
+            if (_selected.Count == 0) Host.Say("Drag a box over wires to select them.", 2.5f);
+            else Host.Say(_selected.Count == 1
+                ? "1 wire selected. Press Delete or Backspace, or right-click, to take it off."
+                : $"{_selected.Count} wires selected. Press Delete or Backspace, or right-click, to take them off.", 5f);
+        }
+
+        static Rect BoxRect(Vector2 a, Vector2 b) => Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+
+        /// <summary>True if any part of the wire's line falls inside the box.</summary>
+        static bool Touches(LinkView link, Rect r)
+        {
+            var pts = link.Points;
+            if (pts == null) return false;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                if (r.Contains(pts[i])) return true;
+                if (i > 0 && SegmentCrosses(pts[i - 1], pts[i], r)) return true;
+            }
+            return false;
+        }
+
+        static bool SegmentCrosses(Vector2 a, Vector2 b, Rect r)
+        {
+            // Sample the segment; wire curves are made of short segments, so a few steps are plenty.
+            for (int k = 1; k < 8; k++) if (r.Contains(Vector2.Lerp(a, b, k / 8f))) return true;
+            return false;
+        }
+
+        /// <summary>Takes off every selected wire as one change. False if none were selected.</summary>
+        public bool DeleteSelection()
+        {
+            if (_selected.Count == 0 || !Host.CanWire) return false;
+            var wires = new List<(int to, int port)>();
+            foreach (var l in _selected) if (l != null) wires.Add((l.To, l.Port));
+            int n = wires.Count;
+            _selected.Clear();
+            if (!Session.DisconnectMany(wires)) return false;
+            App.Sound(Sfx.Close, 1.2f, 0.6f);
+            Host.Say(n == 1 ? "Took the wire off. Undo puts it back." : $"Took {n} wires off. Undo puts them all back.", 3f);
+            return true;
+        }
+
+        /// <summary>Unselects every wire. False if none were selected.</summary>
+        public bool ClearSelection()
+        {
+            if (_selected.Count == 0) return false;
+            foreach (var l in _selected) if (l != null) l.SetSelected(false, false);
+            _selected.Clear();
+            return true;
         }
 
         internal void LinkClicked(LinkView link)
@@ -661,7 +773,7 @@ namespace Blackbox.UI.Board
         HitArea _hit;
         RectTransform _rt;
         WiringBoard _board;
-        bool _hover, _celebrate, _pulsing;
+        bool _hover, _celebrate, _pulsing, _selected, _cutting;
         float _length;
 
         public static LinkView Create(RectTransform layer, int from, int to, int port, Vector2 a, Vector2 b, WiringBoard board)
@@ -727,6 +839,15 @@ namespace Blackbox.UI.Board
 
         internal void Clicked() => _board.LinkClicked(this);
 
+        /// <summary>Marked by a selection box: cyan when selected, violet when a right-drag is about to cut it.</summary>
+        public void SetSelected(bool on, bool cutting)
+        {
+            if (_selected == on && _cutting == cutting) return;
+            _selected = on;
+            _cutting = cutting;
+            ApplyRest();
+        }
+
         /// <summary>A burst of light travelling the length of the wire.</summary>
         public void Pulse(float delay, float duration)
         {
@@ -771,8 +892,8 @@ namespace Blackbox.UI.Board
         {
             if (_pulsing) return;
             _path.Spark = -1f;
-            _path.BaseColor = _hover ? Palette.Text : Palette.Faint;
-            _path.BaseWidth = _hover ? 2.2f : 1.6f;
+            _path.BaseColor = _selected ? (_cutting ? Palette.Violet : Palette.Cyan) : _hover ? Palette.Text : Palette.Faint;
+            _path.BaseWidth = _selected ? 2.6f : _hover ? 2.2f : 1.6f;
             if (_celebrate)
             {
                 _path.LitAlpha = 1f;
@@ -783,6 +904,29 @@ namespace Blackbox.UI.Board
             _flow.enabled = _celebrate;
             _flow.Animate = !App.ReduceMotion;
             _flow.SetVerticesDirty();
+        }
+    }
+
+    /// <summary>Drags on empty board, passed to the board as a selection box.</summary>
+    public sealed class BoardBox : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    {
+        public WiringBoard Board;
+        bool _active;
+
+        public void OnBeginDrag(PointerEventData e)
+        {
+            if (e.button == PointerEventData.InputButton.Middle) return;
+            _active = true;
+            Board.BoxBegin(e);
+        }
+
+        public void OnDrag(PointerEventData e) { if (_active) Board.BoxDrag(e); }
+
+        public void OnEndDrag(PointerEventData e)
+        {
+            if (!_active) return;
+            _active = false;
+            Board.BoxEnd(e);
         }
     }
 

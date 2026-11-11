@@ -724,6 +724,7 @@ namespace Blackbox.UI.Screens
             if (GameInput.Down(Key.Escape))
             {
                 if (_board.CancelWire()) return;
+                if (_board.ClearSelection()) return;
                 if (_ink.Tool != InkTool.Off) SetTool(InkTool.Off);
                 else OpenPause();
                 return;
@@ -738,6 +739,11 @@ namespace Blackbox.UI.Screens
             if (GameInput.Down(Key.E)) SetTool(_ink.Tool == InkTool.Eraser ? InkTool.Off : InkTool.Eraser);
             if (GameInput.Down(Key.T)) SetTool(_ink.Tool == InkTool.Text ? InkTool.Off : InkTool.Text);
             if (GameInput.Down(Key.Backspace) && _ink.ResumeTyping()) return;
+            if ((GameInput.Down(Key.Delete) || GameInput.Down(Key.Backspace)) && _board.SelectedCount > 0)
+            {
+                _board.DeleteSelection();
+                return;
+            }
             if (GameInput.Down(Key.Backspace) || GameInput.Down(Key.Z))
             {
                 if (_ink.Tool != InkTool.Off)

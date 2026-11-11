@@ -284,6 +284,19 @@ namespace Blackbox.Puzzles
             return true;
         }
 
+        /// <summary>Takes the wires out of several ports as one change, so one undo puts them all back. False if none had a wire.</summary>
+        public bool DisconnectMany(IEnumerable<(int to, int port)> wires)
+        {
+            var real = new List<(int to, int port)>();
+            foreach (var (to, port) in wires)
+                if (to >= 0 && to < NodeCount && port >= 0 && port < PortCount(to) && _driver[to][port] >= 0) real.Add((to, port));
+            if (real.Count == 0) return false;
+            Remember();
+            foreach (var (to, port) in real) _driver[to][port] = -1;
+            Touched();
+            return true;
+        }
+
         /// <summary>Takes off every wire. False if there were none.</summary>
         public bool Clear()
         {

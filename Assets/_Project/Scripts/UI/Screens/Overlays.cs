@@ -384,6 +384,8 @@ namespace Blackbox.UI.Screens
                 "SPACE", "run the circuit",
                 "DRAG DOT TO DOT", "add a wire",
                 "CLICK A WIRE", "remove it",
+                "DRAG A BOX", "select wires, then delete",
+                "RIGHT-DRAG A BOX", "remove every wire in it",
                 "DRAG A BLOCK", "move it",
                 "CLICK A SIGNAL", "hear it",
                 "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
