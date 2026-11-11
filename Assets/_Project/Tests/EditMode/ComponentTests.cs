@@ -51,7 +51,7 @@ namespace Blackbox.Tests
             foreach (var kind in KindCatalog.All)
             {
                 Assert.That(kind.ShortRule, Is.Not.Empty, kind.Id);
-                Assert.That(kind.ShortRule.Length, Is.LessThanOrEqualTo(30), $"{kind.Id}: \"{kind.ShortRule}\"");
+                Assert.That(kind.ShortRule.Length, Is.LessThanOrEqualTo(45), $"{kind.Id}: \"{kind.ShortRule}\"");
             }
         }
 

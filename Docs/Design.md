@@ -274,31 +274,31 @@ New kinds of block go in `Components/BlockKinds.cs`, with tests in `ComponentTes
 
 ## Spoilers: the rules
 
-A block shows only its label (K1, K2...) and its ports. The kind ids below are for puzzle files and designers; players never see them. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule written under it (`BlockKind.ShortRule`, the short form below; pointing at the block shows the whole rule), and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
+A block shows only its label (K1, K2...) and its ports. The kind ids below are for puzzle files and designers; players never see them. Port 0 is the top input. Once a circuit is solved, each of its blocks has its rule written under it (`BlockKind.ShortRule`, the short form below, in plain words that fit two short lines; pointing at the block shows the whole rule), and keeps it whenever that circuit is opened again. For testing, **DEBUG: BLOCK RULES** in Settings (off by default) writes every block's rule under it, solved or not.
 
 Each kind of signal has four blocks, and each set starts with one that flips the signal, so a player who has learned one set has a head start on the next.
 
 | Kind | Signal | Inputs | Rule | Short form |
 |---|---|---|---|---|
-| NOT | bit | 1 | 1 becomes 0, 0 becomes 1 | flips 0 and 1 |
-| AND | bit | 2 | 1 only while both are 1 | 1 when both are 1 |
-| OR | bit | 2 | 1 while either is 1 | 1 when either is 1 |
-| XOR | bit | 2 | 1 while they are different | 1 when they differ |
-| MIRROR | digit | 1 | 9 minus the digit: 0 and 9 swap, 1 and 8, 2 and 7 | 9 minus the digit |
-| MAX | digit | 2 | the larger digit | the larger digit |
-| MIN | digit | 2 | the smaller digit | the smaller digit |
-| DIFF | digit | 2 | how far apart they are: the larger minus the smaller | how far apart they are |
-| FILL | shape | 1 | hollow becomes solid, solid becomes hollow | flips the fill |
-| NEXT | shape | 1 | the next form: circle, triangle, square, hexagon, then circle again; fill and colour kept | the next form |
-| TAKEFILL | shape | 2 | the top shape, with the bottom shape's fill | top shape, bottom's fill |
-| TAKECOLOUR | shape | 2 | the top shape, in the bottom shape's colour | top shape, bottom's colour |
-| FLIP | wave | 1 | the wave upside down | upside down |
-| FASTER | wave | 1 | twice as fast, so it repeats twice as often | twice as fast |
-| LATER | wave | 1 | a quarter of the loop later | a quarter loop later |
-| MIX | wave | 2 | halfway between the two waves at every moment | halfway between them |
-| GATE | any | 2 | the top signal while the bottom is on; otherwise off (0, a flat line or a hollow circle) | top, while bottom is on |
-| COUNT | digit | 1 | how many times its input has switched on so far this loop, stopping at 9 | counts the switch-ons |
-| COMPARE | bit | 2 | 1 while the top is higher than the bottom, both read as waves; otherwise 0 | 1 while top is higher |
+| NOT | bit | 1 | 1 becomes 0, 0 becomes 1 | swaps 0 and 1 |
+| AND | bit | 2 | 1 only while both are 1 | 1 only when both inputs are 1 |
+| OR | bit | 2 | 1 while either is 1 | 1 when either input is 1 |
+| XOR | bit | 2 | 1 while they are different | 1 when the two inputs differ |
+| MIRROR | digit | 1 | 9 minus the digit: 0 and 9 swap, 1 and 8, 2 and 7 | 9 minus the digit: 2 becomes 7 |
+| MAX | digit | 2 | the larger digit | the larger of the two digits |
+| MIN | digit | 2 | the smaller digit | the smaller of the two digits |
+| DIFF | digit | 2 | how far apart they are: the larger minus the smaller | the larger digit minus the smaller |
+| FILL | shape | 1 | hollow becomes solid, solid becomes hollow | swaps solid and hollow |
+| NEXT | shape | 1 | the next shape along: circle, triangle, square, hexagon, then circle again; fill and colour kept | next shape: circle, triangle, square, hexagon |
+| TAKEFILL | shape | 2 | the top shape, with the bottom shape's fill | top shape, filled like the bottom one |
+| TAKECOLOUR | shape | 2 | the top shape, in the bottom shape's colour | top shape, coloured like the bottom one |
+| FLIP | wave | 1 | the wave upside down | turns the wave upside down |
+| FASTER | wave | 1 | twice as fast, so it repeats twice as often | plays the wave twice as fast |
+| LATER | wave | 1 | a quarter of the loop later | delays the wave by a quarter loop |
+| MIX | wave | 2 | halfway between the two waves at every moment | halfway between the two waves |
+| GATE | any | 2 | the top signal while the bottom is on; otherwise off (0, a flat line or a hollow circle) | lets the top through while the bottom is on |
+| COUNT | digit | 1 | how many times its input has switched on so far this loop, stopping at 9 | counts each switch-on, up to 9 |
+| COMPARE | bit | 2 | 1 while the top is higher than the bottom, both read as waves; otherwise 0 | 1 while the top is higher than the bottom |
 
 Bit, digit and shape blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave. GATE sends whatever kind its top input is; COUNT reads its input as a bit.
 

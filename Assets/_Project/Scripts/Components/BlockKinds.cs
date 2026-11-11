@@ -39,7 +39,7 @@ namespace Blackbox.Components
         /// <summary>The whole rule, in a sentence, shown when the player points at a block in a solved circuit.</summary>
         public string Rule { get; }
 
-        /// <summary>The rule in a few words (at most 30 characters), written under a block once its circuit is solved.</summary>
+        /// <summary>The rule in a few plain words (at most 45 characters, two short lines), written under a block once its circuit is solved.</summary>
         public string ShortRule { get; }
 
         /// <summary>
@@ -141,51 +141,51 @@ namespace Blackbox.Components
         {
             // ---- Bits: 0 and 1 ------------------------------------------------------
 
-            Value("NOT", Medium.Binary, 1, "flips a bit: 1 becomes 0 and 0 becomes 1", "flips 0 and 1",
+            Value("NOT", Medium.Binary, 1, "flips a bit: 1 becomes 0 and 0 becomes 1", "swaps 0 and 1",
                 x => 1 - x[0]);
-            Value("AND", Medium.Binary, 2, "1 only while both inputs are 1", "1 when both are 1",
+            Value("AND", Medium.Binary, 2, "1 only while both inputs are 1", "1 only when both inputs are 1",
                 x => x[0] & x[1]);
-            Value("OR", Medium.Binary, 2, "1 while either input is 1", "1 when either is 1",
+            Value("OR", Medium.Binary, 2, "1 while either input is 1", "1 when either input is 1",
                 x => x[0] | x[1]);
-            Value("XOR", Medium.Binary, 2, "1 while the two inputs are different", "1 when they differ",
+            Value("XOR", Medium.Binary, 2, "1 while the two inputs are different", "1 when the two inputs differ",
                 x => x[0] ^ x[1]);
 
             // ---- Digits: 0 to 9. No rule can go below 0 or past 9 ------------------
 
-            Value("MIRROR", Medium.Decimal, 1, "turns a digit around: 9 minus the digit, so 0 and 9 swap, 1 and 8, 2 and 7", "9 minus the digit",
+            Value("MIRROR", Medium.Decimal, 1, "turns a digit around: 9 minus the digit, so 0 and 9 swap, 1 and 8, 2 and 7", "9 minus the digit: 2 becomes 7",
                 x => 9 - x[0]);
-            Value("MAX", Medium.Decimal, 2, "the larger of the two digits", "the larger digit",
+            Value("MAX", Medium.Decimal, 2, "the larger of the two digits", "the larger of the two digits",
                 x => Math.Max(x[0], x[1]));
-            Value("MIN", Medium.Decimal, 2, "the smaller of the two digits", "the smaller digit",
+            Value("MIN", Medium.Decimal, 2, "the smaller of the two digits", "the smaller of the two digits",
                 x => Math.Min(x[0], x[1]));
-            Value("DIFF", Medium.Decimal, 2, "how far apart the two digits are: the larger minus the smaller", "how far apart they are",
+            Value("DIFF", Medium.Decimal, 2, "how far apart the two digits are: the larger minus the smaller", "the larger digit minus the smaller",
                 x => Math.Abs(x[0] - x[1]));
 
             // ---- Shapes: a form, a fill and a colour ---------------------------------
 
-            Value("FILL", Medium.Shape, 1, "flips a shape's fill: hollow becomes solid and solid becomes hollow", "flips the fill",
+            Value("FILL", Medium.Shape, 1, "flips a shape's fill: hollow becomes solid and solid becomes hollow", "swaps solid and hollow",
                 x => x[0] ^ 1);
-            Value("NEXT", Medium.Shape, 1, "the next form round: circle, triangle, square, hexagon, then circle again, keeping the fill and colour", "the next form",
+            Value("NEXT", Medium.Shape, 1, "the next shape along: a circle becomes a triangle, a triangle a square, a square a hexagon, and a hexagon a circle again; the fill and colour stay the same", "next shape: circle, triangle, square, hexagon",
                 x => Shapes.Make(Shapes.Form(x[0]) + 1, Shapes.Solid(x[0]), Shapes.Colour(x[0])));
-            Value("TAKEFILL", Medium.Shape, 2, "the top shape, with the bottom shape's fill", "top shape, bottom's fill",
+            Value("TAKEFILL", Medium.Shape, 2, "the top shape, solid or hollow like the bottom shape", "top shape, filled like the bottom one",
                 x => Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[1]), Shapes.Colour(x[0])));
-            Value("TAKECOLOUR", Medium.Shape, 2, "the top shape, in the bottom shape's colour", "top shape, bottom's colour",
+            Value("TAKECOLOUR", Medium.Shape, 2, "the top shape, in the bottom shape's colour", "top shape, coloured like the bottom one",
                 x => Shapes.Make(Shapes.Form(x[0]), Shapes.Solid(x[0]), Shapes.Colour(x[1])));
 
             // ---- Waves: every input read as a wave, a wave sent ----------------------
 
-            Whole("FLIP", Medium.Wave, 1, false, "turns a wave upside down", "upside down",
+            Whole("FLIP", Medium.Wave, 1, false, "turns a wave upside down", "turns the wave upside down",
                 x => x[0].As(Medium.Wave).Map(Medium.Wave, v => v == 0f ? 0f : -v));
-            Whole("FASTER", Medium.Wave, 1, false, "plays the wave twice as fast, so it repeats twice a loop", "twice as fast",
+            Whole("FASTER", Medium.Wave, 1, false, "plays the wave twice as fast, so it repeats twice as often", "plays the wave twice as fast",
                 x => x[0].As(Medium.Wave).Faster(2));
-            Whole("LATER", Medium.Wave, 1, false, "plays the wave a quarter of the loop later", "a quarter loop later",
+            Whole("LATER", Medium.Wave, 1, false, "plays the wave a quarter of the loop later", "delays the wave by a quarter loop",
                 x => x[0].As(Medium.Wave).Later(Trace.Steps / 4));
-            Whole("MIX", Medium.Wave, 2, false, "halfway between the two waves at every moment, so a wave and its upside-down twin mix to a flat line", "halfway between them",
+            Whole("MIX", Medium.Wave, 2, false, "halfway between the two waves at every moment, so a wave and its upside-down twin mix to a flat line", "halfway between the two waves",
                 x => Trace.Zip(Medium.Wave, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => (a + b) * 0.5f));
 
             // ---- Mixing: whole signals of any kind ------------------------------------
 
-            Whole("GATE", Medium.Wave, 2, true, "lets the top signal through while the bottom one is on, and sends nothing while it's off (0, a flat line or an empty circle)", "top, while bottom is on",
+            Whole("GATE", Medium.Wave, 2, true, "lets the top signal through while the bottom one is on, and sends nothing while it's off (0, a flat line or an empty circle)", "lets the top through while the bottom is on",
                 x =>
                 {
                     var gate = x[1].As(Medium.Binary);
@@ -196,7 +196,7 @@ namespace Blackbox.Components
                     return new Trace(top.Medium, levels);
                 });
 
-            Whole("COUNT", Medium.Decimal, 1, true, "counts how many times its input has switched on so far this loop, up to 9", "counts the switch-ons",
+            Whole("COUNT", Medium.Decimal, 1, true, "counts how many times its input has switched on so far this loop, up to 9", "counts each switch-on, up to 9",
                 x =>
                 {
                     var bits = x[0].As(Medium.Binary);
@@ -211,7 +211,7 @@ namespace Blackbox.Components
                     return new Trace(Medium.Decimal, levels);
                 });
 
-            Whole("COMPARE", Medium.Binary, 2, true, "1 while the top signal is higher than the bottom one, both read as waves; otherwise 0", "1 while top is higher",
+            Whole("COMPARE", Medium.Binary, 2, true, "1 while the top signal is higher than the bottom one, both read as waves; otherwise 0", "1 while the top is higher than the bottom",
                 x => Trace.Zip(Medium.Binary, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => a > b + Trace.Tolerance ? 1f : 0f));
 
             // ---- Set aside: stepped waves ---------------------------------------------

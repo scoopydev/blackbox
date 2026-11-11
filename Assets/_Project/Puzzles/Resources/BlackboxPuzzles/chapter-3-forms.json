@@ -101,7 +101,7 @@
     {
       "id": "forms-04",
       "name": "Turn",
-      "hint": "Watch how the form changes.",
+      "hint": "Watch how the shape changes.",
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
@@ -136,7 +136,7 @@
     {
       "id": "forms-05",
       "name": "Homecoming",
-      "hint": "Watch the colour: it stays with the form.",
+      "hint": "Watch the colour: it stays with the shape.",
       "inputs": {
         "A": {
           "signal": "shape solid amber hexagon"
