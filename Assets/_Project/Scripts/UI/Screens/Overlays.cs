@@ -440,6 +440,7 @@ namespace Blackbox.UI.Screens
     {
         public ChapterDef Chapter;
         float _shownAt;
+        float _samplesY = 796f;
         VoidText _prompt;
 
         protected override float VeilAlpha => 1f;
@@ -449,24 +450,32 @@ namespace Blackbox.UI.Screens
             BuildVeil();
             float cx = VoidFrame.Width * 0.5f;
             var label = UIKit.Text(Root, "CHAPTER", TextStyle.Label.WithSize(13).WithTracking(0.5f).WithColor(Palette.Faint));
-            label.rectTransform.At(cx, 330f, 400f, 20f);
+            label.rectTransform.At(cx, 290f, 400f, 20f);
             var numeral = UIKit.Text(Root, Chapter.Numeral, TextStyle.Display.WithSize(120).WithTracking(0.2f).WithColor(Color.white));
             numeral.SignalFill = true;
-            numeral.rectTransform.At(cx, 420f, 600f, 150f);
+            numeral.rectTransform.At(cx, 380f, 600f, 150f);
             var title = UIKit.Text(Root, Chapter.Title, TextStyle.Heading.WithSize(46).WithWeight(200));
-            title.rectTransform.At(cx, 530f, 1000f, 64f);
+            title.rectTransform.At(cx, 490f, 1200f, 64f);
             var tagline = UIKit.Text(Root, Chapter.Tagline, TextStyle.Body.WithSize(23));
-            tagline.rectTransform.At(cx, 592f, 1000f, 34f);
+            tagline.rectTransform.At(cx, 552f, 1200f, 34f);
+            // The note on the chapter's signals takes as many lines as it needs; the rest sits below it.
+            float y = 600f;
             if (!string.IsNullOrEmpty(Chapter.Signals))
             {
-                var signals = UIKit.Text(Root, Chapter.Signals, TextStyle.Body.WithSize(19).WithColor(Palette.Dim));
+                const float width = 1100f;
+                var signals = UIKit.Text(Root, Chapter.Signals, TextStyle.Body.WithSize(18).WithColor(Palette.Dim));
+                int lines = Mathf.Max(1, Mathf.CeilToInt(signals.MeasureWidth() / (width * 0.9f)));
+                float h = lines * 18f * signals.LineHeight;
                 signals.horizontalOverflow = HorizontalWrapMode.Wrap;
-                signals.rectTransform.At(cx, 654f, 900f, 56f);
+                signals.rectTransform.At(cx, y + h * 0.5f, width, h + 6f);
+                y += h;
             }
+            float lineY = y + 30f;
+            _samplesY = Mathf.Max(796f, lineY + 76f);
 
             var line = UIKit.Add<PathGraphic>(Root, "Line");
             line.raycastTarget = false;
-            line.rectTransform.At(cx, 716f, 480f, 10f);
+            line.rectTransform.At(cx, lineY, 480f, 10f);
             line.BaseColor = Palette.Rule;
             line.BaseWidth = 1f;
             line.LitWidth = 1.6f;
@@ -479,7 +488,7 @@ namespace Blackbox.UI.Screens
             BuildSamples(cx);
 
             _prompt = UIKit.Text(Root, "CLICK OR PRESS ENTER TO BEGIN", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
-            _prompt.rectTransform.At(cx, 960f, 700f, 18f);
+            _prompt.rectTransform.At(cx, Mathf.Max(960f, _samplesY + 120f), 700f, 18f);
             _prompt.canvasRenderer.SetAlpha(0f);
             Tweener.Run(_prompt, "show", 0.6f, t => _prompt.canvasRenderer.SetAlpha(t), Ease.OutQuad, 1.4f);
 
@@ -512,7 +521,7 @@ namespace Blackbox.UI.Screens
             }
             float size = Media.IsWave(m) ? 38f : 40f;
             float pitch = ValueView.WidthFor(m, size) + 56f;
-            var row = UIKit.Rect(Root, "Samples").At(cx, 796f, 0f, 0f);
+            var row = UIKit.Rect(Root, "Samples").At(cx, _samplesY, 0f, 0f);
             var views = new List<ValueView>();
             for (int i = 0; i < values.Length; i++)
             {
@@ -523,7 +532,7 @@ namespace Blackbox.UI.Screens
                 views.Add(v);
             }
             var hint = UIKit.Text(Root, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
-            hint.rectTransform.At(cx, 862f, 600f, 16f);
+            hint.rectTransform.At(cx, _samplesY + 66f, 600f, 16f);
 
             var group = row.Group();
             group.alpha = 0f;
@@ -547,7 +556,7 @@ namespace Blackbox.UI.Screens
             float total = 0f;
             foreach (var (m, _) in samples) total += ValueView.WidthFor(m, size) + 56f;
             float x = -total * 0.5f;
-            var row = UIKit.Rect(Root, "Samples").At(cx, 796f, 0f, 0f);
+            var row = UIKit.Rect(Root, "Samples").At(cx, _samplesY, 0f, 0f);
             var views = new List<ValueView>();
             foreach (var (m, v) in samples)
             {
@@ -561,7 +570,7 @@ namespace Blackbox.UI.Screens
                 x += w + 56f;
             }
             var hint = UIKit.Text(Root, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
-            hint.rectTransform.At(cx, 862f, 600f, 16f);
+            hint.rectTransform.At(cx, _samplesY + 66f, 600f, 16f);
             var group = row.Group();
             group.alpha = 0f;
             Tweener.Run(row, "show", 0.6f, t => group.alpha = t, Ease.OutQuad, 1.2f);

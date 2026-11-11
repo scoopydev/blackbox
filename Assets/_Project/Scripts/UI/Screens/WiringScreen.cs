@@ -189,8 +189,9 @@ namespace Blackbox.UI.Screens
             label.rectTransform.At(Left + 40f, GoalY - 10f, 80f, 20f);
 
             string sentence = GoalText.For(Puzzle);
-            int size = sentence.Length > 110 ? 20 : sentence.Length > 80 ? 22 : 24;
-            _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(size).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
+            _goal = UIKit.Text(Root, sentence, TextStyle.Body.WithSize(24).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
+            // One line: smaller type for a longer goal, so it never runs into the rules under it.
+            for (int size = 24; size > 16 && _goal.MeasureWidth() > 1270f; size--) _goal.fontSize = size - 1;
             _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
             _goal.LineHeight = 1.2f;
             _goal.rectTransform.At(Left + 110f + 640f, GoalY - 10f, 1280f, 34f);

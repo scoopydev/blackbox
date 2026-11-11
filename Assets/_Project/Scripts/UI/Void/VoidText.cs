@@ -31,7 +31,14 @@ namespace Blackbox.UI
         static readonly List<UIVertex> s_Quads = new List<UIVertex>();
         static readonly StringBuilder s_Builder = new StringBuilder();
 
-        string Display => string.IsNullOrEmpty(text) ? string.Empty : m_Uppercase ? text.ToUpperInvariant() : text;
+        /// <summary>
+        /// Every text in the game is shown in capitals, whatever case it was
+        /// written in: menus, goals, hints, rules and the player's own notes.
+        /// Turn this off to go back to each style's own case (see <see cref="Uppercase"/>).
+        /// </summary>
+        public static bool AllCaps = true;
+
+        string Display => string.IsNullOrEmpty(text) ? string.Empty : AllCaps || m_Uppercase ? text.ToUpperInvariant() : text;
 
         float Scale => Mathf.Max(0.05f, pixelsPerUnit);
 
