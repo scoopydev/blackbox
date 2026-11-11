@@ -36,6 +36,7 @@ namespace Blackbox.UI.Board
         readonly List<VoidText> _digits = new List<VoidText>();
         readonly List<VoidText> _scale = new List<VoidText>();
         VoidText _nothing, _caption;
+        bool _waveSettings, _captionInside;
         GlyphGraphic _speaker;
 
         public Trace Trace => _trace;
@@ -69,12 +70,29 @@ namespace Blackbox.UI.Board
             {
                 if (_caption == null)
                 {
-                    _caption = UIKit.Text(_rt, "", TextStyle.Label.WithSize(Mathf.Max(9, Mathf.RoundToInt(_h * 0.2f))).WithTracking(0.16f), TextAnchor.MiddleCenter, "Caption");
-                    _caption.rectTransform.Centered(0f, -_h * 0.5f - 9f, _w + 60f, 16f);
+                    int size = _captionInside ? Mathf.Max(10, Mathf.RoundToInt(_h * 0.3f)) : Mathf.Max(9, Mathf.RoundToInt(_h * 0.2f));
+                    _caption = UIKit.Text(_rt, "", TextStyle.Label.WithSize(size).WithTracking(0.16f), TextAnchor.MiddleCenter, "Caption");
+                    if (_captionInside) _caption.rectTransform.Centered(0f, -_h * 0.5f + CaptionRoom * 0.5f, _w + 60f, CaptionRoom);
+                    else _caption.rectTransform.Centered(0f, -_h * 0.5f - 9f, _w + 60f, 16f);
                 }
                 _caption.text = value ?? "";
                 Restyle();
             }
+        }
+
+        /// <summary>The height a caption inside the box takes from the bottom of the line.</summary>
+        float CaptionRoom => Mathf.Max(10, Mathf.RoundToInt(_h * 0.3f)) + 2f;
+
+        /// <summary>
+        /// Writes a wave's frequency and amplitude under it ("F2 A7"), whatever made
+        /// the wave (<see cref="Waves.Describe"/>), as on the inputs. Inside the box
+        /// squeezes the line up to make room, for a box with nothing free below it.
+        /// Call before the first <see cref="Set"/>.
+        /// </summary>
+        public void ShowWaveSettings(bool inside)
+        {
+            _waveSettings = true;
+            _captionInside = inside;
         }
 
         /// <summary>Lets the player click the signal to hear it.</summary>
@@ -149,6 +167,12 @@ namespace Blackbox.UI.Board
             _strip.gameObject.SetActive(false);
             if (_value != null) _value.gameObject.SetActive(false);
             _nothing.enabled = _trace == null;
+            if (_waveSettings)
+            {
+                string settings = Waves.Describe(_trace);
+                if (settings.Length > 0 || _caption != null) Caption = settings;
+                if (settings.Length > 0 && _captionInside) _graph.rectTransform.Centered(0f, CaptionRoom * 0.5f, _w, _h - CaptionRoom);
+            }
             if (_trace == null) return;
 
             var t = _trace;
@@ -295,7 +319,7 @@ namespace Blackbox.UI.Board
         {
             bool live = _look == ValueLook.Live;
             Color quiet = Color.Lerp(_look == ValueLook.Met ? Palette.Text : Palette.Dim, Color.white, _ping);
-            if (_caption != null) _caption.color = live ? Palette.Dim : quiet;
+            if (_caption != null) _caption.color = live ? NumberDim : quiet;
             foreach (var d in _scale) d.color = live ? NumberDim : quiet;
             if (_value != null && _value.gameObject.activeSelf) _value.Look = _look;
             if (_graph.enabled)
@@ -374,6 +398,12 @@ namespace Blackbox.UI.Board
 
         /// <summary>The width a device takes up, for laying out cards around it.</summary>
         public static float WidthFor(Device d, float size) => d == Device.Display ? size * 2.3f : size * 1.7f;
+
+        /// <summary>A display writes a wave's frequency and amplitude under it, as the inputs do. Call before the first Set.</summary>
+        public void ShowWaveSettings()
+        {
+            if (_display != null) _display.ShowWaveSettings(inside: false);
+        }
 
         public static DeviceView Create(Transform parent, Device device, float size, string name = "Device")
         {

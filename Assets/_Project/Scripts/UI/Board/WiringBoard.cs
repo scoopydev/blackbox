@@ -839,9 +839,8 @@ namespace Blackbox.UI.Board
             bool wave = Media.IsWave(spec.Medium);
             view._signal = SignalView.Create(rt, w - 36f * s, (wave ? 40f : 46f) * s);
             view._signal.GetComponent<RectTransform>().Centered(0f, wave ? 6f * s : 0f, w - 36f * s, (wave ? 40f : 46f) * s);
+            view._signal.ShowWaveSettings(inside: false);
             view._signal.Set(spec.Trace, ValueLook.Live);
-            if (wave && spec.Value.HasValue)
-                view._signal.Caption = spec.Medium == Medium.Sampled ? Sampled.Settings(spec.Value.Value) : Waves.Settings(spec.Value.Value);
             view._signal.MakePlayable(() => board.Host.PlayTrace(spec.Trace));
 
             // Where every signal is one kind, as in Part One, naming it on each card is noise.
@@ -933,6 +932,8 @@ namespace Blackbox.UI.Board
 
             view._readout = SignalView.Create(rt, 118f * s, 32f * s, "Sends");
             view._readout.GetComponent<RectTransform>().Centered(0f, h * 0.5f + 24f * s, 118f * s, 32f * s);
+            // The block's card is right under its signal, so a wave's settings go inside the box.
+            view._readout.ShowWaveSettings(inside: true);
             view._readout.MakePlayable(() => { if (view._readout.Trace != null) board.Host.PlayTrace(view._readout.Trace); });
 
             view._note = UIKit.Text(rt, "", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.24f).WithColor(Palette.Violet), TextAnchor.MiddleCenter, "Note");
@@ -1155,6 +1156,7 @@ namespace Blackbox.UI.Board
 
             view._now = DeviceView.Create(rt, def.Device, size, "Now");
             view._now.GetComponent<RectTransform>().Centered(nowX, 0f, deviceW, size);
+            view._now.ShowWaveSettings();
             view._now.MakePlayable(() => { if (view._now.Trace != null) board.Host.PlayTrace(view._now.Trace); });
             view._unknown = UIKit.Text(rt, "?", TextStyle.Value.WithSize(Mathf.RoundToInt(size * 0.6f)).WithWeight(200).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Unknown");
             view._unknown.rectTransform.Centered(nowX, 0f, half, size);
@@ -1164,6 +1166,7 @@ namespace Blackbox.UI.Board
 
             view._want = DeviceView.Create(rt, def.Device, size, "Want");
             view._want.GetComponent<RectTransform>().Centered(wantX, 0f, deviceW, size);
+            view._want.ShowWaveSettings();
             view._want.Set(def.Want, ValueLook.Target);
             view._want.MakePlayable(() => board.Host.PlayTrace(def.Want));
             view._wantLabel = UIKit.Text(rt, "TARGET", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.26f), TextAnchor.MiddleCenter, "Target label");

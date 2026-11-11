@@ -115,6 +115,74 @@ namespace Blackbox.Components
         /// <summary>"F3 A5", "F1 A7 +1/4": frequency and amplitude as the player reads them.</summary>
         public static string Settings(int v) => $"F{Frequency(v) + 1} A{Height(v) + 1}{PhaseMarks[Phase(v)]}";
 
+        static Trace[] s_All;
+
+        /// <summary>
+        /// The wave <paramref name="t"/> is, whatever made it, or null when it isn't
+        /// one of the game's waves. FLIP, FASTER and LATER often make new waves of
+        /// their own (a flipped sine is the same sine half a cycle on), and MIX of a
+        /// wave and itself is that wave.
+        /// </summary>
+        public static int? Recognise(Trace t)
+        {
+            if (t == null || t.Medium != Medium.Wave) return null;
+            if (t.Value.HasValue) return t.Value;
+            if (s_All == null)
+            {
+                var all = new Trace[Size];
+                for (int v = 0; v < Size; v++) all[v] = Trace.Of(Medium.Wave, v);
+                s_All = all;
+            }
+            t.Range(out float low, out float high);
+            for (int v = 0; v < Size; v++)
+            {
+                // Only waves as tall as this one can match it.
+                if (Math.Abs(high - low - 2f * (Height(v) + 1)) > 0.2f) continue;
+                if (s_All[v].Matches(t)) return v;
+            }
+            return null;
+        }
+
+        /// <summary>How many times a signal repeats in one loop: 1 when it doesn't, <see cref="Trace.Steps"/> when it's flat.</summary>
+        public static int Repeats(Trace t)
+        {
+            for (int times = Trace.Steps; times > 1; times--)
+            {
+                if (Trace.Steps % times != 0) continue;
+                int period = Trace.Steps / times;
+                bool repeats = true;
+                // Round the loop, so a saw's drop at the end counts; and closer than
+                // the matching tolerance, which a slow saw climbs in one step.
+                for (int k = 0; k < Trace.Steps && repeats; k++)
+                    repeats = Math.Abs(t[k] - t[(k + period) % Trace.Steps]) <= 0.01f;
+                if (repeats) return times;
+            }
+            return 1;
+        }
+
+        /// <summary>
+        /// The frequency and amplitude of any wave signal, as the player reads them
+        /// under the line. One of the game's waves, however it was made, reads as its
+        /// settings ("F2 A7 +1/2", see <see cref="Recognise"/>). Any other wave reads
+        /// as what can be measured: F for how many times it repeats a loop, when that
+        /// is on the frequency scale, and A for how far it swings each way from its
+        /// middle, to the nearest half ("A3.5"). A flat line reads "A0". Empty for
+        /// anything but a wave.
+        /// </summary>
+        public static string Describe(Trace t)
+        {
+            if (t == null) return "";
+            if (t.Medium == Medium.Sampled) return t.Value.HasValue ? Sampled.Settings(t.Value.Value) : "";
+            if (t.Medium != Medium.Wave) return "";
+            var known = Recognise(t);
+            if (known.HasValue) return Settings(known.Value);
+            t.Range(out float low, out float high);
+            double swing = Math.Round((high - low) * 0.5 * 2.0, MidpointRounding.AwayFromZero) / 2.0;
+            string a = "A" + swing.ToString(swing % 1.0 == 0.0 ? "0" : "0.0", System.Globalization.CultureInfo.InvariantCulture);
+            int f = Array.IndexOf(Cycles, Repeats(t));
+            return f >= 0 && swing > 0.0 ? $"F{f + 1} {a}" : a;
+        }
+
         internal static int Wrap(int v, int n) => ((v % n) + n) % n;
     }
 
