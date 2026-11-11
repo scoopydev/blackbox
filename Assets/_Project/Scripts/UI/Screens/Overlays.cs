@@ -269,7 +269,6 @@ namespace Blackbox.UI.Screens
         PillButton _yes, _no;
         bool _focusYes;
 
-        protected override float VeilAlpha => 0.94f;
 
         protected internal override void Build()
         {
@@ -346,12 +345,12 @@ namespace Blackbox.UI.Screens
 
             var ideas = Wiring ? new List<string>
             {
-                "Wire the circuit so every output does what its target shows. Drag from a dot to a dot to run a wire; click a wire to take it off.",
-                "Every block must be used, and every input of a block needs a wire. A block with an empty input sends nothing.",
-                "Each block does one simple thing, the same every time you meet that kind of block, but it never says what. Their numbers, K1, K2 and so on, only tell them apart: K1 is a different block in every circuit. Wire a block between an input and an output, run it, and watch what it sends. Once you solve a circuit, each of its blocks has its rule written under it.",
-                "A block reads any signal as its own type: a bit block counts a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
-                "Each output is a display: it shows the signal that reaches it, and plays it on a run. Its target is met only by the very same signal.",
-                "Signals can change through the loop. Each one plays across its card, and clicking any signal plays it.",
+                "Wire the inputs to the outputs so every output matches its target.",
+                "Use every block, and give every block input a wire.",
+                "Each block has one simple rule it never tells you. Run the circuit and watch what comes out.",
+                "K1, K2 and so on are just names. K1 is a different block in each circuit.",
+                "A block reads any signal as its own kind.",
+                "Solve a circuit to see each block's rule written under it.",
             } : new List<string>
             {
                 "The goal is written above the circuit. Press RUN to send the signals through: only then do the outputs show, and each target gets a tick or a cross.",
@@ -362,32 +361,34 @@ namespace Blackbox.UI.Screens
                 "Draw with the pen, or type with the text tool, to label blocks and note down what you learn. Notes stay with the circuit.",
             };
             if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
+            // Each idea is as tall as its wrapped lines, so long ones never run into the next.
+            const float ideaWidth = 680f;
+            const int ideaSize = 21;
+            const float lineHeight = 33f;
             float y = 252f;
             foreach (var idea in ideas)
             {
-                var t = UIKit.Text(Root, idea, TextStyle.Body.WithSize(21), TextAnchor.UpperLeft);
+                var t = UIKit.Text(Root, idea, TextStyle.Body.WithSize(ideaSize), TextAnchor.UpperLeft);
+                int lines = Mathf.Max(1, Mathf.CeilToInt(t.MeasureWidth() / (ideaWidth * 0.92f)));
+                float h = lines * lineHeight;
                 t.horizontalOverflow = HorizontalWrapMode.Wrap;
-                t.rectTransform.At(250f + 340f, y + 40f, 680f, 80f);
+                t.rectTransform.At(250f + ideaWidth * 0.5f, y + h * 0.5f, ideaWidth, h + 8f);
                 var dot = UIKit.Shape(Root, "Dot", ShapeKind.Circle);
                 dot.rectTransform.At(226f, y + 15f, 6f, 6f);
                 dot.Style(Paint.Signal, Color.white, Paint.None, Color.clear);
-                y += 92f;
+                y += h + 26f;
             }
 
             string[] keys = Wiring ? new[]
             {
                 "SPACE", "run the circuit",
-                "DRAG DOT TO DOT", "run a wire",
-                "CLICK A DOT, THEN ANOTHER", "run a wire",
-                "DRAG A WIRE'S END", "move it, or drop it to take it off",
-                "CLICK A WIRE", "take it off",
-                "RIGHT-CLICK A DOT", "take its wires off",
+                "DRAG DOT TO DOT", "add a wire",
+                "CLICK A WIRE", "remove it",
                 "DRAG A BLOCK", "move it",
                 "CLICK A SIGNAL", "hear it",
                 "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
-                "RIGHT-DRAG", "rub out a note",
-                "Z  ·  BACKSPACE", "undo",
-                "ESC", "put a wire down, or menu",
+                "Z", "undo",
+                "ESC", "menu",
             } : new[]
             {
                 "SPACE", "run the circuit",
@@ -402,7 +403,7 @@ namespace Blackbox.UI.Screens
                 "TAB  ·  LEFT RIGHT", "choose something, change it",
                 "ESC", "menu",
             };
-            float ky = 270f;
+            float ky = 272f;
             for (int i = 0; i + 1 < keys.Length; i += 2)
             {
                 var k = UIKit.Text(Root, keys[i], TextStyle.Label.WithSize(13).WithTracking(0.16f).WithColor(Palette.Dim), TextAnchor.MiddleRight);

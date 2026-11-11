@@ -50,8 +50,8 @@ namespace Blackbox.UI.Screens
         public override bool IsOverlay => true;
         protected Image Veil;
 
-        /// <summary>How dark the veil is. The board stays faintly visible behind Pause.</summary>
-        protected virtual float VeilAlpha => 0.9f;
+        /// <summary>How dark the veil is. Solid black, so nothing behind shows through; Pause lets the board show faintly.</summary>
+        protected virtual float VeilAlpha => 1f;
 
         protected void BuildVeil()
         {
