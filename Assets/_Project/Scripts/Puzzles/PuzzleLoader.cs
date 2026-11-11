@@ -98,6 +98,7 @@ namespace Blackbox.Puzzles
                 Wiring = wiring,
                 Mixed = wiring && !root.Has("medium"),
             };
+            chapter.Guide = ReadGuide(root, sourceName, chapter);
 
             var unlock = root["unlock"];
             if (unlock.IsObject)
@@ -121,6 +122,31 @@ namespace Blackbox.Puzzles
                 chapter.Puzzles.Add(puzzle);
             }
             return chapter;
+        }
+
+        static readonly string[] GuideKeys = { "none", "bits", "digits", "waves", "readings", "recap" };
+
+        /// <summary>
+        /// The chapter's signal guide: "guide" names one, or else it follows the
+        /// chapter's signals (bits, digits, waves, or readings for every kind).
+        /// </summary>
+        static SignalGuide ReadGuide(JsonValue root, string sourceName, ChapterDef chapter)
+        {
+            if (root.Has("guide"))
+            {
+                string key = root["guide"].AsString(string.Empty);
+                int i = System.Array.IndexOf(GuideKeys, key);
+                if (i < 0) throw new PuzzleFormatException($"{sourceName}: unknown guide '{key}' (use {string.Join(", ", GuideKeys)}).");
+                return (SignalGuide)i;
+            }
+            if (chapter.Mixed) return SignalGuide.Readings;
+            switch (chapter.Medium)
+            {
+                case Medium.Binary: return SignalGuide.Bits;
+                case Medium.Decimal: return SignalGuide.Digits;
+                case Medium.Wave: return SignalGuide.Waves;
+                default: return SignalGuide.None;
+            }
         }
 
         /// <summary>

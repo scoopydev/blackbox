@@ -4,6 +4,7 @@
   "mode": "wiring",
   "tagline": "Every block you've met, all mixed up.",
   "signals": "From here on, any kind of signal and any block you've met can turn up anywhere, so try things and watch what each block sends.",
+  "guide": "recap",
   "circuits": [
     {
       "id": "unmarked-01",

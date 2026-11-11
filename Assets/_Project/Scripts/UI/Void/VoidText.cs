@@ -73,6 +73,21 @@ namespace Blackbox.UI
 
         public override float preferredWidth => MeasureWidth();
 
+        /// <summary>How many lines the text takes when it wraps to <paramref name="width"/>.</summary>
+        public int LinesAt(float width)
+        {
+            if (font == null) return 1;
+            string s = Display;
+            if (s.Length == 0) return 1;
+            int px = PixelSize;
+            font.RequestCharactersInTexture(s, px, fontStyle);
+            var overflow = horizontalOverflow;
+            horizontalOverflow = HorizontalWrapMode.Wrap;
+            BreakLines(s, px, Scale, width);
+            horizontalOverflow = overflow;
+            return Mathf.Max(1, s_Lines.Count);
+        }
+
         public override float preferredHeight
         {
             get

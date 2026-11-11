@@ -270,7 +270,7 @@ namespace Blackbox.Components
                 case Medium.Shape:
                     return from == Medium.Binary ? "a circle, solid for 1 and hollow for 0" : from == Medium.Decimal ? "a circle, solid unless it's 0" : "a circle, solid while it's above the middle";
                 default:
-                    return from == Medium.Binary ? "the top for 1, the bottom for 0" : from == Medium.Decimal ? "a flat line, 0 at the bottom up to 9 at the top" : "the top when solid, the bottom when hollow";
+                    return from == Medium.Binary ? "the top for 1, the bottom for 0" : from == Medium.Decimal ? "a level, 0 at the bottom up to 9 at the top" : "the top when solid, the bottom when hollow";
             }
         }
 

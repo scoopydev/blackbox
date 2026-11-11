@@ -57,6 +57,33 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void EveryChapterOpensWithASignalGuide()
+        {
+            var guides = TestContent.Library.Chapters.ToDictionary(c => c.Id, c => c.Guide);
+            Assert.That(guides, Is.EqualTo(new Dictionary<string, SignalGuide>
+            {
+                ["first-light"] = SignalGuide.Bits,
+                ["tally"] = SignalGuide.Digits,
+                ["resonance"] = SignalGuide.Waves,
+                ["patch"] = SignalGuide.Readings,
+                ["junction"] = SignalGuide.Readings,
+                ["blend"] = SignalGuide.Readings,
+                ["unmarked"] = SignalGuide.Recap,
+                ["blackbox"] = SignalGuide.Recap,
+            }), "each Learn chapter explains its kind, Combine how blocks read each kind, and the last chapters recap them all");
+
+            ContentLibrary Load(string guide) => ContentLibrary.Load(name =>
+            {
+                string text = TestContent.Read(name);
+                return name == "chapter-2-tally" ? text.Replace("\"tagline\"", $"\"guide\": \"{guide}\", \"tagline\"") : text;
+            });
+            Assert.That(Load("none").Chapters[1].Guide, Is.EqualTo(SignalGuide.None), "a chapter can go without one");
+            Assert.That(Load("recap").Chapters[1].Guide, Is.EqualTo(SignalGuide.Recap));
+            var e = Assert.Throws<PuzzleFormatException>(() => Load("pictures"));
+            StringAssert.Contains("unknown guide 'pictures'", e.Message);
+        }
+
+        [Test]
         public void NothingShippedUsesWhatIsSetAside()
         {
             // Stepped waves, shapes and every output device but the display were

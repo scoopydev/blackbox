@@ -76,7 +76,7 @@ Each medium is heard in its own way, so a player can follow a circuit by ear as 
 | decimal | One short tone whose pitch is the digit, climbing a major scale: 0 is C4 (do), 7 is C5, 9 is E5. Every digit lasts as long. |
 | wave | The wave itself. Its frequency is its pitch (F1 is D3, F3 is A4, F7 is A6) and its amplitude its loudness, 2.5 dB a step. Phase can't be heard. |
 
-A signal that changes through the loop plays each of its values in turn. Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead. Clicking a signal always plays it. Each chapter's title card plays a few of its signals, so the player learns the sounds before the first circuit.
+A signal that changes through the loop plays each of its values in turn. Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead. Clicking a signal always plays it. Each chapter's signal guide plays its main example, and every signal on it can be clicked, so the player learns the sounds before the first circuit.
 
 ## Progression
 
@@ -85,7 +85,12 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
-* The first time a player enters a chapter, its title card plays, with a line about its signals.
+* The first time a player enters a chapter, its title card plays, then its **signal guide**: the chapter's kinds of signal drawn as the board draws them, with notes pointing at what to look for. Every signal on it plays when clicked, with a playhead running through the loop. **SIGNAL GUIDE** in the pause menu (or G) opens it again.
+  * First Light, **reading a bit**: a steady 1 and 0, then a bit that switches, with notes on the line above or below the middle (a beep or a soft tap), the faint middle line, and the loop playing left to right.
+  * Tally, **reading a digit**: a steady digit as just its number, a busy one with only its highest and lowest written, and a stepped line with a 0-to-9 scale beside it and each step's digit written on it.
+  * Resonance, **reading a wave**: one cycle bracketed (F), the height from the middle to a peak bracketed (A), where F and A are written, the three forms, and a wave starting a quarter cycle late over the same wave on time.
+  * Patch, Junction and Blend, **how a block reads each kind**: a bit, a digit and a wave, each drawn as a bit block, a digit block and a wave block reads it, with the reading written under it.
+  * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
 * Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch.
   1. **Pre-wired.** One input and one block, every wire drawn, but the output's wire comes straight from the input, so the block isn't used. The player moves it to come from the block.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
@@ -245,7 +250,7 @@ Tests/EditMode/ NUnit tests for everything in Core, Components, Circuit and Puzz
 * **Core, Components, Circuit and Puzzles** compile into one assembly, `Blackbox.Core`, which doesn't reference the engine. The whole play loop (wiring, running, the rules, solving, unlocking) can be tested without Unity, and the tests include a full playthrough of every chapter.
 * **The interface is built in code.** `BlackboxApp` creates the camera, the event system and one canvas with a fixed 1920×1080 frame. The canvas scales to fit any screen. Screens are laid out in frame coordinates (x from the left, y down from the top).
 * **No scene setup is needed.** If the open scene has no `BlackboxApp`, one is created when it loads, so pressing Play in any scene starts the game. **BLACKBOX → Create Main Scene** makes a proper scene for builds.
-* **Screens** live on a stack. Opening a screen replaces the stack with a fade. Overlays (pause, settings, confirm, help, a chapter's title card) sit on top, behind a dark veil. Only the top screen gets keys.
+* **Screens** live on a stack. Opening a screen replaces the stack with a fade. Overlays (pause, settings, confirm, help, a chapter's title card and signal guide) sit on top, behind a dark veil. Only the top screen gets keys.
 * **Input** works with either backend: the Input System package or the old Input Manager.
 * **Saving** writes `blackbox-save.json` to `Application.persistentDataPath`. It goes through a temporary file, so a crash can't leave half a save. It stores solved circuits and best move counts, the wires the player left on each circuit, their notes (pen strokes and typed text), which chapter cards have been seen, and preferences. Saves from before the wiring game keep only their preferences.
 

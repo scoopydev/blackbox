@@ -54,7 +54,8 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
-| `signals` | no | One line about the medium, shown on the title card and in the help. |
+| `signals` | no | One line about the medium, shown in the help, and on the title card of a chapter without a signal guide. The `recap` guide shows it under its heading. |
+| `guide` | no | The signal guide shown after the title card, before the first circuit: `bits`, `digits`, `waves`, `readings` (how each kind of block reads each kind of signal), `recap` (all three kinds side by side) or `none`. By default it follows `medium`, and a chapter that mixes kinds gets `readings`. |
 | `unlock` | no | `{ "after": "first-light", "solved": 4 }` makes the chapter wait until `solved` circuits of chapter `after` are solved. Leave it out for a chapter that is open from the start, as all the shipped chapters are. |
 | `circuits` | yes | The circuits, easiest first. |
 

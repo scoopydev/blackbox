@@ -5,7 +5,7 @@
   "mode": "wiring",
   "medium": "wave",
   "tagline": "Listen closely.",
-  "signals": "Signals here are waves: a sine, square or saw. F, from 1 to 7, is how fast a wave repeats and how high it sounds. A, from 1 to 7, is how tall it is and how loud. A wave marked p1, p2 or p3 starts a quarter, a half or three quarters of a cycle late.",
+  "signals": "Signals here are waves: a sine, square or saw. F, from 1 to 7, is how fast a wave repeats and how high it sounds. A, from 1 to 7, is how tall it is and how loud. A wave marked +1/4, +1/2 or +3/4 starts that much of a cycle late.",
   "circuits": [
     {
       "id": "resonance-01",

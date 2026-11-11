@@ -252,6 +252,38 @@ namespace Blackbox.UI.Board
             }
         }
 
+        /// <summary>
+        /// Where the line is drawn at a moment of the loop (0 to 1) and a level,
+        /// from the centre of the view with y up, for pointing at part of it.
+        /// Call after <see cref="Set"/>.
+        /// </summary>
+        public Vector2 PointAt(float loop, float level)
+        {
+            var r = _graph.rectTransform;
+            Vector2 c = r.anchoredPosition, size = r.sizeDelta;
+            float span = Mathf.Max(1e-4f, _graph.Max - _graph.Min);
+            float v = Mathf.Clamp01((level - _graph.Min) / span);
+            float pad = _graph.LineWidth;
+            return new Vector2(c.x - size.x * 0.5f + Mathf.Clamp01(loop) * size.x, c.y - size.y * 0.5f + pad + v * (size.y - 2f * pad));
+        }
+
+        /// <summary>The left and right ends of the line, from the centre of the view.</summary>
+        public (float left, float right) LineSpan
+        {
+            get
+            {
+                var r = _graph.rectTransform;
+                return (r.anchoredPosition.x - r.sizeDelta.x * 0.5f, r.anchoredPosition.x + r.sizeDelta.x * 0.5f);
+            }
+        }
+
+        /// <summary>The digits written on the steps of a digit line, one for each step.</summary>
+        public IReadOnlyList<VoidText> StepNumbers => _digits;
+        /// <summary>The highest and lowest level written at the left of a bit line or a busy digit line.</summary>
+        public IReadOnlyList<VoidText> ScaleNumbers => _scale;
+        /// <summary>The line of text under the signal, if it has one.</summary>
+        public VoidText CaptionText => _caption;
+
         /// <summary>Where a level of the graph is drawn, up from the middle of the view.</summary>
         float GraphY(float level)
         {

@@ -4,6 +4,7 @@
   "mode": "wiring",
   "tagline": "Everything at once.",
   "signals": "Bigger circuits with every kind of signal and block. Make every output do what its target shows.",
+  "guide": "recap",
   "circuits": [
     {
       "id": "blackbox-01",

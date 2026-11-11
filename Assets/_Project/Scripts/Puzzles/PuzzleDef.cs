@@ -192,6 +192,27 @@ namespace Blackbox.Puzzles
     }
 
     /// <summary>A set of circuits on one medium that get harder as they go.</summary>
+    /// <summary>
+    /// The page shown after a chapter's title card, before its first circuit,
+    /// that points out what to look for in its signals. By default a chapter of
+    /// bits, digits or waves explains that kind, and a chapter of every kind
+    /// shows how each kind of block reads the others.
+    /// </summary>
+    public enum SignalGuide
+    {
+        None,
+        /// <summary>A bit's line above or below the middle, steady or switching.</summary>
+        Bits,
+        /// <summary>A digit as a height from 0 to 9, or as just its number when it stays put.</summary>
+        Digits,
+        /// <summary>A wave's frequency, amplitude, form and phase.</summary>
+        Waves,
+        /// <summary>One signal of each kind, as each kind of block reads it.</summary>
+        Readings,
+        /// <summary>All three kinds side by side, with what to look for in each.</summary>
+        Recap,
+    }
+
     public sealed class ChapterDef
     {
         public string Id;
@@ -203,6 +224,8 @@ namespace Blackbox.Puzzles
         public string Tagline;
         /// <summary>What the signals in this chapter are, in a sentence, for the title card and help.</summary>
         public string Signals;
+        /// <summary>The page that shows the chapter's signals before its first circuit.</summary>
+        public SignalGuide Guide;
         /// <summary>Position in the game, from 0.</summary>
         public int Number;
 

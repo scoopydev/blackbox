@@ -40,6 +40,7 @@ namespace Blackbox.UI.Screens
             const float step = 58f;
             _menu.Add(MenuItem.Create(Root, "RESUME", cx, y), () => { App.Sound(Sfx.Close); Close(); });
             _menu.Add(MenuItem.Create(Root, "HOW IT WORKS", cx, y += step), OpenHelp);
+            if (SignalGuideOverlay.Has(p.Chapter)) _menu.Add(MenuItem.Create(Root, "SIGNAL GUIDE", cx, y += step), OpenGuide);
             _menu.Add(MenuItem.Create(Root, "RESET CIRCUIT", cx, y += step), () =>
                 Game.Confirm(ResetQuestion, "RESET", false, () =>
                 {
@@ -50,7 +51,18 @@ namespace Blackbox.UI.Screens
             _menu.Add(MenuItem.Create(Root, "CHAPTERS", cx, y += step + 16f), () => Game.GoChapters(Puzzle.Chapter));
             _menu.Add(MenuItem.Create(Root, "MAIN MENU", cx, y += step), Game.GoTitle);
 
-            Chrome.KeyHintsCentred(Root, cx, 1000f, "UP DOWN", "MOVE", "ENTER", "CHOOSE", "H", "HELP", "ESC", "RESUME");
+            if (SignalGuideOverlay.Has(p.Chapter))
+                Chrome.KeyHintsCentred(Root, cx, 1000f, "UP DOWN", "MOVE", "ENTER", "CHOOSE", "H", "HELP", "G", "SIGNALS", "ESC", "RESUME");
+            else
+                Chrome.KeyHintsCentred(Root, cx, 1000f, "UP DOWN", "MOVE", "ENTER", "CHOOSE", "H", "HELP", "ESC", "RESUME");
+        }
+
+        void OpenGuide()
+        {
+            var guide = Game.Screens.Create<SignalGuideOverlay>();
+            guide.Chapter = Puzzle.Chapter;
+            guide.FromMenu = true;
+            Game.Screens.Push(guide);
         }
 
         void OpenHelp()
@@ -70,6 +82,7 @@ namespace Blackbox.UI.Screens
                 return;
             }
             if (GameInput.Down(Key.H)) { OpenHelp(); return; }
+            if (GameInput.Down(Key.G) && SignalGuideOverlay.Has(Puzzle.Chapter)) { OpenGuide(); return; }
             _menu.HandleKeys();
         }
     }
@@ -451,18 +464,22 @@ namespace Blackbox.UI.Screens
         {
             BuildVeil();
             float cx = VoidFrame.Width * 0.5f;
+            // A chapter with a signal guide leaves its signals to the guide, which
+            // comes next, so its card is just the title, lower on the screen.
+            bool guide = SignalGuideOverlay.Has(Chapter);
+            float shift = guide ? 70f : 0f;
             var label = UIKit.Text(Root, "CHAPTER", TextStyle.Label.WithSize(13).WithTracking(0.5f).WithColor(Palette.Faint));
-            label.rectTransform.At(cx, 290f, 400f, 20f);
+            label.rectTransform.At(cx, 290f + shift, 400f, 20f);
             var numeral = UIKit.Text(Root, Chapter.Numeral, TextStyle.Display.WithSize(120).WithTracking(0.2f).WithColor(Color.white));
             numeral.SignalFill = true;
-            numeral.rectTransform.At(cx, 380f, 600f, 150f);
+            numeral.rectTransform.At(cx, 380f + shift, 600f, 150f);
             var title = UIKit.Text(Root, Chapter.Title, TextStyle.Heading.WithSize(46).WithWeight(200));
-            title.rectTransform.At(cx, 490f, 1200f, 64f);
+            title.rectTransform.At(cx, 490f + shift, 1200f, 64f);
             var tagline = UIKit.Text(Root, Chapter.Tagline, TextStyle.Body.WithSize(23));
-            tagline.rectTransform.At(cx, 552f, 1200f, 34f);
+            tagline.rectTransform.At(cx, 552f + shift, 1200f, 34f);
             // The note on the chapter's signals takes as many lines as it needs; the rest sits below it.
-            float y = 600f;
-            if (!string.IsNullOrEmpty(Chapter.Signals))
+            float y = 600f + shift;
+            if (!guide && !string.IsNullOrEmpty(Chapter.Signals))
             {
                 const float width = 1100f;
                 var signals = UIKit.Text(Root, Chapter.Signals, TextStyle.Body.WithSize(18).WithColor(Palette.Dim));
@@ -487,10 +504,10 @@ namespace Blackbox.UI.Screens
             line.SetLit(0f, 0.0001f);
             Tweener.Run(line, "draw", 1.6f, t => line.SetLit(0f, Mathf.Max(0.0001f, t)), Ease.InOutCubic, 0.35f);
 
-            BuildSamples(cx);
+            if (!guide) BuildSamples(cx);
 
-            _prompt = UIKit.Text(Root, "CLICK OR PRESS ENTER TO BEGIN", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
-            _prompt.rectTransform.At(cx, Mathf.Max(960f, _samplesY + 120f), 700f, 18f);
+            _prompt = UIKit.Text(Root, guide ? "CLICK OR PRESS ENTER TO CONTINUE" : "CLICK OR PRESS ENTER TO BEGIN", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
+            _prompt.rectTransform.At(cx, guide ? 960f : Mathf.Max(960f, _samplesY + 120f), 700f, 18f);
             _prompt.canvasRenderer.SetAlpha(0f);
             Tweener.Run(_prompt, "show", 0.6f, t => _prompt.canvasRenderer.SetAlpha(t), Ease.OutQuad, 1.4f);
 
@@ -590,6 +607,13 @@ namespace Blackbox.UI.Screens
             if (Time.unscaledTime - _shownAt < 0.8f) return;
             App.Sound(Sfx.Close);
             Close();
+            // Then the chapter's signals, before its first circuit.
+            if (SignalGuideOverlay.Has(Chapter))
+            {
+                var guide = Game.Screens.Create<SignalGuideOverlay>();
+                guide.Chapter = Chapter;
+                Game.Screens.Push(guide);
+            }
         }
 
         public override void HandleInput()
