@@ -104,6 +104,24 @@ namespace Blackbox.UI
             }
         }
 
+        /// <summary>
+        /// Puts this text's characters in the font texture before its mesh is built.
+        /// Asking for them while the mesh is being built can make the font texture
+        /// grow, which makes every other text rebuild at once through the vertex
+        /// helper Unity shares between graphics. That left this text drawn where
+        /// another one was, on top of it: a hint over the goal line, or over a
+        /// dialog's question.
+        /// </summary>
+        public override void Rebuild(CanvasUpdate update)
+        {
+            if (update == CanvasUpdate.PreRender && font != null)
+            {
+                string s = Display;
+                if (s.Length > 0) font.RequestCharactersInTexture(s + "H", PixelSize, fontStyle);
+            }
+            base.Rebuild(update);
+        }
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -116,8 +134,11 @@ namespace Blackbox.UI
             m_DisableFontTextureRebuiltCallback = true;
             try
             {
-                // One request, so a rebuild of the font texture can't drop the first set of characters.
+                // Normally a no-op, as Rebuild asked already. One request, so a rebuild
+                // of the font texture can't drop the first set of characters.
                 font.RequestCharactersInTexture(s + "H", px, fontStyle);
+                // If that did rebuild other texts through the shared helper, start clean.
+                vh.Clear();
 
                 float capHeight = font.GetCharacterInfo('H', out CharacterInfo h, px, fontStyle) ? h.maxY / scale : fontSize * 0.7f;
                 Rect r = rectTransform.rect;
