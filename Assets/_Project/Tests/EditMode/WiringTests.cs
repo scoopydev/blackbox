@@ -311,6 +311,33 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void SolvedOutputsHoldUntilWhatFeedsThemChanges()
+        {
+            // An output solved on a run stays solved, and quiet on the next, while
+            // the wire into it and every block upstream of it are as they ran.
+            var p = TestContent.ParseWired(Small);
+            var s = new WiringSession(p);
+            int a = 0, b = 1, g = s.BlockNode(0), h = s.BlockNode(1), x = s.OutputNode(0);
+            s.Connect(a, g, 0);
+            s.Connect(b, g, 1);
+            s.Connect(g, h, 0);
+            s.Connect(h, x, 0);
+            var ran = s.Drivers;
+
+            Assert.That(WiringSession.OutputsUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true }), "nothing changed");
+            s.Connect(g, x, 0);
+            Assert.That(WiringSession.OutputsUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { false }), "its wire comes from somewhere else");
+            s.Connect(h, x, 0);
+            Assert.That(WiringSession.OutputsUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true }), "put back");
+            s.Connect(a, g, 1);
+            Assert.That(WiringSession.OutputsUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { false }), "a block two steps up was rewired");
+            s.Connect(b, g, 1);
+            Assert.That(WiringSession.OutputsUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { true }), "put back again");
+            s.Disconnect(x, 0);
+            Assert.That(WiringSession.OutputsUnchanged(p, ran, s.Drivers), Is.EqualTo(new[] { false }), "no wire");
+        }
+
+        [Test]
         public void TheSessionKeepsTheRules()
         {
             var p = TestContent.ParseWired(Small);

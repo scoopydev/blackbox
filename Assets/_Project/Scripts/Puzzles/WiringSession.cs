@@ -517,6 +517,26 @@ namespace Blackbox.Puzzles
             return result;
         }
 
+        /// <summary>
+        /// Which outputs get the same signal under <paramref name="now"/> as under
+        /// <paramref name="before"/>: the wire into each comes from the same input
+        /// or block, and that block is unchanged (see <see cref="BlocksUnchanged"/>).
+        /// An output with no wire is never the same.
+        /// </summary>
+        public static bool[] OutputsUnchanged(PuzzleDef p, int[][] before, int[][] now)
+        {
+            int inputs = p.Inputs.Count, blocks = p.Blocks.Count;
+            var kept = BlocksUnchanged(p, before, now);
+            var result = new bool[p.Outputs.Count];
+            for (int o = 0; o < result.Length; o++)
+            {
+                int node = inputs + blocks + o;
+                int was = before[node][0], wired = now[node][0];
+                result[o] = wired >= 0 && was == wired && (wired < inputs || kept[wired - inputs]);
+            }
+            return result;
+        }
+
         /// <summary>A copy of the wiring, as the driver of every port.</summary>
         public int[][] Drivers
         {

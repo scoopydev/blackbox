@@ -577,22 +577,28 @@ namespace Blackbox.UI.Board
         }
 
         /// <summary>Hides everything a run shows: outputs, block readouts, marks.</summary>
-        public void Conceal()
+        /// <summary>Hides every signal a run showed, except the outputs in <paramref name="keepOutputs"/>.</summary>
+        public void Conceal(bool[] keepOutputs = null)
         {
             _shown = false;
             foreach (var b in Blocks) b.Conceal();
-            foreach (var o in Outputs) o.Conceal();
+            for (int o = 0; o < Outputs.Count; o++)
+            {
+                if (keepOutputs != null && keepOutputs[o] && Outputs[o].Showing) _shown = true;
+                else Outputs[o].Conceal();
+            }
             foreach (var i in Inputs) i.Unused = false;
         }
 
         /// <summary>
-        /// After a wiring change: hides the outputs, and every block not in
-        /// <paramref name="keep"/> (see <see cref="WiringSession.BlocksUnchanged"/>).
-        /// A kept block that was showing a signal keeps it until the next run, with
-        /// its note brought up to date from <paramref name="now"/>, so a block newly
-        /// wired on to an output is no longer NOT USED.
+        /// After a wiring change: hides every block not in <paramref name="keep"/>
+        /// (see <see cref="WiringSession.BlocksUnchanged"/>), and every output not in
+        /// <paramref name="keepOutputs"/>. A kept block that was showing a signal keeps
+        /// it until the next run, with its note brought up to date from
+        /// <paramref name="now"/>, so a block newly wired on to an output is no longer
+        /// NOT USED. A kept output stays as the last run showed it.
         /// </summary>
-        public void ConcealChanged(bool[] keep, WiringReport now)
+        public void ConcealChanged(bool[] keep, WiringReport now, bool[] keepOutputs = null)
         {
             bool any = false;
             for (int b = 0; b < Blocks.Count; b++)
@@ -606,7 +612,11 @@ namespace Blackbox.UI.Board
                 }
                 else view.Conceal();
             }
-            foreach (var o in Outputs) o.Conceal();
+            for (int o = 0; o < Outputs.Count; o++)
+            {
+                if (keepOutputs != null && keepOutputs[o] && Outputs[o].Showing) any = true;
+                else Outputs[o].Conceal();
+            }
             // Whether an input is used can change with any wire, so its mark waits for the next run.
             foreach (var i in Inputs) i.Unused = false;
             _shown = any;
@@ -666,10 +676,12 @@ namespace Blackbox.UI.Board
         }
 
         /// <summary>Shows everything from a run at once, and marks the inputs it found unused.</summary>
-        public void ShowAll(WiringReport report)
+        /// <summary>Shows everything a run found. Outputs in <paramref name="held"/> that are showing are left as they are.</summary>
+        public void ShowAll(WiringReport report, bool[] held = null)
         {
             for (int b = 0; b < Blocks.Count; b++) ShowBlock(b, report);
-            for (int o = 0; o < Outputs.Count; o++) ShowOutput(o, report);
+            for (int o = 0; o < Outputs.Count; o++)
+                if (held == null || !held[o] || !Outputs[o].Showing) ShowOutput(o, report);
             for (int i = 0; i < Inputs.Count; i++) Inputs[i].Unused = report.UnusedInputs.Contains(i);
         }
 
@@ -1366,6 +1378,8 @@ namespace Blackbox.UI.Board
         }
 
         public Trace Shown => _known ? _now.Trace : null;
+        /// <summary>A signal from a run is showing.</summary>
+        public bool Showing => _known;
 
         public void Ping(bool target)
         {

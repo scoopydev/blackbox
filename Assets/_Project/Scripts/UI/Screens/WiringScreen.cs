@@ -99,6 +99,7 @@ namespace Blackbox.UI.Screens
             {
                 _session.Run();
                 _ranWith = _session.Drivers;
+                RememberMet(_session.LastRun);
                 _board.ShowAll(_session.LastRun);
                 SetSolvedShown(true, quiet: true);
             }
@@ -402,13 +403,40 @@ namespace Blackbox.UI.Screens
         /// <summary>
         /// After a wiring change, each block keeps the signal its last run showed
         /// until the next run, unless its own inputs were rewired or a block feeding
-        /// it changed. Rewiring where a block's signal goes leaves it showing. The
-        /// outputs always clear, since what reaches them is checked only by a run.
+        /// it changed. Rewiring where a block's signal goes leaves it showing. An
+        /// output clears too, since what reaches it is checked only by a run, unless
+        /// it was solved and nothing feeding it changed (see <see cref="HeldOutputs"/>).
         /// </summary>
         void ConcealChanged()
         {
             if (_ranWith == null) { _board.Conceal(); return; }
-            _board.ConcealChanged(WiringSession.BlocksUnchanged(Puzzle, _ranWith, _session.Drivers), _session.Check());
+            _board.ConcealChanged(WiringSession.BlocksUnchanged(Puzzle, _ranWith, _session.Drivers), _session.Check(), HeldOutputs());
+        }
+
+        /// <summary>The wiring of the last run that finished, and which outputs it found doing what their targets show.</summary>
+        int[][] _metWith;
+        bool[] _metOutputs;
+        /// <summary>The outputs the run in progress leaves as they were.</summary>
+        bool[] _held;
+
+        void RememberMet(WiringReport report)
+        {
+            _metWith = _session.Drivers;
+            _metOutputs = (bool[])report.OutputMet.Clone();
+        }
+
+        /// <summary>
+        /// The outputs that stay solved: each did what its target shows on the last
+        /// run that finished, and nothing feeding it has been rewired since, so it
+        /// still gets the same signal. A run leaves them showing as they are and
+        /// doesn't play them again. Null before a run has finished.
+        /// </summary>
+        bool[] HeldOutputs()
+        {
+            if (_metWith == null) return null;
+            var held = WiringSession.OutputsUnchanged(Puzzle, _metWith, _session.Drivers);
+            for (int o = 0; o < held.Length; o++) held[o] &= _metOutputs[o];
+            return held;
         }
 
         public void BlocksMoved() => SavePlaces();
@@ -563,12 +591,17 @@ namespace Blackbox.UI.Screens
             _running = true;
             _run.SetText("RUNNING");
             _run.Active = true;
-            _board.Conceal();
+            // Outputs already solved, with nothing feeding them changed, stay solved and quiet.
+            var held = _held = HeldOutputs();
+            _board.Conceal(held);
             _ranWith = _session.Drivers;
             RefreshCounters();
             Say("Running the circuit.", 30f);
 
             var report = _session.Check();
+            if (held != null)
+                for (int o = 0; o < held.Length; o++)
+                    if (held[o] && !_board.Outputs[o].Showing) _board.ShowOutput(o, report);
             var depth = _board.Depths();
             int max = 1;
             for (int n = _session.InputCount; n < _session.NodeCount; n++) max = Mathf.Max(max, depth[n]);
@@ -608,6 +641,7 @@ namespace Blackbox.UI.Screens
             float t = flow + 0.25f;
             foreach (int o in order)
             {
+                if (held != null && held[o]) continue;
                 int index = o;
                 var got = report.Values[_session.OutputNode(o)];
                 var device = Puzzle.Outputs[o].Device;
@@ -649,7 +683,8 @@ namespace Blackbox.UI.Screens
             RestoreRunButton();
             bool solved = _session.Run();
             var report = _session.LastRun;
-            _board.ShowAll(report);
+            _board.ShowAll(report, _held);
+            RememberMet(report);
             RefreshCounters();
             if (solved)
             {
