@@ -10,29 +10,33 @@ using UnityEngine;
 namespace Blackbox.UI.Screens
 {
     /// <summary>
-    /// The title: the wordmark, a one-block circuit quietly ticking beneath it,
-    /// and the main menu. The circuit is live: its input flips by itself, and the
-    /// block and input can be clicked like any other.
+    /// The title: the wordmark, a small circuit beneath it, and the main menu.
+    /// The circuit is drawn exactly as the circuit screen draws one: an input, a
+    /// block and a display, wired and showing their signals. Each time the title
+    /// opens, and every few seconds after, it picks a new kind of signal, a new
+    /// input and a new block at random.
     /// </summary>
-    public sealed class TitleScreen : GameScreen, IBoardHost
+    public sealed class TitleScreen : GameScreen, IWiringHost
     {
-        const string DemoJson = @"{
-            ""id"": ""title"", ""name"": ""BLACKBOX"", ""probes"": 0,
-            ""inputs"": { ""A"": { ""at"": [0, 0], ""value"": 0, ""adjustable"": true } },
-            ""blocks"": { ""k"": { ""kind"": ""NOT"", ""at"": [1, 0] } },
-            ""outputs"": { ""X"": [2, 0] },
-            ""wires"": [""A -> k"", ""k -> X""]
+        /// <summary>A circuit that always loads, if a random one is ever refused.</summary>
+        const string FallbackJson = @"{
+            ""id"": ""title"", ""name"": ""BLACKBOX"", ""mode"": ""wiring"",
+            ""inputs"": { ""A"": { ""signal"": ""binary 0110"" } },
+            ""blocks"": { ""k"": { ""kind"": ""NOT"" } },
+            ""outputs"": { ""X"": { ""device"": ""display"" } },
+            ""solution"": [""A -> k"", ""k -> X""]
         }";
 
-        const float Tick = 1.7f;
-        /// <summary>After the player touches the circuit, it waits this long before ticking again.</summary>
-        const float TouchPause = 5f;
+        /// <summary>How long each random circuit stays before the next fades in.</summary>
+        const float Hold = 7f;
+        const float Fade = 0.6f;
+        /// <summary>Where the circuit sits: centred under the wordmark, above the menu.</summary>
+        static readonly Rect DemoArea = new Rect(460f, 360f, 1000f, 230f);
 
         MenuList _menu;
-        BoardView _board;
-        PuzzleSession _demo;
+        WiringBoard _board;
         float _timer;
-        bool _auto;
+        static readonly System.Random s_Random = new System.Random();
 
         protected internal override void Build()
         {
@@ -42,7 +46,7 @@ namespace Blackbox.UI.Screens
             var tagline = UIKit.Text(Root, "LEARN THE RULES  ·  COMPLETE THE CIRCUIT", TextStyle.Label.WithSize(13).WithTracking(0.4f).WithColor(Palette.Faint));
             tagline.rectTransform.At(cx, 314f, 900f, 20f);
 
-            BuildDemo();
+            ShowDemo(false);
 
             _menu = new MenuList();
             var progress = Game.Progress;
@@ -73,35 +77,103 @@ namespace Blackbox.UI.Screens
             Chrome.KeyHints(Root, 1830f, 1032f, true, "ARROWS", "MOVE", "ENTER", "CHOOSE");
         }
 
-        void BuildDemo()
+        /// <summary>A one-block circuit with a random signal and block of the same kind.</summary>
+        static string RandomJson()
         {
-            var def = PuzzleLoader.ReadPuzzle(JsonValue.Parse(DemoJson), "title", Medium.Binary);
-            _demo = new PuzzleSession(def);
-            _demo.Changed += OnDemoChanged;
-            var metrics = BoardMetrics.Fit(def, new Rect(560f, 360f, 800f, 230f));
-            metrics.Scale = 0.86f;
-            _board = BoardView.Create(Root, _demo, this, metrics);
-            _board.Quiet = true;
-            _timer = 0.9f;
+            var r = s_Random;
+            string signal, kind;
+            switch (r.Next(3))
+            {
+                case 0:
+                {
+                    // A run of bits that isn't all one value.
+                    string bits;
+                    do
+                    {
+                        var b = new System.Text.StringBuilder();
+                        for (int i = 0; i < 4; i++) b.Append(r.Next(2));
+                        bits = b.ToString();
+                    } while (bits == "0000" || bits == "1111");
+                    signal = "binary " + bits;
+                    kind = "NOT";
+                    break;
+                }
+                case 1:
+                {
+                    var b = new System.Text.StringBuilder();
+                    int n = r.Next(2) == 0 ? 1 : 4;
+                    for (int i = 0; i < n; i++) b.Append(r.Next(10));
+                    signal = "decimal " + b;
+                    kind = "MIRROR";
+                    break;
+                }
+                default:
+                {
+                    string[] forms = { "sine", "square", "saw" };
+                    signal = $"wave {forms[r.Next(forms.Length)]} f{1 + r.Next(3)} a{3 + r.Next(5)}";
+                    string[] kinds = { "FLIP", "FASTER", "LATER" };
+                    kind = kinds[r.Next(kinds.Length)];
+                    break;
+                }
+            }
+            return @"{
+            ""id"": ""title"", ""name"": ""BLACKBOX"", ""mode"": ""wiring"",
+            ""inputs"": { ""A"": { ""signal"": """ + signal + @""" } },
+            ""blocks"": { ""k"": { ""kind"": """ + kind + @""" } },
+            ""outputs"": { ""X"": { ""device"": ""display"" } },
+            ""solution"": [""A -> k"", ""k -> X""]
+        }";
         }
 
-        void OnDemoChanged(ChangeKind kind, int index)
+        static PuzzleDef Load(string json) => PuzzleLoader.ReadPuzzle(JsonValue.Parse(json), "title", Medium.Binary, true);
+
+        /// <summary>Builds a new random circuit, centred, and fades it in over the old one.</summary>
+        void ShowDemo(bool fade)
         {
-            if (kind == ChangeKind.Input) _board.Inputs[index].SetValue(_demo.InputValue(index), !_auto);
-            else _board.Blocks[index].SetState(_demo.State(index), true);
-            _board.Refresh(true);
-            _board.Pulse(kind == ChangeKind.Input ? index : _demo.Circuit.BlockNode(index));
+            PuzzleDef def;
+            try { def = Load(RandomJson()); }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("BLACKBOX title circuit: " + e.Message);
+                def = Load(FallbackJson);
+            }
+            var session = new WiringSession(def, new List<string> { "A -> k", "k -> X" });
+
+            var metrics = BoardMetrics.Fit(def, DemoArea);
+            metrics.Scale = 0.86f;
+            metrics.ColSpacing = 330f;
+            var old = _board;
+            _board = WiringBoard.Create(Root, session, this, null, metrics);
+            _board.transform.SetSiblingIndex(2);
+            // Centre on what's drawn: the output card, with its target, is wider than the input.
+            var (min, max) = _board.Extent();
+            ((RectTransform)_board.transform).anchoredPosition = new Vector2(-(min + max) * 0.5f, 0f);
+            session.Run();
+            _board.ShowAll(session.LastRun);
+
+            // Just to look at: the menu and the keys stay in charge.
+            var group = _board.Group();
+            group.blocksRaycasts = false;
+            group.interactable = false;
+            if (fade && !App.ReduceMotion)
+            {
+                group.alpha = 0f;
+                var board = _board;
+                Tweener.Run(board, "fade", Fade, t => group.alpha = t, Ease.OutCubic, Fade * 0.5f);
+            }
+            if (old != null)
+            {
+                var oldGroup = old.Group();
+                Tweener.Run(old, "fade", fade ? Fade * 0.6f : 0.01f, t => oldGroup.alpha = 1f - t, Ease.OutQuad, 0f, () => Destroy(old.gameObject));
+            }
+            _timer = Hold;
         }
 
         void Update()
         {
-            if (!Built || _demo == null) return;
+            if (!Built || _board == null) return;
             _timer -= Time.unscaledDeltaTime;
-            if (_timer > 0f) return;
-            _timer = Tick;
-            _auto = true;
-            _demo.SetInput(0, 1 - _demo.InputValue(0));
-            _auto = false;
+            if (_timer <= 0f) ShowDemo(true);
         }
 
         void OpenHelp()
@@ -117,30 +189,11 @@ namespace Blackbox.UI.Screens
             _menu.HandleKeys();
         }
 
-        // The demo circuit behaves like any circuit.
-        public void InputStep(int input, int direction)
-        {
-            _timer = TouchPause;
-            if (_demo.CycleInput(input, direction)) App.Sound(Sfx.Dial);
-        }
-
-        public void BlockStep(int block, int direction)
-        {
-            _timer = TouchPause;
-            if (_demo.CycleState(block, direction)) App.Sound(Sfx.Dial);
-        }
-
-        public void BlockPip(int block, int state)
-        {
-            _timer = TouchPause;
-            if (_demo.SetState(block, state)) App.Sound(Sfx.Dial);
-        }
-
-        public void WireClicked(int wire, float at) { }
-        public void ProbeClicked(int probe) { }
-        public void PlayValue(int value) { _timer = TouchPause; App.Audio?.PlaySignal(Medium.Binary, value); }
-        public void Hover(BoardItem item, int index, bool on) { }
-        public bool CanPlaceProbe => false;
+        // IWiringHost: the title's circuit only shows its signals.
+        public bool CanWire => false;
+        public void Say(string message, float seconds) { }
+        public void PlayTrace(Trace trace) { }
+        public void BlocksMoved() { }
     }
 
     /// <summary>

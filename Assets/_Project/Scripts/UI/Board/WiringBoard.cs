@@ -59,19 +59,20 @@ namespace Blackbox.UI.Board
         const float SnapReach = 30f;
 
         /// <param name="places">Where the player last left each block, by block id, in board coordinates. Missing blocks sit where the circuit puts them.</param>
-        public static WiringBoard Create(Transform parent, WiringSession session, IWiringHost host, IDictionary<string, Vector2> places = null)
+        /// <param name="metrics">Where and how big to draw it; the circuit screen's board area when left out.</param>
+        public static WiringBoard Create(Transform parent, WiringSession session, IWiringHost host, IDictionary<string, Vector2> places = null, BoardMetrics metrics = null)
         {
             var rt = UIKit.Rect(parent, "Wiring board").Stretch();
             var board = rt.gameObject.AddComponent<WiringBoard>();
-            board.Build(session, host, places);
+            board.Build(session, host, places, metrics);
             return board;
         }
 
-        void Build(WiringSession session, IWiringHost host, IDictionary<string, Vector2> places)
+        void Build(WiringSession session, IWiringHost host, IDictionary<string, Vector2> places, BoardMetrics metrics)
         {
             Session = session;
             Host = host;
-            Metrics = BoardMetrics.Fit(session.Puzzle);
+            Metrics = metrics ?? BoardMetrics.Fit(session.Puzzle);
             var root = (RectTransform)transform;
 
             // Clicking empty board puts down a wire held by a click.
@@ -534,6 +535,19 @@ namespace Blackbox.UI.Board
         {
             _shown = true;
             Outputs[output].Show(report.Values[Session.OutputNode(output)], report.OutputMet[output]);
+        }
+
+        /// <summary>
+        /// The horizontal extent of every card, in frame units from the screen's
+        /// centre, so a small board can be centred on what it actually draws.
+        /// </summary>
+        public (float min, float max) Extent()
+        {
+            float min = float.MaxValue, max = float.MinValue;
+            foreach (var v in Inputs) { min = Mathf.Min(min, v.Bounds.xMin); max = Mathf.Max(max, v.Bounds.xMax); }
+            foreach (var v in Outputs) { min = Mathf.Min(min, v.Bounds.xMin); max = Mathf.Max(max, v.Bounds.xMax); }
+            foreach (var v in Blocks) { min = Mathf.Min(min, v.Centre.x - v.Size.x * 0.5f); max = Mathf.Max(max, v.Centre.x + v.Size.x * 0.5f); }
+            return min <= max ? (min, max) : (0f, 0f);
         }
 
         /// <summary>Shows everything from a run at once.</summary>
