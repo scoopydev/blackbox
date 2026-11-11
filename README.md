@@ -51,7 +51,7 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | H | How it works |
 | Esc | Finish typing, put the pen down, drop a wire, or open the menu |
 
-Part One has five chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes), *Resonance* (analog waves) and *Grain* (sampled waves). Part Two has *Patch* (5 circuits) and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
+Part One has five chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes), *Resonance* (analog waves) and *Grain* (sampled waves). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
 ## Project layout
 

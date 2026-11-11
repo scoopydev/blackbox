@@ -79,7 +79,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has five chapters, one per medium, with six circuits each, and teaches each signal and its four blocks. **Combine** (Patch, Blend) teaches how kinds of signal read each other and the eight mixing blocks. **Build** (Unmarked, Blackbox) is the main game. Each later part opens when every circuit of the part before it is solved; the chapter map has a tab for each part, with a padlock and a count while it's locked.
+* Three parts. **Learn** has five chapters, one per medium, with six circuits each, and teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the eight mixing blocks. **Build** (Unmarked, Blackbox) is the main game. Each later part opens when every circuit of the part before it is solved; the chapter map has a tab for each part, with a padlock and a count while it's locked.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -175,7 +175,20 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 04 | Bit Shapes | A shape block reads a bit as a circle | 2 | 1 |
 | 05 | Moving Parts | A fan driven by a shape, a servo by bits | 9 | 1 |
 
-### Chapter VII: Blend
+### Chapter VII: Junction
+
+*Where kinds of signal meet.* Two kinds of signal into one named block from Part One, the step between Patch (one kind read as another) and Blend (the mixing blocks). No M kinds yet; a test checks that every solution feeds some block two kinds at once.
+
+| # | Circuit | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 01 | Corners | A digit and a shape summed: the shape counts as its corners | 9 | 2 |
+| 02 | Solid State | A shape's form with a bit's fill | 9 | 1 |
+| 03 | Lights Out | A digit and a wave in a bit block, and which goes on top | 9 | 1 |
+| 04 | Staircase | A wave read as a digit, plus a steady digit | 9 | 2 |
+| 05 | Flicker | A wave giving a shape its fill, so it flickers | 9 | 1 |
+| 06 | Junction | A shape, a digit and a wave, three blocks, three outputs | 15,625 | 4 |
+
+### Chapter VIII: Blend
 
 *Signals of different kinds, mixed together.* The M kinds, one or two at a time.
 
@@ -190,7 +203,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 07 | Count | M6 counts rises, through a gate | 27 | 2 |
 | 08 | Threshold | M8 against a digit makes a pulse; a lower threshold keeps it on longer | 9 | 1 |
 
-### Chapter VIII: Unmarked
+### Chapter IX: Unmarked
 
 *The blocks have lost their names.* Two blocks each, of every kind met so far.
 
@@ -203,7 +216,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 05 | Countdown | A count, mirrored | 9 | 1 |
 | 06 | Colours | Shapes on a light and a digit display | 27 | 2 |
 
-### Chapter IX: Blackbox
+### Chapter X: Blackbox
 
 *Everything at once.* Three to five unnamed blocks, two or three outputs.
 
@@ -264,7 +277,7 @@ Values are small whole numbers, one range per medium: 2 for bits, 10 for digits,
 
 ### Adding a chapter
 
-1. Write `chapter-10-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
+1. Write `chapter-11-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to a part in `chapters.json`.
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.

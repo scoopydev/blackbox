@@ -17,7 +17,7 @@ The game in parts, each a list of chapter files (names without `.json`) in play 
     { "id": "learn", "title": "Learn", "tagline": "PART ONE  ·  WHAT EACH SIGNAL AND BLOCK DOES",
       "chapters": ["chapter-1-first-light", "chapter-2-tally"] },
     { "id": "combine", "title": "Combine", "tagline": "PART TWO  ·  WIRING, AND HOW SIGNALS COMBINE",
-      "afterPrevious": true, "chapters": ["chapter-6-patch", "chapter-7-blend"] }
+      "afterPrevious": true, "chapters": ["chapter-6-patch", "chapter-7-junction", "chapter-8-blend"] }
   ]
 }
 ```

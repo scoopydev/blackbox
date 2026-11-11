@@ -24,7 +24,8 @@ namespace Blackbox.Tests
             Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
             Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
-            Assert.That(library.Chapters.Count, Is.EqualTo(9));
+            Assert.That(library.Chapters.Count, Is.EqualTo(10));
+            Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend" }), "Combine reads, then meets, then mixes");
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
             Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
             foreach (var part in library.Parts)
@@ -57,6 +58,29 @@ namespace Blackbox.Tests
             // What BlackboxApp runs when the game starts. Wired circuits start with
             // few or no wires, so it must not ask them to have every block input wired.
             Assert.DoesNotThrow(() => TestContent.Library.CheckCircuits());
+        }
+
+        [Test]
+        public void JunctionBringsKindsTogether()
+        {
+            // Every Junction circuit's solution feeds some block two different
+            // kinds of signal at once, and uses only blocks named in Part One.
+            var junction = TestContent.Library.Chapters.Single(c => c.Id == "junction");
+            Assert.That(junction.Puzzles.Count, Is.EqualTo(6));
+            foreach (var p in junction.Puzzles)
+            {
+                Assert.That(p.Blocks.All(b => !b.Kind.Mixing), Is.True, $"{p.Id}: the mixing blocks wait for Blend");
+                var values = WiringSession.Evaluate(p, p.Solution);
+                var session = new WiringSession(p);
+                bool meets = false;
+                foreach (var b in p.Blocks)
+                {
+                    var media = p.Solution.Where(w => w.To == b).Select(w => values[session.NodeOf(w.From)].Medium).Distinct().Count();
+                    if (media > 1) meets = true;
+                }
+                Assert.That(meets, Is.True, $"{p.Id}: some block meets two kinds of signal");
+                Assert.That(p.Inputs.Select(i => i.Signal.Medium).Distinct().Count(), Is.GreaterThan(1), $"{p.Id}: more than one kind of input");
+            }
         }
 
         [Test]

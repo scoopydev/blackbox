@@ -22,7 +22,8 @@
       "afterPrevious": true,
       "chapters": [
         "chapter-6-patch",
-        "chapter-7-blend"
+        "chapter-7-junction",
+        "chapter-8-blend"
       ]
     },
     {
@@ -31,8 +32,8 @@
       "tagline": "PART THREE  ·  UNMARKED BLOCKS, EVERY SIGNAL",
       "afterPrevious": true,
       "chapters": [
-        "chapter-8-unmarked",
-        "chapter-9-blackbox"
+        "chapter-9-unmarked",
+        "chapter-10-blackbox"
       ]
     }
   ]
