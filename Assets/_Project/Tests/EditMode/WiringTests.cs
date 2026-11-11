@@ -422,6 +422,9 @@ namespace Blackbox.Tests
             foreach (var o in puzzle.Outputs)
             {
                 Assert.That(o.Want, Is.Not.Null, $"{puzzle.Id}: {o.Id}");
+                // A steady bit can only be 0 or 1, so an input often matches it
+                // already; the every-block rule still stops a straight wire solving it.
+                if (o.Want.Medium == Medium.Binary && o.Want.IsFlat) continue;
                 bool straight = puzzle.Inputs.Any(i => Devices.Same(o.Device, i.Signal.Trace, o.Want));
                 Assert.That(straight, Is.False, $"{puzzle.Id}: wiring an input straight to {o.Id} already does what its target shows");
             }

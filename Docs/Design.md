@@ -83,7 +83,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
 * The first time a player enters a chapter, its title card plays, with a line about its signals.
-* Every Learn chapter follows the same arc, so the media are the thing that changes:
+* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch.
   1. **Pre-wired.** One block, every wire drawn, but one runs from the wrong input. The player moves it.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
   3. From here the player draws every wire: two blocks in a chain.
@@ -100,14 +100,15 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 
 | # | Circuit | Teaches | Wirings | Solutions |
 |---|---|---|---|---|
-| 01 | First Light | Pre-wired: move one wire, and NOT | 2 | 1 |
-| 02 | Switch | Half wired: an empty input sends nothing, and AND | 4 | 2 |
-| 03 | Under the Lid | Wiring it all, a chain, and OR | 27 | 2 |
-| 04 | Fork | One input feeding two blocks, and XOR | 27 | 2 |
-| 05 | Relay | Three blocks in a row | 3,125 | 24 |
-| 06 | Tangle | Four blocks, two outputs | 279,936 | 224 |
+| 01 | First Light | Steady bits. Pre-wired: move one wire, and NOT | 2 | 1 |
+| 02 | Switch | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 3 |
+| 03 | Under the Lid | Steady bits. Wiring it all, a chain, and OR | 27 | 6 |
+| 04 | Sequence | Bits that switch through the loop; AND on every moment | 4 | 2 |
+| 05 | Fork | One input feeding two blocks, and XOR | 27 | 2 |
+| 06 | Relay | Three blocks in a row | 3,125 | 24 |
+| 07 | Tangle | Four blocks, two outputs | 279,936 | 224 |
 
-AND and OR give the same answer either way round, and so does XOR, which is why bit circuits have more solutions.
+The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves on to bit patterns (such as 0011, 0 for half the loop and then 1) from Sequence on, so a new player meets one bit at a time first. A steady bit target can only be 0 or 1, so an input may already match it; those circuits are excused from the straight-wire check below, and the every-block rule still stops a straight wire solving them. AND and OR give the same answer either way round, and so does XOR, which is why bit circuits have more solutions.
 
 ### Chapter II: Tally
 

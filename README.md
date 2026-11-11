@@ -51,7 +51,7 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | H | How it works |
 | Esc | Finish typing, put the pen down, drop a wire, or open the menu |
 
-Part One has four chapters of six circuits: *First Light* (bits), *Tally* (digits), *Forms* (shapes) and *Resonance* (waves). Stepped waves and their chapter, *Grain*, are set aside for now (see the end of Design.md). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
+Part One has four chapters: *First Light* (bits, 7 circuits, starting with steady 0s and 1s before bits that switch), *Tally* (digits), *Forms* (shapes) and *Resonance* (waves), six circuits each. Stepped waves and their chapter, *Grain*, are set aside for now (see the end of Design.md). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6). Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
 ## Project layout
 

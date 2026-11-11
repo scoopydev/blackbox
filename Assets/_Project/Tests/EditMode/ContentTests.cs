@@ -46,7 +46,7 @@ namespace Blackbox.Tests
             foreach (var chapter in LearnChapters)
             {
                 Assert.That(chapter.Mixed, Is.False, $"{chapter.Title} is about one kind of signal");
-                Assert.That(chapter.Puzzles.Count, Is.EqualTo(6), chapter.Title);
+                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" ? 7 : 6), chapter.Title);
             }
             foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
                 Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");
@@ -124,6 +124,19 @@ namespace Blackbox.Tests
                 }
                 Assert.That(kinds.Count, Is.EqualTo(4), $"{chapter.Title} uses all four of its kinds: {string.Join(", ", kinds)}");
             }
+        }
+
+        [Test]
+        public void TheGameStartsWithSteadyBits()
+        {
+            // First Light opens with bits that stay at 0 or 1, and only then moves
+            // on to bits that switch as the loop plays.
+            var firstLight = TestContent.Library.Chapters[0];
+            Assert.That(firstLight.Id, Is.EqualTo("first-light"));
+            var steady = firstLight.Puzzles.TakeWhile(p => p.Inputs.All(i => i.Signal.Trace.IsFlat)).Count();
+            Assert.That(steady, Is.EqualTo(3), "three circuits of steady bits come first");
+            foreach (var p in firstLight.Puzzles.Skip(steady))
+                Assert.That(p.Inputs.Any(i => !i.Signal.Trace.IsFlat), Is.True, $"{p.Id}: once patterns start, every circuit has one");
         }
 
         [Test]

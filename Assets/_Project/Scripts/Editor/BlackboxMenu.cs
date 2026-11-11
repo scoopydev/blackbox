@@ -117,7 +117,8 @@ namespace Blackbox.EditorTools
             if (!analysis.Searched) notes.Add($"too many wirings to check them all ({analysis.Space})");
             foreach (var o in p.Outputs)
                 foreach (var i in p.Inputs)
-                    if (Blackbox.Components.Devices.Same(o.Device, i.Signal.Trace, o.Want))
+                    // A steady bit is only 0 or 1, so an input often matches it; the every-block rule still applies.
+                    if (!(o.Want.Medium == Blackbox.Components.Medium.Binary && o.Want.IsFlat) && Blackbox.Components.Devices.Same(o.Device, i.Signal.Trace, o.Want))
                         notes.Add($"wiring {i.Id} straight to {o.Id} already matches its target");
             if (notes.Count > 0)
             {
