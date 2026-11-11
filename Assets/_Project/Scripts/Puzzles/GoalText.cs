@@ -129,7 +129,7 @@ namespace Blackbox.Puzzles
         }
 
         /// <summary>The rules of every wired circuit, shown under its goal.</summary>
-        public const string WiringRules = "USE EVERY INPUT AND EVERY BLOCK  ·  WIRE EVERY BLOCK INPUT";
+        public const string WiringRules = "MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS.";
 
         /// <summary>
         /// "Make light X and display Y do what their targets show", or "Make displays

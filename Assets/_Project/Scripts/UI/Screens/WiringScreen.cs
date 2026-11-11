@@ -185,9 +185,12 @@ namespace Blackbox.UI.Screens
 
         void BuildGoal()
         {
-            // No goal sentence: the targets beside the outputs say it. Only the rules stay.
-            var rules = UIKit.Text(Root, GoalText.WiringRules, TextStyle.Label.WithSize(12).WithTracking(0.3f).WithColor(Palette.Faint), TextAnchor.MiddleLeft, "Rules");
-            rules.rectTransform.At(Left + 640f, GoalY, 1280f, 18f);
+            // The goal is the same for every circuit: the targets beside the outputs say the rest.
+            var label = UIKit.Text(Root, "GOAL", TextStyle.Label.WithSize(13).WithTracking(0.34f).WithColor(Color.white), TextAnchor.MiddleLeft, "Goal label");
+            label.SignalFill = true;
+            label.rectTransform.At(Left + 40f, GoalY, 80f, 20f);
+            var goal = UIKit.Text(Root, GoalText.WiringRules, TextStyle.Body.WithSize(22).WithColor(Palette.Text), TextAnchor.MiddleLeft, "Goal");
+            goal.rectTransform.At(Left + 110f + 640f, GoalY, 1280f, 30f);
 
             _matchedValue = UIKit.Text(Root, "", TextStyle.Value.WithSize(34).WithWeight(200), TextAnchor.MiddleRight, "Matched");
             _matchedValue.rectTransform.At(Right - 100f, GoalY - 8f, 200f, 44f);
