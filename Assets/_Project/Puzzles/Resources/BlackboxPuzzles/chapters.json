@@ -35,7 +35,10 @@
       "chapters": [
         "chapter-10-unmarked",
         "chapter-11-blackbox",
-        "chapter-12-lights-out"
+        "chapter-12-pulse",
+        "chapter-13-cipher",
+        "chapter-14-undertow",
+        "chapter-15-lights-out"
       ]
     }
   ]

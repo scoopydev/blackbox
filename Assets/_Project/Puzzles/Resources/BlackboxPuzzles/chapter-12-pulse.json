@@ -1,0 +1,247 @@
+{
+  "id": "pulse",
+  "title": "Pulse",
+  "mode": "wiring",
+  "medium": "binary",
+  "tagline": "Bits, and nothing else.",
+  "signals": "Only bits here, and only the blocks that work on bits, with one new one among them. With nothing else to lean on, each circuit turns on one idea about 1s and 0s.",
+  "circuits": [
+    {
+      "id": "pulse-01",
+      "hint": "{h} takes three votes, but X only ever depends on two of the inputs. Where could the third vote come from?",
+      "inputs": {
+        "A": {
+          "signal": "binary 0110100110010110"
+        },
+        "B": {
+          "signal": "binary 0011101011000101"
+        },
+        "C": {
+          "signal": "binary 0101110000111010"
+        },
+        "D": {
+          "signal": "binary 1100101001010011"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "NOT"
+        },
+        "h": {
+          "kind": "MAJORITY"
+        },
+        "k": {
+          "kind": "XOR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "B -> k.0",
+        "C -> k.1",
+        "B -> h.0",
+        "C -> h.1",
+        "k -> h.2",
+        "h -> g",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "pulse-02",
+      "hint": "{h} is a new kind of block, with three inputs: the bottom one decides which of the other two gets through. X needs a block that isn't on the board.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0110100110010110"
+        },
+        "B": {
+          "signal": "binary 0011101011000101"
+        },
+        "C": {
+          "signal": "binary 0101110000111010"
+        },
+        "D": {
+          "signal": "binary 1100101001010011"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "AND"
+        },
+        "k": {
+          "kind": "NOT"
+        },
+        "h": {
+          "kind": "PICK"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k",
+        "k -> h.0",
+        "A -> h.1",
+        "B -> h.2",
+        "h -> X",
+        "h -> g.0",
+        "C -> g.1",
+        "g -> Y"
+      ]
+    },
+    {
+      "id": "pulse-03",
+      "hint": "X is 1 only where A is 1 and B isn't, and Y the other way round. Nothing here turns a bit over, so find another way to tell where they differ.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0110100110010110"
+        },
+        "B": {
+          "signal": "binary 0011101011000101"
+        },
+        "C": {
+          "signal": "binary 0101110000111010"
+        },
+        "D": {
+          "signal": "binary 1100101001010011"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "AND"
+        },
+        "h": {
+          "kind": "XOR"
+        },
+        "k": {
+          "kind": "AND"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> h.0",
+        "B -> h.1",
+        "A -> g.0",
+        "h -> g.1",
+        "g -> X",
+        "B -> k.0",
+        "h -> k.1",
+        "k -> Y"
+      ]
+    },
+    {
+      "id": "pulse-04",
+      "hint": "X needs a block that isn't on the board. Three of the blocks that are can stand in for it, if everything is turned over going in and coming out.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0110100110010110"
+        },
+        "B": {
+          "signal": "binary 0011101011000101"
+        },
+        "C": {
+          "signal": "binary 0101110000111010"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "NOT"
+        },
+        "h": {
+          "kind": "AND"
+        },
+        "k": {
+          "kind": "NOT"
+        },
+        "m": {
+          "kind": "NOT"
+        },
+        "n": {
+          "kind": "XOR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k",
+        "B -> m",
+        "k -> h.0",
+        "m -> h.1",
+        "h -> g",
+        "g -> X",
+        "g -> n.0",
+        "C -> n.1",
+        "n -> Y"
+      ]
+    },
+    {
+      "id": "pulse-05",
+      "hint": "At each step, count how many of the inputs are 1.",
+      "inputs": {
+        "A": {
+          "signal": "binary 00001111"
+        },
+        "B": {
+          "signal": "binary 00110011"
+        },
+        "C": {
+          "signal": "binary 01010101"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "XOR"
+        },
+        "h": {
+          "kind": "NOT"
+        },
+        "k": {
+          "kind": "MAJORITY"
+        },
+        "m": {
+          "kind": "XOR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> m.0",
+        "B -> m.1",
+        "m -> g.0",
+        "C -> g.1",
+        "g -> X",
+        "A -> k.0",
+        "B -> k.1",
+        "C -> k.2",
+        "k -> h",
+        "h -> Y"
+      ]
+    }
+  ]
+}

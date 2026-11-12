@@ -732,9 +732,11 @@ namespace Blackbox.Tests
         [Test]
         public void EveryBlockIsTaughtBeforeBuild()
         {
-            // Build mixes everything: each one- or two-input kind it uses was met earlier,
-            // in Part One or Two, and every such kind is met there at least once. The
-            // three-input kinds are new in Build, and only turn up in its later half.
+            // Build starts by mixing what came before: Unmarked and the first half of
+            // Blackbox use only kinds met in Part One or Two, and every one- or
+            // two-input kind is met there at least once, bar VOLUME. The kinds new
+            // in Build (the three-input ones, and VOLUME, which waits for Undertow
+            // to have only waves round it) turn up after that, and each turns up.
             var met = new HashSet<string>();
             var build = new List<PuzzleDef>();
             foreach (var chapter in TestContent.Library.Chapters)
@@ -743,22 +745,19 @@ namespace Blackbox.Tests
                     if (chapter.Part.Id == "build") build.Add(p);
                     else foreach (var b in p.Blocks) met.Add(b.Kind.Id);
                 }
-            var late = new HashSet<string>();
+            int early = TestContent.Library.Chapters.Single(c => c.Id == "unmarked").Puzzles.Count
+                + TestContent.Library.Chapters.Single(c => c.Id == "blackbox").Puzzles.Count / 2;
+            var fresh = new HashSet<string>();
             for (int i = 0; i < build.Count; i++)
-                foreach (var b in build[i].Blocks)
+                foreach (var b in build[i].Blocks.Where(b => !met.Contains(b.Kind.Id)))
                 {
-                    if (b.Kind.InputCount == 3)
-                    {
-                        Assert.That(i, Is.GreaterThanOrEqualTo(build.Count / 2), $"{build[i].Id}: {b.Kind.Id} turns up early in Build");
-                        late.Add(b.Kind.Id);
-                    }
-                    else Assert.That(met, Does.Contain(b.Kind.Id), $"{build[i].Id}: {b.Kind.Id} turns up in Build before it was ever met");
+                    Assert.That(i, Is.GreaterThanOrEqualTo(early), $"{build[i].Id}: {b.Kind.Id} turns up in Build before the second half of Blackbox");
+                    fresh.Add(b.Kind.Id);
                 }
+            Assert.That(met.Where(id => KindCatalog.Get(id).InputCount == 3), Is.Empty, "the three-input kinds wait for Build");
+            Assert.That(fresh.Where(id => KindCatalog.Get(id).InputCount < 3), Is.EquivalentTo(new[] { "VOLUME" }), "the only one- or two-input kind new in Build");
             foreach (var kind in KindCatalog.All.Where(k => !k.Shelved && !KindCatalog.Unplaced.Contains(k.Id)))
-            {
-                if (kind.InputCount == 3) Assert.That(late, Does.Contain(kind.Id), $"{kind.Id} never turns up late in Build");
-                else Assert.That(met, Does.Contain(kind.Id), $"{kind.Id} is never taught");
-            }
+                Assert.That(met.Contains(kind.Id) || fresh.Contains(kind.Id), Is.True, $"{kind.Id} never turns up");
         }
 
         [Test]

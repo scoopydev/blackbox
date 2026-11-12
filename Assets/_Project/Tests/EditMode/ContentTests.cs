@@ -24,10 +24,10 @@ namespace Blackbox.Tests
             Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
             Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
-            Assert.That(library.Chapters.Count, Is.EqualTo(12));
+            Assert.That(library.Chapters.Count, Is.EqualTo(15));
             Assert.That(library.Parts[0].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "first-light", "tally", "ticker", "resonance" }), "bits, steady digits, changing digits, then waves; shapes are set aside");
             Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "outline", "blend", "earshot" }), "Combine reads, meets, sorts solid from dotted, mixes, then listens");
-            Assert.That(library.Parts[2].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "unmarked", "blackbox", "lights-out" }), "Build ends in the dark");
+            Assert.That(library.Parts[2].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "unmarked", "blackbox", "pulse", "cipher", "undertow", "lights-out" }), "Build mixes everything, takes each kind alone, then ends in the dark");
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
             Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
             foreach (var part in library.Parts)
@@ -51,11 +51,43 @@ namespace Blackbox.Tests
                 Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" || chapter.Id == "resonance" ? 7 : 6), chapter.Title);
             }
             foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
-                Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");
+                Assert.That(chapter.Mixed, Is.EqualTo(!PureChapters.ContainsKey(chapter.Id)), $"{chapter.Title}: only Build's pure chapters keep to one kind of signal");
             var media = LearnChapters.Select(c => c.Medium).ToList();
             Assert.That(media.Count(m => m == Medium.Decimal), Is.EqualTo(2), "digits have two chapters, steady then changing");
             Assert.That(media.Where(m => m != Medium.Decimal).Distinct().Count(), Is.EqualTo(media.Count - 2), "every other medium has one chapter");
             Assert.That(media.Distinct(), Is.EquivalentTo(System.Enum.GetValues(typeof(Medium)).Cast<Medium>().Where(m => !KindCatalog.MediumShelved(m))), "every medium in play has its chapter");
+        }
+
+        /// <summary>Build's chapters that keep to one kind of signal, and the kind each keeps to.</summary>
+        static readonly Dictionary<string, Medium> PureChapters = new Dictionary<string, Medium>
+        {
+            ["pulse"] = Medium.Binary,
+            ["cipher"] = Medium.Decimal,
+            ["undertow"] = Medium.Wave,
+        };
+
+        [Test]
+        public void PureChaptersKeepToOneSignal()
+        {
+            // Pulse, Cipher and Undertow come after Blackbox, each with one kind of
+            // signal and nothing to mix it with: every input, every block and every
+            // signal along the answer is that kind, so a block that could take
+            // another kind (SWITCH, VOLUME) only ever gets this one.
+            foreach (var entry in PureChapters)
+            {
+                var chapter = TestContent.Library.Chapters.Single(c => c.Id == entry.Key);
+                Assert.That(chapter.Part.Id, Is.EqualTo("build"), chapter.Title);
+                Assert.That(chapter.Medium, Is.EqualTo(entry.Value), chapter.Title);
+                foreach (var p in chapter.Puzzles)
+                {
+                    foreach (var i in p.Inputs) Assert.That(i.Signal.Medium, Is.EqualTo(entry.Value), $"{p.Id}: input {i.Id}");
+                    foreach (var b in p.Blocks) Assert.That(b.Kind.Medium, Is.EqualTo(entry.Value), $"{p.Id}: {b.Kind.Id}");
+                    foreach (var t in WiringSession.Evaluate(p, p.Solution))
+                        if (t != null) Assert.That(t.Medium, Is.EqualTo(entry.Value), $"{p.Id}: a {Media.Noun(t.Medium)} along the answer");
+                }
+            }
+            var kinds = new HashSet<string>(PureChapters.Keys.SelectMany(id => TestContent.Library.Chapters.Single(c => c.Id == id).Puzzles).SelectMany(p => p.Blocks).Select(b => b.Kind.Id));
+            Assert.That(kinds, Is.SupersetOf(new[] { "PICK", "VOLUME" }), "the pure chapters bring in PICK and VOLUME");
         }
 
         [Test]
@@ -75,8 +107,11 @@ namespace Blackbox.Tests
                 ["earshot"] = SignalGuide.Listening,
                 ["unmarked"] = SignalGuide.Recap,
                 ["blackbox"] = SignalGuide.Recap,
+                ["pulse"] = SignalGuide.Bits,
+                ["cipher"] = SignalGuide.ChangingDigits,
+                ["undertow"] = SignalGuide.Waves,
                 ["lights-out"] = SignalGuide.Dark,
-            }), "each Learn chapter explains its kind, Combine how blocks read each kind, the last chapters recap them all, and the listening chapters how to play by ear");
+            }), "each Learn chapter explains its kind, Combine how blocks read each kind, the last chapters recap them all, the pure chapters go back over their kind, and the listening chapters how to play by ear");
 
             ContentLibrary Load(string guide) => ContentLibrary.Load(name =>
             {
@@ -161,6 +196,20 @@ namespace Blackbox.Tests
                 Assert.That(Space(firstHalf[i]), Is.GreaterThanOrEqualTo(Space(firstHalf[i - 1])), $"{firstHalf[i].Id} has fewer ways to wire it than {firstHalf[i - 1].Id}");
             foreach (var p in blackbox)
                 Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(3), $"{p.Id}: every Blackbox circuit has three blocks or more");
+
+            // Pulse, Cipher and Undertow each keep to one kind of signal. They're
+            // open side by side, so each only has to open bigger than Blackbox and
+            // climb inside; their three-input blocks come and go, so blocks needn't.
+            foreach (var id in PureChapters.Keys)
+            {
+                var pure = library.Chapters.Single(c => c.Id == id).Puzzles;
+                Assert.That(pure.Count, Is.EqualTo(5), id);
+                Assert.That(Space(pure[0]), Is.GreaterThan(Space(blackbox[0])), $"{id} opens bigger than Blackbox");
+                for (int i = 1; i < pure.Count; i++)
+                    Assert.That(Space(pure[i]), Is.GreaterThanOrEqualTo(Space(pure[i - 1])), $"{pure[i].Id} has fewer ways to wire it than {pure[i - 1].Id}");
+                foreach (var p in pure)
+                    Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(3), $"{p.Id}: every circuit there has three blocks or more");
+            }
 
             var dark = library.Chapters.Single(c => c.Id == "lights-out").Puzzles;
             Assert.That(Space(dark[0]), Is.GreaterThan(Space(blackbox[0])), "Lights Out opens bigger than Blackbox");

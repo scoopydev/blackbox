@@ -1,0 +1,243 @@
+{
+  "id": "undertow",
+  "title": "Undertow",
+  "mode": "wiring",
+  "medium": "wave",
+  "tagline": "Waves, and nothing else.",
+  "signals": "Only waves here, and only the blocks that work on waves, with one new one among them. Where a block reads a wave as a digit, it hears the wave's height above the middle, and 0 below it.",
+  "circuits": [
+    {
+      "id": "undertow-01",
+      "hint": "Every block has to be used, but the target needs {h} to change nothing. A quarter of a loop is a long wait for a slow wave, and not for a fast one.",
+      "inputs": {
+        "A": {
+          "signal": "wave saw f1 a7"
+        },
+        "B": {
+          "signal": "wave sine f1 a7"
+        },
+        "C": {
+          "signal": "wave square f2 a4"
+        },
+        "D": {
+          "signal": "wave sine f3 a6"
+        }
+      },
+      "blocks": {
+        "h": {
+          "kind": "LATER"
+        },
+        "g": {
+          "kind": "MIX"
+        },
+        "k": {
+          "kind": "FASTER"
+        },
+        "m": {
+          "kind": "FASTER"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "B -> m",
+        "m -> k",
+        "k -> h",
+        "h -> g.0",
+        "A -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "undertow-02",
+      "hint": "{g} is a new kind of block, and its two inputs do different jobs. Try the same two signals both ways round.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f2 a7"
+        },
+        "B": {
+          "signal": "wave saw f1 a9"
+        },
+        "C": {
+          "signal": "wave square f1 a5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "VOLUME"
+        },
+        "h": {
+          "kind": "VOLUME"
+        },
+        "k": {
+          "kind": "FASTER"
+        },
+        "m": {
+          "kind": "FLIP"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k",
+        "k -> g.0",
+        "B -> g.1",
+        "g -> X",
+        "B -> m",
+        "m -> h.0",
+        "k -> h.1",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "undertow-03",
+      "hint": "The target is as tall as it is because of {g}'s bottom input. Its top input only gives the shape.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave sine f2 a7"
+        },
+        "C": {
+          "signal": "wave saw f1 a9"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "VOLUME"
+        },
+        "h": {
+          "kind": "MIX"
+        },
+        "k": {
+          "kind": "FASTER"
+        },
+        "m": {
+          "kind": "LATER"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "B -> k",
+        "A -> h.0",
+        "k -> h.1",
+        "h -> g.0",
+        "C -> m",
+        "m -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "undertow-04",
+      "hint": "X and Y both start from A, and both go through the same two kinds of block. What's different about how they go through them?",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a8"
+        },
+        "B": {
+          "signal": "wave saw f1 a6"
+        },
+        "C": {
+          "signal": "wave square f2 a4"
+        },
+        "D": {
+          "signal": "wave sine f3 a5"
+        }
+      },
+      "blocks": {
+        "k": {
+          "kind": "FASTER"
+        },
+        "m": {
+          "kind": "LATER"
+        },
+        "h": {
+          "kind": "LATER"
+        },
+        "n": {
+          "kind": "FASTER"
+        },
+        "g": {
+          "kind": "MIX"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k",
+        "k -> h",
+        "h -> X",
+        "A -> m",
+        "m -> n",
+        "n -> g.0",
+        "B -> g.1",
+        "g -> Y"
+      ]
+    },
+    {
+      "id": "undertow-05",
+      "hint": "{h} hears only the top half of its bottom input, but the target swells in both halves of B. How could the bottom half be heard too?",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f4 a8"
+        },
+        "B": {
+          "signal": "wave sine f1 a9"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIX"
+        },
+        "h": {
+          "kind": "VOLUME"
+        },
+        "k": {
+          "kind": "VOLUME"
+        },
+        "m": {
+          "kind": "FLIP"
+        },
+        "n": {
+          "kind": "FLIP"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> h.0",
+        "B -> h.1",
+        "A -> m",
+        "B -> n",
+        "m -> k.0",
+        "n -> k.1",
+        "h -> g.0",
+        "k -> g.1",
+        "g -> X"
+      ]
+    }
+  ]
+}

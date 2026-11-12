@@ -80,7 +80,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Outline, Blend, Earshot) teaches how kinds of signal read each other, how two kinds meet in one block, solid and dotted outlines, the three mixing blocks, and listen-only blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox, Lights Out) is the main game, with every kind of signal, and ends in the dark: Lights Out draws no signal at all. It climbs inside, and opens bigger than Blackbox, but needn't close bigger than Blackbox's three-input finale, since hearing a circuit through is the hard part. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Outline, Blend, Earshot) teaches how kinds of signal read each other, how two kinds meet in one block, solid and dotted outlines, the three mixing blocks, and listen-only blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox, Pulse, Cipher, Undertow, Lights Out) is the main game, with every kind of signal, and ends in the dark: Lights Out draws no signal at all. It climbs inside, and opens bigger than Blackbox, but needn't close bigger than Blackbox's three-input finale, since hearing a circuit through is the hard part. Pulse, Cipher and Undertow (12 Nov 2026, from fella) each take one kind of signal alone, bits, digits or waves, with only the blocks that send that kind and nothing mixed in, and bring in the last two blocks, PICK and VOLUME (`ContentTests.PureChaptersKeepToOneSignal`). They're open side by side, so each opens bigger than Blackbox and climbs inside, five circuits each. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -93,6 +93,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
   * Patch, Junction, Outline and Blend, **how a block reads each kind**: a bit, a digit and a wave, each drawn as a bit block, a digit block and a wave block reads it, with the reading written under it.
   * Earshot, **listen-only blocks**: a listen-only block as the board draws it, the speaker beside its label and the speaker over it that plays what it sends; a chain from it through a block with no mark to an output, every one a speaker, since everything after it is only heard until the circuit is solved; then how each kind sounds and what can't be heard (when a wave starts, and which way up it is).
   * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
+  * Pulse, Cipher and Undertow go back to the guide for their kind: reading a bit, digits that change, and reading a wave.
   * Lights Out, **by ear alone**: nothing is drawn, so three steps to try (listen to the targets, listen to the inputs, wire and run), what can't be heard, and the promise that an output that sounds like its target is its target.
 * Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
 * Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first two use steady bits, and the third brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has six circuits, the last as big as FIRST LIGHT 7, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
@@ -263,7 +264,49 @@ The circuits with two solutions have two alike blocks that can swap, or one bloc
 | 9 | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 7,776 | 1 |
 | 10 | The higher of two waves (COMPARE choosing for SWITCH), how many times they cross, and a gated saw | 1,679,616 | 2 |
 
-### Chapter XII: Lights Out
+### Chapter XII: Pulse
+
+*Bits, and nothing else.* Only bits and the bit blocks, with PICK new. With nothing to mix, each circuit is a fact about 1s and 0s. Most of them need a block that isn't on the board, built from ones that are.
+
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | MAJORITY needs a third vote: XOR of the same two inputs is 1 just where they disagree, so ties go to 1 and MAJORITY acts as OR; NOT makes it NOR | 46,656 | 1 |
+| 2 | PICK, new: choosing between a pattern and its NOT, by a second pattern, is XOR, which isn't on the board; AND with a third | 46,656 | 2 |
+| 3 | No NOT: XOR marks where A and B differ, and AND with each keeps the steps where only that one is 1 | 46,656 | 2 |
+| 4 | No OR: NOT both inputs, AND them, and NOT the result; XOR with a third | 823,543 | 6 |
+| 5 | Count the 1s among three patterns that go through every mix: two XORs give the odd counts, and MAJORITY then NOT the counts under two | 1,679,616 | 6 |
+
+Pulse 2 can use either pattern as the chooser; in 3 and 4 alike blocks swap jobs; in 5 the two XORs can pair the inputs any way.
+
+### Chapter XIII: Cipher
+
+*Digits, and nothing else.* Only digits and the digit blocks. Each circuit is a fact about numbers that no one block sends.
+
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | Two DIFFs measure A against B and against C; MIN keeps the nearer | 46,656 | 2 |
+| 2 | Three copies of a tune, each with one wrong note: MIDDLE votes them right, then DIFF from a steady 4, and MIRROR | 46,656 | 1 |
+| 3 | No adding block: MIRROR B, take its DIFF from A, and MIRROR back, and that's A + B (it never passes 9) | 117,649 | 8 |
+| 4 | DIFF of a tune and its own MIRROR is always odd; MIN with another tune, and MAX with a steady 6 | 279,936 | 1 |
+| 5 | MIDDLE with a steady 9 is MAX, and with a steady 0 is MIN; then MIRROR | 279,936 | 2 |
+
+In Cipher 1 and 5 alike blocks swap jobs. Cipher 3 can mirror either input first, and its two MIRRORs and two DIFFs can swap.
+
+### Chapter XIV: Undertow
+
+*Waves, and nothing else.* Only waves and the wave blocks, with VOLUME new. VOLUME can read a digit, but here only waves reach it.
+
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | LATER waits a quarter of the loop, and after two FASTERs the sine goes round four times, so the wait is a whole cycle and LATER changes nothing; MIX with a saw | 16,807 | 2 |
+| 2 | VOLUME, new: its top gives the shape and its bottom the height, so the same two waves give a different target each way round; FASTER and FLIP | 46,656 | 4 |
+| 3 | Only VOLUME's bottom sets the height: a MIX at half height comes out as tall as a delayed saw, and quiet while the saw is below the middle | 46,656 | 1 |
+| 4 | Order matters: FASTER then LATER is a different wave from LATER then FASTER; MIX with a saw | 262,144 | 8 |
+| 5 | VOLUME hears only the top half of its bottom wave; FLIP both inputs to hear the bottom half, and MIX the two, so the fast wave swells with every half of the slow one (A times B) | 1,679,616 | 8 |
+
+In Undertow 1, 2 and 5 alike blocks swap jobs, and in 5 a FLIP can go before or after VOLUME. Undertow 4 can also make X from two LATERs (a sine half a loop late is upside down) and FASTER, sharing a LATER with Y.
+
+### Chapter XV: Lights Out
 
 *Nothing is drawn. Listen.* The whole board is heard, never seen: inputs, blocks, outputs and targets are speakers. The circuits use mostly bits and digits, whose order through the loop can be heard, and waves mainly where a bit or digit block reads them. They were found by a search for circuits with one answer and nothing that sounds right but isn't, then picked for clear tunes and rhythms.
 
@@ -323,7 +366,7 @@ Values are small whole numbers, one range per medium: 2 for bits, 10 for digits,
 
 ### Adding a chapter
 
-1. Write `chapter-13-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
+1. Write `chapter-16-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to a part in `chapters.json`.
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.
@@ -366,9 +409,9 @@ Each kind of signal has four blocks, and each set starts with one that flips the
 
 Bit and digit blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave, except the on/off input of GATE and SWITCH, read as a bit, and VOLUME's bottom input, read as a digit. COUNT reads its input as a bit. So every block always sends its own type, and its label says which (`ComponentTests.EveryBlockAlwaysSendsItsOwnKind`). Until 12 Nov 2026 GATE and SWITCH sent whatever type their top input was; they became wave blocks when labels started naming the type.
 
-VOLUME and PICK (added 12 Nov 2026) work but no circuit uses them yet (`KindCatalog.Unplaced`); the test that every block is taught skips them until a circuit does.
+VOLUME and PICK (added 12 Nov 2026) are the two blocks new after Blackbox: PICK in Pulse, and VOLUME in Undertow, where only waves reach it. `KindCatalog.Unplaced` is for a kind that works before any circuit uses it; the test that every block is taught skips those. It's empty now.
 
-The four blocks with three inputs come last, late in Blackbox, one to a circuit at first: MAJORITY and MIDDLE are three-input cousins of the bit and digit blocks, BETWEEN reads all three as waves like COMPARE, and SWITCH is a wave block like GATE, reading its bottom input as a bit.
+The four blocks with three inputs come last, late in Blackbox, one to a circuit at first: MAJORITY and MIDDLE are three-input cousins of the bit and digit blocks, BETWEEN reads all three as waves like COMPARE, and SWITCH is a wave block like GATE, reading its bottom input as a bit. PICK, SWITCH's cousin for bits, follows in Pulse.
 
 The few edges a player can bump into, all kept because they follow from the rule rather than add to it: COUNT stops at 9 (a digit has nowhere further to go), and a mixed or flipped wave is still a wave, so FASTER and LATER work on it.
 

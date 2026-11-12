@@ -353,12 +353,12 @@ namespace Blackbox.Components
         };
 
         /// <summary>
-        /// Kinds that work but no circuit uses yet (VOLUME and PICK, added
-        /// 12 Nov 2026). Unlike <see cref="Shelved"/> kinds, a circuit may use them;
-        /// the test that every kind is taught skips them until one does. Take an id
-        /// out of here once a circuit teaches it.
+        /// Kinds that work but no circuit uses yet. Unlike <see cref="Shelved"/>
+        /// kinds, a circuit may use them; the test that every kind is taught skips
+        /// them until one does. Take an id out of here once a circuit teaches it.
+        /// (VOLUME and PICK, added 12 Nov 2026, are now taught in Undertow and Pulse.)
         /// </summary>
-        public static readonly HashSet<string> Unplaced = new HashSet<string> { "VOLUME", "PICK" };
+        public static readonly HashSet<string> Unplaced = new HashSet<string>();
 
         /// <summary>
         /// Kinds set aside for now. Their code and tests stay, and the loader

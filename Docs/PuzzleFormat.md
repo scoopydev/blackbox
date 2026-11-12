@@ -50,7 +50,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 |---|---|---|
 | `id` | yes | Stable id. Saves refer to it, so don't rename it once players have it. |
 | `title` | yes | Shown on the chapter map and the title card. |
-| `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal` or `wave` (analog). `shape` and `sampled` are set aside for now (see below). A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
+| `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal` or `wave` (analog). `shape` and `sampled` are set aside for now (see below). A chapter on one kind of signal names it, for its title card and chapter page: the Learn chapters, and Pulse, Cipher and Undertow in Part Three. A chapter that mixes kinds (the rest of Parts Two and Three) leaves it out. |
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
 | `dark` | no | `true` for a wired chapter played by ear: no signal is drawn anywhere in its circuits, not even a target, only a speaker that plays it. Lights Out is the one dark chapter. A test checks that in a dark circuit nothing the player could wire to an output sounds like its target without being it ([SignalSound.SoundsAlike](../Assets/_Project/Scripts/Components/SignalSound.cs): a wave started late, turned upside down or raised sounds the same). |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |

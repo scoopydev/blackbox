@@ -1,0 +1,247 @@
+{
+  "id": "cipher",
+  "title": "Cipher",
+  "mode": "wiring",
+  "medium": "decimal",
+  "tagline": "Digits, and nothing else.",
+  "signals": "Only digits here, most of them changing as the loop plays, and only the blocks that work on digits. With nothing else to lean on, each circuit turns on one idea about numbers.",
+  "guide": "changing-digits",
+  "circuits": [
+    {
+      "id": "cipher-01",
+      "hint": "X is a distance at every step, and always the shorter of two.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 25814736"
+        },
+        "B": {
+          "signal": "decimal 63527148"
+        },
+        "C": {
+          "signal": "decimal 70615243"
+        },
+        "D": {
+          "signal": "decimal 4"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIN"
+        },
+        "h": {
+          "kind": "DIFF"
+        },
+        "k": {
+          "kind": "DIFF"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> h.0",
+        "B -> h.1",
+        "A -> k.0",
+        "C -> k.1",
+        "h -> g.0",
+        "k -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "cipher-02",
+      "hint": "Three of the inputs play the same tune, each with one wrong note. Both targets start from the tune played right.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 25814036"
+        },
+        "B": {
+          "signal": "decimal 25894736"
+        },
+        "C": {
+          "signal": "decimal 25114736"
+        },
+        "D": {
+          "signal": "decimal 4"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "DIFF"
+        },
+        "k": {
+          "kind": "MIDDLE"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k.0",
+        "B -> k.1",
+        "C -> k.2",
+        "k -> h.0",
+        "D -> h.1",
+        "h -> X",
+        "k -> g",
+        "g -> Y"
+      ]
+    },
+    {
+      "id": "cipher-03",
+      "hint": "X is A plus B at every step. No block adds, so look for blocks that can between them.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 41302153"
+        },
+        "B": {
+          "signal": "decimal 25416231"
+        },
+        "C": {
+          "signal": "decimal 63527148"
+        },
+        "D": {
+          "signal": "decimal 5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "DIFF"
+        },
+        "k": {
+          "kind": "DIFF"
+        },
+        "m": {
+          "kind": "MIRROR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "B -> m",
+        "A -> k.0",
+        "m -> k.1",
+        "k -> g",
+        "g -> X",
+        "A -> h.0",
+        "B -> h.1",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "cipher-04",
+      "hint": "Both targets start from the same signal, and every digit in it is odd. How far is a digit from its own mirror?",
+      "inputs": {
+        "A": {
+          "signal": "decimal 25814736"
+        },
+        "B": {
+          "signal": "decimal 63527148"
+        },
+        "C": {
+          "signal": "decimal 6"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIN"
+        },
+        "h": {
+          "kind": "MAX"
+        },
+        "k": {
+          "kind": "DIFF"
+        },
+        "m": {
+          "kind": "MIRROR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> m",
+        "A -> k.0",
+        "m -> k.1",
+        "k -> g.0",
+        "B -> g.1",
+        "g -> X",
+        "k -> h.0",
+        "C -> h.1",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "cipher-05",
+      "hint": "Neither target needs three digits, but both blocks that take three are needed. What can a steady 0 or 9 do in one of their inputs?",
+      "inputs": {
+        "A": {
+          "signal": "decimal 25814736"
+        },
+        "B": {
+          "signal": "decimal 63527148"
+        },
+        "C": {
+          "signal": "decimal 9"
+        },
+        "D": {
+          "signal": "decimal 0"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "MIDDLE"
+        },
+        "k": {
+          "kind": "MIDDLE"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> h.0",
+        "B -> h.1",
+        "C -> h.2",
+        "h -> X",
+        "A -> k.0",
+        "B -> k.1",
+        "D -> k.2",
+        "k -> g",
+        "g -> Y"
+      ]
+    }
+  ]
+}
