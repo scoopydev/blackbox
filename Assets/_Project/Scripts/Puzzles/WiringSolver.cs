@@ -23,10 +23,12 @@ namespace Blackbox.Puzzles
         public readonly List<string> Examples = new List<string>();
         /// <summary>
         /// Searched by ear: block wirings in which some signal that's only heard
-        /// (see <see cref="PuzzleDef.Heard"/>) sounds like an output's target without
+        /// (see <see cref="PuzzleDef.Heard(int, int[][])"/>) sounds like an output's target without
         /// matching it, so wired to that output it would sound right and be judged wrong.
         /// </summary>
         public long Confusable;
+        /// <summary>A few of them: the block wiring, and the wire to an output that would sound right.</summary>
+        public readonly List<string> SoundAlikes = new List<string>();
 
         public override string ToString()
         {
@@ -36,6 +38,7 @@ namespace Blackbox.Puzzles
             else sb.Append($", {Solutions} solving wiring(s) out of {Space} block wirings");
             if (Searched && Confusable > 0) sb.Append($", {Confusable} that sound right but aren't");
             foreach (var e in Examples) sb.Append("\n    ").Append(e);
+            foreach (var e in SoundAlikes) sb.Append("\n    sounds right but isn't: ").Append(e);
             return sb.ToString();
         }
     }
@@ -51,7 +54,8 @@ namespace Blackbox.Puzzles
     /// Swapping the wires into a block that treats its inputs alike (AND, MIX, the
     /// two bounds of BETWEEN ...) is the same answer, so those are tried in one order only.
     /// With <c>byEar</c>, an output whose signal is only heard (every output of a dark
-    /// circuit, and one wired straight from a listen-only block) also counts when it
+    /// circuit, and one wired from a listen-only block, straight or through other
+    /// blocks: see <see cref="PuzzleDef.Heard(int, int[][])"/>) also counts when it
     /// sounds like its target (<see cref="SignalSound.SoundsAlike"/>): that finds the
     /// wirings a player listening can't tell from an answer.
     /// </summary>
@@ -99,6 +103,8 @@ namespace Blackbox.Puzzles
             var blockMemo = new Dictionary<string, int>();
             var matchMemo = new Dictionary<(int output, int trace, bool ear), bool>();
             var value = new int[sources];
+            // Which signals of the wiring being tried are only heard, so compared by ear.
+            var heard = new bool[sources];
 
             bool Reaches(int source, int target)
             {
@@ -145,7 +151,7 @@ namespace Blackbox.Puzzles
             bool Matches(int output, int source, int traceId)
             {
                 if (traceId < 0) return false;
-                bool ear = byEar && p.Heard(source);
+                bool ear = byEar && heard[source];
                 if (matchMemo.TryGetValue((output, traceId, ear), out bool m)) return m;
                 var o = p.Outputs[output];
                 m = Devices.Same(o.Device, traces[traceId], o.Want) || (ear && SignalSound.SoundsAlike(traces[traceId], o.Want));
@@ -172,7 +178,12 @@ namespace Blackbox.Puzzles
 
                 var done = new bool[sources];
                 for (int n = inputs; n < sources; n++) Value(n, done);
-                if (byEar && Confusable()) result.Confusable++;
+                if (byEar) for (int s = 0; s < sources; s++) heard[s] = p.Heard(s, driver);
+                if (byEar && Confusable(out int co, out int cs))
+                {
+                    result.Confusable++;
+                    if (result.SoundAlikes.Count < keep) result.SoundAlikes.Add(Describe(session, driver) + "; then " + session.LinkText(cs, sources + co, 0));
+                }
                 if (dangling > outputs) return;
                 for (int o = 0; o < outputs; o++)
                 {
@@ -190,20 +201,21 @@ namespace Blackbox.Puzzles
             // Whether any signal of this wiring that would only be heard on an output
             // sounds like the output's target without matching it.
             var confusableMemo = new Dictionary<(int output, int trace), bool>();
-            bool Confusable()
+            bool Confusable(out int output, out int source)
             {
+                output = source = -1;
                 for (int o = 0; o < outputs; o++)
                     for (int s = 0; s < sources; s++)
                     {
                         int id = s < inputs ? inputIds[s] : value[s];
-                        if (id < 0 || !p.Heard(s)) continue;
+                        if (id < 0 || !heard[s]) continue;
                         if (!confusableMemo.TryGetValue((o, id), out bool c))
                         {
                             var want = p.Outputs[o].Want;
                             c = !Devices.Same(p.Outputs[o].Device, traces[id], want) && SignalSound.SoundsAlike(traces[id], want);
                             confusableMemo[(o, id)] = c;
                         }
-                        if (c) return true;
+                        if (c) { output = o; source = s; return true; }
                     }
                 return false;
             }

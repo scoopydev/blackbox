@@ -229,10 +229,36 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void EverythingAfterAListenOnlyBlockIsHeard()
+        {
+            // EARSHOT 4: listen-only g and h feed k and m, which feed X and Y. Until
+            // the circuit is solved, everything after a listen-only block is only
+            // heard too, however far on; inputs never are.
+            var p = TestContent.Library.AllPuzzles.Single(q => q.Id == "earshot-04");
+            var session = new WiringSession(p);
+            foreach (var w in p.Solution)
+                Assert.That(session.Connect(session.NodeOf(w.From), session.NodeOf(w.To), w.ToPort), Is.True, w.ToString());
+            var driver = session.Drivers;
+            int Node(string id) => session.NodeOf(p.AllNodes.Single(n => n.Id == id));
+            foreach (var id in new[] { "g", "h", "k", "m", "X", "Y" })
+                Assert.That(p.Heard(Node(id), driver), Is.True, $"{id} is only heard");
+            foreach (var id in new[] { "A", "B", "C", "D" })
+                Assert.That(p.Heard(Node(id), driver), Is.False, $"{id} is drawn");
+            Assert.That(p.Heard(Node("k")), Is.False, "k isn't listen-only itself");
+
+            // Fed from inputs alone, k is drawn again, and so is the output it feeds.
+            driver[Node("k")][0] = Node("C");
+            driver[Node("k")][1] = Node("D");
+            Assert.That(p.Heard(Node("k"), driver), Is.False);
+            Assert.That(p.Heard(Node("X"), driver), Is.False);
+            Assert.That(p.Heard(Node("Y"), driver), Is.True, "Y still comes from h through m");
+        }
+
+        [Test]
         public void HeardCircuitsCanBeSolvedByEar()
         {
-            // Lights Out draws no signal, and an output wired straight from a
-            // listen-only block draws none either. In those circuits nothing a player
+            // Lights Out draws no signal, and nothing wired after a listen-only block
+            // is drawn either until it's solved. In those circuits nothing a player
             // could wire to an output sounds like its target without being it, and
             // the answer is still the only one.
             foreach (var p in TestContent.Library.AllPuzzles.Where(p => p.Dark || p.Blocks.Any(b => b.Listen)))

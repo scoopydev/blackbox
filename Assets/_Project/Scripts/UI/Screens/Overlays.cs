@@ -580,7 +580,7 @@ namespace Blackbox.UI.Screens
                 "Solve a circuit to reveal its block rules.",
                 "Click and drag to move blocks around.",
                 "A solid outline must be used. A dotted input or block may be left out.",
-                "Speaker blocks are only heard: click to listen.",
+                "Speaker blocks are only heard, and so is everything wired after them until the circuit is solved: click to listen.",
             } : new List<string>
             {
                 "The goal is written above the circuit. Press RUN to send the signals through: only then do the outputs show, and each target gets a tick or a cross.",

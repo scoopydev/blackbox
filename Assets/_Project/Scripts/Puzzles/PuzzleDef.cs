@@ -89,8 +89,9 @@ namespace Blackbox.Puzzles
         /// <summary>A locked block keeps its state. It is drawn with a dashed outline and a padlock.</summary>
         public bool Locked;
         /// <summary>
-        /// A listen-only block in a wired circuit: what it sends is never drawn, on
-        /// the block or on an output wired straight to it, only heard when clicked.
+        /// A listen-only block in a wired circuit: what it sends is never drawn, nor
+        /// is anything wired after it, block or output, until the circuit is solved:
+        /// those are only heard when clicked (see <see cref="PuzzleDef.Heard(int, int[][])"/>).
         /// A speaker beside its label marks it out.
         /// </summary>
         public bool Listen;
@@ -178,11 +179,27 @@ namespace Blackbox.Puzzles
         public bool Dark => Chapter != null && Chapter.Dark;
 
         /// <summary>
-        /// True when the signal a node sends is heard but never drawn: every node in
-        /// a dark circuit, and a listen-only block. Node numbers are inputs, then
-        /// blocks, as in <see cref="WiringSession"/>.
+        /// True when the signal a node sends is heard but never drawn, whatever the
+        /// wiring: every node in a dark circuit, and a listen-only block. Node numbers
+        /// are inputs, then blocks, then outputs, as in <see cref="WiringSession"/>.
         /// </summary>
         public bool Heard(int node) => Dark || (node >= Inputs.Count && node < Inputs.Count + Blocks.Count && Blocks[node - Inputs.Count].Listen);
+
+        /// <summary>
+        /// True when, wired as <paramref name="driver"/> says (the driver of each port
+        /// of each node, as <see cref="WiringSession.Drivers"/> gives it), a node's
+        /// signal is heard but not drawn: <see cref="Heard(int)"/>, or anything wired
+        /// after a listen-only block, any number of blocks on, outputs included. The
+        /// board draws them all once the circuit is solved, unless it's dark.
+        /// </summary>
+        public bool Heard(int node, int[][] driver)
+        {
+            if (Heard(node)) return true;
+            if (driver == null || node < Inputs.Count || node >= driver.Length) return false;
+            foreach (int d in driver[node])
+                if (d >= 0 && d != node && Heard(d, driver)) return true;
+            return false;
+        }
 
         public IEnumerable<NodeDef> AllNodes
         {

@@ -641,6 +641,7 @@ namespace Blackbox.UI.Board
                 else Outputs[o].Conceal();
             }
             _shown = any;
+            RefreshHeard();
         }
 
         /// <summary>Shows one block's result from a run.</summary>
@@ -649,7 +650,27 @@ namespace Blackbox.UI.Board
             _shown = true;
             var sent = report.Values[Session.BlockNode(block)];
             if (sent != null) _seenBlocks[block] = sent.Medium;
+            Blocks[block].HeardOnly = HeardNow(Session.BlockNode(block), Session.Drivers);
             Blocks[block].Show(sent, report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block), report.IdleBlocks.Contains(block));
+        }
+
+        /// <summary>
+        /// Whether a node's signal shows only as a speaker now: everything in a dark
+        /// circuit, and, until the circuit is solved, a listen-only block and
+        /// everything wired after one (see <see cref="PuzzleDef.Heard(int, int[][])"/>).
+        /// </summary>
+        bool HeardNow(int node, int[][] driver) => Puzzle.Dark || (!_solved && Puzzle.Heard(node, driver));
+
+        /// <summary>
+        /// Brings every block's and output's speaker up to date with the wiring and
+        /// whether the circuit is solved: solving shows every signal that was only heard.
+        /// </summary>
+        void RefreshHeard()
+        {
+            var driver = Session.Drivers;
+            for (int b = 0; b < Blocks.Count; b++) Blocks[b].HeardOnly = HeardNow(Session.BlockNode(b), driver);
+            for (int o = 0; o < Outputs.Count; o++)
+                if (Outputs[o].Showing) Outputs[o].HeardOnly = HeardNow(Session.OutputNode(o), driver);
         }
 
         /// <summary>The kind of signal each block has been seen sending, on some run this visit.</summary>
@@ -680,10 +701,9 @@ namespace Blackbox.UI.Board
         public void ShowOutput(int output, WiringReport report)
         {
             _shown = true;
-            // What comes straight from a listen-only block is heard on the output too, not drawn.
+            // What comes from a listen-only block, straight or through other blocks, is heard on the output too, not drawn.
             int node = Session.OutputNode(output);
-            int from = Session.DriverOf(node, 0);
-            Outputs[output].Show(report.Values[node], report.OutputMet[output], Puzzle.Dark || (from >= 0 && Puzzle.Heard(from)));
+            Outputs[output].Show(report.Values[node], report.OutputMet[output], HeardNow(node, Session.Drivers));
         }
 
         /// <summary>
@@ -720,6 +740,7 @@ namespace Blackbox.UI.Board
             foreach (var v in Inputs) v.Solved = solved;
             foreach (var v in Blocks) v.Solved = solved;
             foreach (var v in Outputs) v.Solved = solved;
+            RefreshHeard();
         }
 
         public void SetShowRules(bool on)
@@ -1229,6 +1250,13 @@ namespace Blackbox.UI.Board
         /// <summary>A signal from a run is showing above the block.</summary>
         public bool Showing => _readout.gameObject.activeSelf;
 
+        /// <summary>What the block sends shows only as a speaker, heard when clicked.</summary>
+        public bool HeardOnly
+        {
+            get => _readout.HeardOnly;
+            set => _readout.HeardOnly = value;
+        }
+
         /// <summary>Brings the note under the signal up to date, leaving the signal as it is.</summary>
         public void Renote(Trace sent, bool emptyInput, bool unused, bool idle = false)
         {
@@ -1459,8 +1487,8 @@ namespace Blackbox.UI.Board
 
         /// <summary>
         /// What arrived on the run, and whether it matches the target. A signal that
-        /// is only heard (from a listen-only block, or anything in a dark circuit)
-        /// shows as a speaker.
+        /// is only heard (from a listen-only block, straight or through other blocks,
+        /// until the circuit is solved, or anything in a dark circuit) shows as a speaker.
         /// </summary>
         public void Show(Trace got, bool matched, bool heard = false)
         {
@@ -1478,6 +1506,13 @@ namespace Blackbox.UI.Board
         public Trace Shown => _known ? _now.Trace : null;
         /// <summary>A signal from a run is showing.</summary>
         public bool Showing => _known;
+
+        /// <summary>What arrived shows only as a speaker, heard when clicked. The target is drawn unless the circuit is dark.</summary>
+        public bool HeardOnly
+        {
+            get => _now.HeardOnly;
+            set => _now.HeardOnly = value;
+        }
 
         public void Ping(bool target)
         {

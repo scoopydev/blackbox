@@ -197,7 +197,7 @@
           "listen": true
         },
         "k": {
-          "kind": "MIX",
+          "kind": "MAX",
           "at": [
             2,
             0.5

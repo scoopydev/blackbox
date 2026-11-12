@@ -479,38 +479,46 @@ namespace Blackbox.UI.Screens
 
         /// <summary>
         /// Earshot: a listen-only block as the board draws it, a speaker beside its
-        /// label and a speaker over it in place of its signal, then what can and
-        /// can't be heard in each kind of signal.
+        /// label and a speaker over it in place of its signal; then a chain from it
+        /// to an output, every signal a speaker, since everything it feeds is only
+        /// heard too until the circuit is solved; then what can and can't be heard
+        /// in each kind of signal.
         /// </summary>
         void BuildListening()
         {
             Header("LISTEN-ONLY BLOCKS", "Some blocks never show what they send. You can only hear it.");
 
             // The block, as on the board.
-            const float bx = 560f, by = 560f, bw = 150f, bh = 88f;
-            var g = NoteGroup();
-            var box = UIKit.Shape(g, "Block");
-            box.rectTransform.At(bx, by, bw, bh);
-            box.Radius = 16f;
-            box.Style(Paint.Solid, Color.black, Paint.Solid, Palette.Faint, 1.4f);
-            var label = UIKit.Text(g, "W1", TextStyle.Value.WithSize(28).WithWeight(200).WithTracking(0.08f).WithColor(Palette.Dim));
-            label.raycastTarget = false;
-            label.rectTransform.At(bx + 17f, by + 3f, bw, bh * 0.55f);
-            var mark = UIKit.Glyph(g, "sound", Palette.Dim, 1.4f, "Mark");
-            mark.raycastTarget = false;
-            mark.rectTransform.At(bx - 31f, by + 3f, 22f, 22f);
-            foreach (var port in new[] { new Vector2(bx - bw * 0.5f, by - 24f), new Vector2(bx - bw * 0.5f, by + 24f), new Vector2(bx + bw * 0.5f, by) })
-            {
-                var dot = UIKit.Shape(g, "Port", ShapeKind.Circle);
-                dot.Style(Paint.Solid, Palette.Text, Paint.None, Color.clear, 0f);
-                dot.rectTransform.At(port.x, port.y, 7f, 7f);
-            }
-            Reveal(g);
+            const float bx = 560f, by = 460f, bw = 150f, bh = 88f;
+            Reveal(Card(bx, by, bw, bh, "W1", listen: true, ports: 2));
             // What it sent on the run: a speaker that plays it.
             _lead = Heard("wave saw f2 a5", bx, by - bh * 0.5f - 30f, 118f, 34f);
             Note(new Vector2(bx - 44f, by + 3f), new Vector2(bx - 150f, by + 3f), Side.Left, "THE MARK", "A speaker beside the label", 240f, dot: false);
             Note(new Vector2(bx + 30f, by - bh * 0.5f - 30f), new Vector2(bx + 140f, by - bh * 0.5f - 30f), Side.Right, "WHAT IT SENDS", "After a run, only a speaker. Click it to hear the signal.", 300f, dot: false);
-            Caption(bx, by + bh * 0.5f + 40f, "Wired straight to an output", "It's only heard there too. Click the output, then its target, and listen.", 420f);
+
+            // Everything wired after it is only heard too: a block with no mark, and an output.
+            Section(bx, 590f, "EVERYTHING AFTER IT");
+            const float cy = 712f, cw = 112f, ch = 64f, step = 210f;
+            var chain = new (string label, bool listen, int ports, string spec)[]
+            {
+                ("W1", true, 2, "wave saw f2 a5"),
+                ("D1", false, 2, "decimal 2709"),
+                ("X", false, 1, "decimal 2709"),
+            };
+            var wires = NoteGroup();
+            for (int i = 0; i < chain.Length - 1; i++)
+            {
+                float x0 = bx + (i - 1) * step + cw * 0.5f, x1 = bx + i * step - cw * 0.5f;
+                Line(wires, Palette.Faint, new Vector2(x0, cy), new Vector2(x1, cy - (chain[i + 1].ports == 2 ? 17f : 0f)));
+            }
+            Reveal(wires);
+            for (int i = 0; i < chain.Length; i++)
+            {
+                float x = bx + (i - 1) * step;
+                Reveal(Card(x, cy, cw, ch, chain[i].label, chain[i].listen, chain[i].ports, output: i == chain.Length - 1));
+                Heard(chain[i].spec, x, cy - ch * 0.5f - 24f, 96f, 28f);
+            }
+            Caption(bx, cy + ch * 0.5f + 34f, "Only heard too", "Every block and output it feeds, however far on, shows only a speaker, mark or not. Solve the circuit and every signal shows.", 560f);
 
             // How each kind sounds.
             const float cx = 1340f;
@@ -562,6 +570,42 @@ namespace Blackbox.UI.Screens
             Section(Cx, 690f, "WHAT YOU CAN'T HEAR");
             Caption(Cx, 726f, null, "When a wave starts, or which way up it is. Every circuit here is built so that when an output sounds like its target, it is its target.", 820f);
             Caption(Cx, 830f, "Listen as often as you like", "A signal plays each time you click it, and the pen still works for notes.", 820f);
+        }
+
+        /// <summary>
+        /// A block's card as the board draws it, centred at (x, y): its label, a
+        /// speaker beside it on a listen-only block, a dot for each input and one for
+        /// what it sends. An output's card has its input only.
+        /// </summary>
+        RectTransform Card(float x, float y, float w, float h, string label, bool listen, int ports, bool output = false)
+        {
+            var g = NoteGroup();
+            var box = UIKit.Shape(g, "Block");
+            box.rectTransform.At(x, y, w, h);
+            box.Radius = h * 0.18f;
+            box.Style(Paint.Solid, Color.black, Paint.Solid, Palette.Faint, 1.4f);
+            float size = h * 0.32f;
+            var text = UIKit.Text(g, label, TextStyle.Value.WithSize(Mathf.RoundToInt(size)).WithWeight(200).WithTracking(0.08f).WithColor(Palette.Dim));
+            text.raycastTarget = false;
+            float shift = listen ? size * 0.6f : 0f;
+            text.rectTransform.At(x + shift, y + 3f, w, h * 0.55f);
+            if (listen)
+            {
+                var mark = UIKit.Glyph(g, "sound", Palette.Dim, 1.4f, "Mark");
+                mark.raycastTarget = false;
+                mark.rectTransform.At(x - shift - size * 0.55f, y + 3f, size * 0.8f, size * 0.8f);
+            }
+            var dots = new List<Vector2>();
+            if (ports == 1) dots.Add(new Vector2(x - w * 0.5f, y));
+            else { dots.Add(new Vector2(x - w * 0.5f, y - h * 0.27f)); dots.Add(new Vector2(x - w * 0.5f, y + h * 0.27f)); }
+            if (!output) dots.Add(new Vector2(x + w * 0.5f, y));
+            foreach (var port in dots)
+            {
+                var dot = UIKit.Shape(g, "Port", ShapeKind.Circle);
+                dot.Style(Paint.Solid, Palette.Text, Paint.None, Color.clear, 0f);
+                dot.rectTransform.At(port.x, port.y, 7f, 7f);
+            }
+            return g;
         }
 
         /// <summary>A signal shown only as a speaker, as a listen-only block or a dark circuit shows it, that plays when clicked.</summary>
