@@ -319,7 +319,7 @@ namespace Blackbox.Tests
             // the middle, where the pattern 01 is already 1.
             var p = TestContent.ParseWired(@"{
                 ""id"": ""t"", ""name"": ""Test"",
-                ""inputs"": { ""A"": ""binary 01"", ""B"": ""wave sine f1 a7 p2"", ""C"": ""binary 0101"" },
+                ""inputs"": { ""A"": ""binary 01"", ""B"": { ""signal"": ""wave sine f1 a7 p2"", ""optional"": true }, ""C"": { ""signal"": ""binary 0101"", ""optional"": true } },
                 ""blocks"": { ""g"": ""NOT"" },
                 ""outputs"": { ""X"": ""display"" },
                 ""solution"": [ ""A -> g"", ""g -> X"" ]
@@ -436,6 +436,66 @@ namespace Blackbox.Tests
             Assert.That(GoalText.BrokenRules(p, s.Check()), Is.Null, "every rule kept");
             Assert.That(WiringSession.AllBlocksUsed(p, s.Drivers), Is.True);
             Assert.That(GoalText.WiringRules, Is.EqualTo("MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS."));
+        }
+
+        const string WithSpares = @"{
+            ""id"": ""t"", ""name"": ""Test"",
+            ""inputs"": { ""A"": ""binary 0110"", ""B"": ""binary 0011"", ""C"": { ""signal"": ""decimal 5"", ""optional"": true } },
+            ""blocks"": { ""g"": { ""kind"": ""AND"" }, ""h"": { ""kind"": ""NOT"" }, ""k"": { ""kind"": ""FLIP"", ""optional"": true } },
+            ""outputs"": { ""X"": ""display"" },
+            ""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]
+        }";
+
+        [Test]
+        public void OptionalBlocksMayBeLeftOut()
+        {
+            // A dotted outline marks what the answer leaves out. An optional block
+            // may go unused, wired or not; once it leads to an output, it's a block
+            // like any other and needs every input wired.
+            var p = TestContent.ParseWired(WithSpares);
+            Assert.That(p.Inputs.Select(i => i.Optional), Is.EqualTo(new[] { false, false, true }));
+            Assert.That(p.Blocks.Select(b => b.Optional), Is.EqualTo(new[] { false, false, true }));
+
+            var s = new WiringSession(p);
+            int a = 0, c = 2, h = s.BlockNode(1), k = s.BlockNode(2), x = s.OutputNode(0);
+            foreach (var w in p.Solution) s.Connect(s.NodeOf(w.From), s.NodeOf(w.To), w.ToPort);
+            var report = s.Check();
+            Assert.That(report.Solved, Is.True, "solved without the optional block");
+            Assert.That(report.IdleBlocks, Is.EqualTo(new[] { 2 }));
+            Assert.That(report.UnusedBlocks, Is.Empty, "leaving it out breaks no rule");
+
+            s.Connect(c, k, 0);
+            report = s.Check();
+            Assert.That(report.Solved, Is.True, "wired, but going nowhere, is still left out");
+            Assert.That(report.IdleBlocks, Is.EqualTo(new[] { 2 }));
+
+            s.Disconnect(k, 0);
+            s.Connect(k, x, 0);
+            report = s.Check();
+            Assert.That(report.IdleBlocks, Is.Empty, "it leads to an output now");
+            Assert.That(report.EmptyBlocks, Is.EqualTo(new[] { 2 }), "so its input needs a wire");
+            Assert.That(report.UnusedBlocks, Is.EqualTo(new[] { 0, 1 }), "and the blocks it replaced lead nowhere");
+            Assert.That(report.RulesKept, Is.False);
+
+            var analysis = WiringSolver.Analyse(p);
+            Assert.That(analysis.Space, Is.EqualTo(25 * 5 * 6), "an optional block has one more way to be wired: not at all");
+            Assert.That(analysis.Solutions, Is.EqualTo(1), "wiring the optional block to nowhere isn't another answer");
+            Assert.That(analysis.Examples[0], Does.Not.Contain("k"));
+        }
+
+        [Test]
+        public void OptionalIsWhatTheAnswerLeavesOut()
+        {
+            void Refused(string json, string reason, string expect)
+            {
+                var ex = Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(json), reason);
+                Assert.That(ex.Message, Does.Contain(expect), reason);
+            }
+            Refused(Small.Replace(@"""B -> g.1""", @"""A -> g.1"""), "an input the answer leaves out must be marked", "mark it \"optional\"");
+            Refused(Small.Replace(@"""B"": ""wave sine f1 a7""", @"""B"": { ""signal"": ""wave sine f1 a7"", ""optional"": true }"), "an optional input the answer uses", "is optional, but the solution uses it");
+            Refused(WithSpares.Replace(@"""h -> X"" ]", @"""h -> X"", ""C -> k"" ]"), "the answer wires nothing into an optional block", "wires nothing into it");
+            Refused(WithSpares.Replace(@"""g -> h"", ""h -> X""", @"""g -> h"", ""h -> k"", ""k -> X"""), "an optional block the answer uses", "is optional");
+            Refused(Small.Replace(@"""X"": ""display""", @"""X"": { ""device"": ""display"", ""optional"": true }"), "outputs are never optional", "only inputs and blocks");
         }
 
         [Test]

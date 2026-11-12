@@ -16,7 +16,8 @@
           "signal": "decimal 1234"
         },
         "B": {
-          "signal": "decimal 6"
+          "signal": "decimal 6",
+          "optional": true
         }
       },
       "blocks": {
@@ -135,7 +136,8 @@
           "signal": "decimal 02468642"
         },
         "B": {
-          "signal": "decimal 5"
+          "signal": "decimal 5",
+          "optional": true
         }
       },
       "blocks": {

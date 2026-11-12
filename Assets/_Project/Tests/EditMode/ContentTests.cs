@@ -157,6 +157,24 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void DottedOutlinesMarkWhatEachAnswerLeavesOut()
+        {
+            // Every input and block a circuit's answer doesn't need is marked optional
+            // and drawn dotted; everything the answer uses is solid.
+            foreach (var p in TestContent.Library.AllPuzzles.Where(p => p.Wiring))
+            {
+                var used = WiringSession.UsedNodes(p, p.Solution);
+                for (int i = 0; i < p.Inputs.Count; i++)
+                    Assert.That(p.Inputs[i].Optional, Is.EqualTo(!used[i]), $"{p.Id} input {p.Inputs[i].Id}");
+                for (int b = 0; b < p.Blocks.Count; b++)
+                    Assert.That(p.Blocks[b].Optional, Is.EqualTo(!used[p.Inputs.Count + b]), $"{p.Id} block {p.Blocks[b].Id}");
+            }
+            var first = TestContent.Library.AllPuzzles.First(p => p.Wiring);
+            Assert.That(first.Inputs.Any(i => i.Optional), Is.True, "the first circuit has an optional input");
+            Assert.That(first.Hint, Does.Contain("dotted"), "and its hint says what the dotted outline means");
+        }
+
+        [Test]
         public void NoTwoPuzzlesAfterLearnUseTheSameBlocks()
         {
             // Each circuit after Learn is meant to be solved by its own idea, so no

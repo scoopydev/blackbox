@@ -25,6 +25,12 @@ namespace Blackbox.Puzzles
         public int Index;
         /// <summary>The value this node must end on, if it has a target.</summary>
         public int? Target;
+        /// <summary>
+        /// In a circuit the player wires: an input or block the answer doesn't need,
+        /// drawn with a dotted outline. An optional block may be left out, where every
+        /// other block has to lead to an output. Outputs are never optional.
+        /// </summary>
+        public bool Optional;
     }
 
     /// <summary>A signal source on the left of the board.</summary>

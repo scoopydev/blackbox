@@ -9,10 +9,11 @@
   "circuits": [
     {
       "id": "first-light-01",
-      "hint": "The wires are drawn, but one starts at the wrong input. Click the wire into {g} to take it off, drag from B's dot to {g}'s left dot, then press RUN.",
+      "hint": "The wires are drawn, but one starts at A, and A's dotted outline means the answer doesn't need it. Click the wire into {g} to take it off, drag from B's dot to {g}'s left dot, then press RUN.",
       "inputs": {
         "A": {
-          "signal": "binary 1"
+          "signal": "binary 1",
+          "optional": true
         },
         "B": {
           "signal": "binary 0"

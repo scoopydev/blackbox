@@ -51,10 +51,12 @@
           "signal": "binary 0110"
         },
         "C": {
-          "signal": "decimal 9"
+          "signal": "decimal 9",
+          "optional": true
         },
         "D": {
-          "signal": "binary 1"
+          "signal": "binary 1",
+          "optional": true
         }
       },
       "blocks": {
@@ -140,7 +142,8 @@
           "signal": "binary 01101000"
         },
         "B": {
-          "signal": "decimal 5"
+          "signal": "decimal 5",
+          "optional": true
         },
         "C": {
           "signal": "wave saw f1 a7"
@@ -186,10 +189,12 @@
           "signal": "decimal 3"
         },
         "C": {
-          "signal": "binary 1"
+          "signal": "binary 1",
+          "optional": true
         },
         "D": {
-          "signal": "decimal 6"
+          "signal": "decimal 6",
+          "optional": true
         }
       },
       "blocks": {

@@ -606,7 +606,7 @@ namespace Blackbox.UI.Board
                 if (!view.Showing) continue;
                 if (keep[b])
                 {
-                    view.Renote(now.Values[Session.BlockNode(b)], now.EmptyBlocks.Contains(b), now.UnusedBlocks.Contains(b));
+                    view.Renote(now.Values[Session.BlockNode(b)], now.EmptyBlocks.Contains(b), now.UnusedBlocks.Contains(b), now.IdleBlocks.Contains(b));
                     any = true;
                 }
                 else view.Conceal();
@@ -625,7 +625,7 @@ namespace Blackbox.UI.Board
             _shown = true;
             var sent = report.Values[Session.BlockNode(block)];
             if (sent != null) _seenBlocks[block] = sent.Medium;
-            Blocks[block].Show(sent, report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block));
+            Blocks[block].Show(sent, report.EmptyBlocks.Contains(block), report.UnusedBlocks.Contains(block), report.IdleBlocks.Contains(block));
         }
 
         /// <summary>The kind of signal each block has been seen sending, on some run this visit.</summary>
@@ -987,6 +987,9 @@ namespace Blackbox.UI.Board
             view._card.raycastTarget = false;
             view._card.rectTransform.Stretch();
             view._card.Radius = 14f * s;
+            // An input the answer doesn't need has a dotted outline.
+            view._card.Dashed = def.Optional;
+            view._card.SetDash(2.4f * s, 5.5f * s);
 
             view._label = UIKit.Text(rt, def.Id, TextStyle.Label.WithSize(Mathf.RoundToInt(17 * s)), TextAnchor.MiddleRight, "Label");
             view._label.rectTransform.Centered(-w * 0.5f - 28f * s, 0f, 40f, 24f);
@@ -1070,6 +1073,9 @@ namespace Blackbox.UI.Board
             view._outline.raycastTarget = false;
             view._outline.rectTransform.Stretch();
             view._outline.Radius = 16f * s;
+            // A block the answer doesn't need has a dotted outline, and may be left out.
+            view._outline.Dashed = def.Optional;
+            view._outline.SetDash(2.4f * s, 5.5f * s);
 
             // Every block is labelled by the kind of signal it sends and a number:
             // B1, D1, W1 ... The label says what comes out, never which rule makes
@@ -1117,21 +1123,25 @@ namespace Blackbox.UI.Board
             Restyle();
         }
 
-        /// <summary>What the block sent on the run, or null if nothing; and whether a rule is broken here.</summary>
-        public void Show(Trace sent, bool emptyInput, bool unused)
+        /// <summary>
+        /// What the block sent on the run, or null if nothing; and whether a rule is
+        /// broken here. An idle block is an optional one left out of the circuit.
+        /// </summary>
+        public void Show(Trace sent, bool emptyInput, bool unused, bool idle = false)
         {
             _readout.gameObject.SetActive(true);
             _readout.Set(sent, ValueLook.Live);
-            Renote(sent, emptyInput, unused);
+            Renote(sent, emptyInput, unused, idle);
         }
 
         /// <summary>A signal from a run is showing above the block.</summary>
         public bool Showing => _readout.gameObject.activeSelf;
 
         /// <summary>Brings the note under the signal up to date, leaving the signal as it is.</summary>
-        public void Renote(Trace sent, bool emptyInput, bool unused)
+        public void Renote(Trace sent, bool emptyInput, bool unused, bool idle = false)
         {
-            _note.text = emptyInput ? "AN INPUT IS EMPTY" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
+            // An optional block left out breaks no rule, so it needs no note.
+            _note.text = idle ? "" : emptyInput ? "AN INPUT IS EMPTY" : sent == null ? "GETS NOTHING" : unused ? "NOT USED" : "";
             _broken = emptyInput || unused;
             Restyle();
         }

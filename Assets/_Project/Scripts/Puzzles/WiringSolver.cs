@@ -38,6 +38,8 @@ namespace Blackbox.Puzzles
     /// Each block input takes any input or other block, without loops; then each
     /// output takes any signal its device reads the way its target wants, and the
     /// wiring counts if every block ends up leading to an output. Inputs may go unused.
+    /// An optional block is either left out, with no wires in, or wired and leading
+    /// to an output: wired but going nowhere is the same answer as left out.
     /// Swapping the wires into a block that treats its inputs alike (AND, MIX, the
     /// two bounds of BETWEEN ...) is the same answer, so those are tried in one order only.
     /// </summary>
@@ -55,11 +57,14 @@ namespace Blackbox.Puzzles
             var ports = new List<(int block, int port)>();
             for (int b = 0; b < blocks; b++)
                 for (int k = 0; k < p.Blocks[b].Kind.InputCount; k++) ports.Add((b, k));
+            // An optional block adds one more way to wire it: leaving it out.
             long space = 1;
-            foreach (var _ in ports)
+            for (int b = 0; b < blocks && space <= long.MaxValue / 1024; b++)
             {
-                space *= sources - 1;
-                if (space > long.MaxValue / 64) break;
+                long ways = 1;
+                for (int k = 0; k < p.Blocks[b].Kind.InputCount && ways <= long.MaxValue / 1024; k++) ways *= sources - 1;
+                if (p.Blocks[b].Optional) ways++;
+                space = ways > long.MaxValue / 1024 / space ? long.MaxValue / 1024 : space * ways;
             }
             result.Space = space;
             if (space > maxSpace) return result;
@@ -102,7 +107,7 @@ namespace Blackbox.Puzzles
                 bool fed = true;
                 for (int k = 0; k < ins.Length; k++)
                 {
-                    int id = Value(ins[k], done);
+                    int id = ins[k] < 0 ? -1 : Value(ins[k], done);
                     key.Append(',').Append(id);
                     if (id < 0) fed = false;
                     else traceIns[k] = traces[id];
@@ -146,9 +151,10 @@ namespace Blackbox.Puzzles
                 for (int b = 0; b < blocks; b++)
                     foreach (int d in driver[inputs + b])
                         if (d >= inputs) consumed[d - inputs] = true;
-                // Every block no other block reads has to go straight to an output.
+                // Every block no other block reads has to go straight to an output,
+                // apart from an optional block left out.
                 int dangling = 0;
-                for (int b = 0; b < blocks; b++) if (!consumed[b]) dangling++;
+                for (int b = 0; b < blocks; b++) if (!consumed[b] && !Off(b)) dangling++;
                 if (dangling > outputs) return;
 
                 var done = new bool[sources];
@@ -171,7 +177,7 @@ namespace Blackbox.Puzzles
                 if (o == outputs)
                 {
                     for (int k = 0; k < outputs; k++) driver[sources + k][0] = choice[k];
-                    if (WiringSession.AllBlocksUsed(p, driver))
+                    if (WiringSession.AllBlocksUsed(p, driver) && OptionalUsedOrOff())
                     {
                         result.Solutions++;
                         if (result.Examples.Count < keep) result.Examples.Add(Describe(session, driver));
@@ -186,6 +192,20 @@ namespace Blackbox.Puzzles
                 }
             }
 
+            // An optional block with no wires in is left out of the circuit.
+            bool Off(int b) => p.Blocks[b].Optional && driver[inputs + b][0] < 0;
+
+            bool OptionalUsedOrOff()
+            {
+                bool any = false;
+                for (int b = 0; b < blocks && !any; b++) any = p.Blocks[b].Optional && !Off(b);
+                if (!any) return true;
+                var used = WiringSession.Used(p, driver);
+                for (int b = 0; b < blocks; b++)
+                    if (p.Blocks[b].Optional && !Off(b) && !used[inputs + b]) return false;
+                return true;
+            }
+
             void Assign(int i)
             {
                 if (i == ports.Count)
@@ -195,6 +215,9 @@ namespace Blackbox.Puzzles
                 }
                 var (b, k) = ports[i];
                 int node = inputs + b;
+                int count = p.Blocks[b].Kind.InputCount;
+                // An optional block can be left out: no wires in at all.
+                if (k == 0 && p.Blocks[b].Optional) Assign(i + count);
                 int alike = p.Blocks[b].Kind.AlikeFrom;
                 for (int s = 0; s < sources; s++)
                 {

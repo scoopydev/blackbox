@@ -383,8 +383,13 @@ namespace Blackbox.Puzzles
                     throw new PuzzleFormatException($"{where}: {w.To.Id} port {w.ToPort} has two wires running into it.");
             foreach (var b in p.Blocks)
                 for (int port = 0; port < b.Kind.InputCount; port++)
-                    if (!driven.Contains((b, port)))
+                {
+                    // An optional block is what the answer leaves out, so the answer wires nothing into it.
+                    if (b.Optional && driven.Contains((b, port)))
+                        throw new PuzzleFormatException($"{where}: block '{b.Id}' is optional, so the solution wires nothing into it.");
+                    if (!b.Optional && !driven.Contains((b, port)))
                         throw new PuzzleFormatException($"{where}: block '{b.Id}' port {port} has nothing wired into it.");
+                }
             foreach (var o in p.Outputs)
                 if (!driven.Contains((o, 0)))
                     throw new PuzzleFormatException($"{where}: output '{o.Id}' has nothing wired into it.");
@@ -449,6 +454,7 @@ namespace Blackbox.Puzzles
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': {Media.Key(node.Signal.Medium)} signals are set aside for now, so no circuit may use them.");
                 if (v.IsObject && (v.Has("adjustable") || v.Has("target") || v.Has("value")))
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs of a wired circuit are fixed signals, so they take no \"value\", \"adjustable\" or \"target\".");
+                if (v.IsObject) node.Optional = v["optional"].AsBool(false);
                 p.Inputs.Add(node);
             }
 
@@ -476,6 +482,7 @@ namespace Blackbox.Puzzles
                 {
                     ReadPosition(b["at"], block, where);
                     if (b.Has("target")) throw new PuzzleFormatException($"{where}: block '{block.Id}': in a wired circuit only outputs have targets.");
+                    block.Optional = b["optional"].AsBool(false);
                 }
                 p.Blocks.Add(block);
             }
@@ -500,6 +507,7 @@ namespace Blackbox.Puzzles
                         throw new PuzzleFormatException($"{where}: output '{m.Key}' has unknown device '{v.AsString()}' (use display, light, speaker, digits, fan or servo).");
                 }
                 else if (!v.IsNull) throw new PuzzleFormatException($"{where}: output '{m.Key}' must be [column, row], a device name or an object.");
+                if (v.IsObject && v.Has("optional")) throw new PuzzleFormatException($"{where}: output '{m.Key}': only inputs and blocks can be optional; every output has to match.");
                 if (Devices.Shelved.Contains(node.Device))
                     throw new PuzzleFormatException($"{where}: output '{m.Key}' is a {Devices.Noun(node.Device)}, which is set aside for now: every output is a display.");
                 p.Outputs.Add(node);
@@ -543,9 +551,25 @@ namespace Blackbox.Puzzles
             foreach (var o in p.Outputs)
                 o.Want = values[p.Inputs.Count + p.Blocks.Count + o.Index]
                     ?? throw new PuzzleFormatException($"{where}: the solution sends nothing to output '{o.Id}'.");
-            var unused = WiringSession.UnusedBlocks(p, p.Solution);
-            if (unused.Count > 0)
-                throw new PuzzleFormatException($"{where}: the solution doesn't use block '{p.Blocks[unused[0]].Id}': every block must lead to an output.");
+            // Optional means exactly what the answer leaves out, so the dotted outlines never mislead.
+            var used = WiringSession.UsedNodes(p, p.Solution);
+            for (int i = 0; i < p.Inputs.Count; i++)
+            {
+                var input = p.Inputs[i];
+                if (!used[i] && !input.Optional)
+                    throw new PuzzleFormatException($"{where}: the solution doesn't use input '{input.Id}', so mark it \"optional\": true.");
+                if (used[i] && input.Optional)
+                    throw new PuzzleFormatException($"{where}: input '{input.Id}' is optional, but the solution uses it.");
+            }
+            for (int b = 0; b < p.Blocks.Count; b++)
+            {
+                var block = p.Blocks[b];
+                bool on = used[p.Inputs.Count + b];
+                if (!on && !block.Optional)
+                    throw new PuzzleFormatException($"{where}: the solution doesn't use block '{block.Id}': every block must lead to an output, unless it's marked \"optional\": true.");
+                if (on && block.Optional)
+                    throw new PuzzleFormatException($"{where}: block '{block.Id}' is optional, but the solution uses it.");
+            }
 
             BoardLayout.ApplyWiring(p);
             LabelBlocks(p);

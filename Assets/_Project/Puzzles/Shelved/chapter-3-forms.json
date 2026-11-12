@@ -12,7 +12,8 @@
       "hint": "These wires are drawn already. Run it, then move {g}'s input to the other shape.",
       "inputs": {
         "A": {
-          "signal": "shape solid pink triangle"
+          "signal": "shape solid pink triangle",
+          "optional": true
         },
         "B": {
           "signal": "shape hollow amber square"
@@ -103,7 +104,8 @@
           "signal": "shape solid triangle"
         },
         "B": {
-          "signal": "shape hollow pink hexagon"
+          "signal": "shape hollow pink hexagon",
+          "optional": true
         }
       },
       "blocks": {

@@ -20,7 +20,8 @@ namespace Blackbox.Puzzles
         public readonly List<int> StarvedBlocks = new List<int>();
         /// <summary>Blocks whose signal doesn't lead to any output.</summary>
         public readonly List<int> UnusedBlocks = new List<int>();
-        /// <summary>Inputs whose signal doesn't lead to any output.</summary>
+        /// <summary>Optional blocks left out of the circuit: they lead to no output, and that breaks no rule.</summary>
+        public readonly List<int> IdleBlocks = new List<int>();
         /// <summary>Outputs with no wire into them.</summary>
         public readonly List<int> UnwiredOutputs = new List<int>();
 
@@ -35,7 +36,7 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>Every block is used, and every block input is connected. Inputs may go unused.</summary>
+        /// <summary>Every block is used, and every block input is connected. Inputs and optional blocks may go unused.</summary>
         public bool RulesKept => EmptyBlocks.Count == 0 && UnusedBlocks.Count == 0;
 
         /// <summary>Every output gets what it wants, and the rules are kept.</summary>
@@ -354,8 +355,15 @@ namespace Blackbox.Puzzles
         {
             int inputs = p.Inputs.Count, blocks = p.Blocks.Count, outputs = p.Outputs.Count;
             var report = new WiringReport { Values = Evaluate(p, driver), OutputMet = new bool[outputs] };
+            var used = Used(p, driver);
             for (int b = 0; b < blocks; b++)
             {
+                // An optional block left out of the circuit breaks no rule, however it's wired.
+                if (p.Blocks[b].Optional && !used[inputs + b])
+                {
+                    report.IdleBlocks.Add(b);
+                    continue;
+                }
                 var ports = driver[inputs + b];
                 bool empty = Array.IndexOf(ports, -1) >= 0;
                 if (empty) report.EmptyBlocks.Add(b);
@@ -425,7 +433,7 @@ namespace Blackbox.Puzzles
         /// <summary>Evaluates a list of wires, such as a circuit's solution.</summary>
         public static Trace[] Evaluate(PuzzleDef p, IEnumerable<WireDef> wires) => Evaluate(p, DriversOf(p, wires));
 
-        /// <summary>Blocks whose signal reaches no output, through these wires.</summary>
+        /// <summary>Blocks that must be used but whose signal reaches no output, through these wires.</summary>
         public static List<int> UnusedBlocks(PuzzleDef p, IEnumerable<WireDef> wires) => UnusedBlocks(p, DriversOf(p, wires));
 
         public static List<int> UnusedBlocks(PuzzleDef p, int[][] driver)
@@ -433,20 +441,26 @@ namespace Blackbox.Puzzles
             int inputs = p.Inputs.Count, blocks = p.Blocks.Count;
             var used = Used(p, driver);
             var unused = new List<int>();
-            for (int b = 0; b < blocks; b++) if (!used[inputs + b]) unused.Add(b);
+            for (int b = 0; b < blocks; b++) if (!used[inputs + b] && !p.Blocks[b].Optional) unused.Add(b);
             return unused;
         }
 
-        /// <summary>Every block leads to an output: the rule on what must be used. Inputs needn't be.</summary>
+        /// <summary>
+        /// Every block leads to an output, except optional ones, which may be left
+        /// out: the rule on what must be used. Inputs needn't be.
+        /// </summary>
         public static bool AllBlocksUsed(PuzzleDef p, int[][] driver)
         {
             var used = Used(p, driver);
-            for (int b = 0; b < p.Blocks.Count; b++) if (!used[p.Inputs.Count + b]) return false;
+            for (int b = 0; b < p.Blocks.Count; b++) if (!used[p.Inputs.Count + b] && !p.Blocks[b].Optional) return false;
             return true;
         }
 
+        /// <summary>Each node (inputs, then blocks, then outputs) whose signal leads to an output through these wires.</summary>
+        public static bool[] UsedNodes(PuzzleDef p, IEnumerable<WireDef> wires) => Used(p, DriversOf(p, wires));
+
         /// <summary>Each node whose signal leads to an output.</summary>
-        static bool[] Used(PuzzleDef p, int[][] driver)
+        public static bool[] Used(PuzzleDef p, int[][] driver)
         {
             int inputs = p.Inputs.Count, blocks = p.Blocks.Count;
             var used = new bool[driver.Length];

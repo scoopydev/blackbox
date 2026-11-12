@@ -15,7 +15,8 @@
           "signal": "wave sine f2 a5"
         },
         "B": {
-          "signal": "wave saw f3 a7"
+          "signal": "wave saw f3 a7",
+          "optional": true
         }
       },
       "blocks": {
@@ -105,7 +106,8 @@
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
-          "signal": "wave sine f1 a6"
+          "signal": "wave sine f1 a6",
+          "optional": true
         },
         "B": {
           "signal": "wave saw f1 a3"

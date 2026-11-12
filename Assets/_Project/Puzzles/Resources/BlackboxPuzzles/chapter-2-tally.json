@@ -12,7 +12,8 @@
       "hint": "These wires are drawn already. Run it, then move {g}'s input to the other digit.",
       "inputs": {
         "A": {
-          "signal": "decimal 4"
+          "signal": "decimal 4",
+          "optional": true
         },
         "B": {
           "signal": "decimal 6"
