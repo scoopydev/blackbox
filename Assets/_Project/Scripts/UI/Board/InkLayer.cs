@@ -84,6 +84,8 @@ namespace Blackbox.UI.Board
         float _backspaceHeld;
         readonly float[] _held = new float[4];
         int _at; // caret position in the note being typed
+        /// <summary>The frame a click off a block ended its label, so that click doesn't also start a note.</summary>
+        int _labelEndedFrame = -1;
         /// <summary>The other end of the selection, or -1 when nothing is selected.</summary>
         int _anchor = -1;
         readonly List<(string text, int at)> _undo = new List<(string, int)>();
@@ -853,7 +855,7 @@ namespace Blackbox.UI.Board
                     // Clicking away finishes the note; the next click starts a new one.
                     FinishTyping();
                 }
-                else
+                else if (_labelEndedFrame != Time.frameCount)
                 {
                     StartNote(local);
                     App.Sound(Sfx.Tick, 1.2f, 0.6f);
@@ -904,6 +906,17 @@ namespace Blackbox.UI.Board
 
         void Update()
         {
+            if (_editing != null && _editing.OnBlock && GameInput.PointerPressed)
+            {
+                // Clicking anywhere off the block, on the board or not, ends its label.
+                var root = _rt.GetComponentInParent<Canvas>();
+                var eye = root != null && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
+                if (BlockAt == null || BlockAt(GameInput.PointerPosition, eye) != _editing.Note.Block)
+                {
+                    FinishTyping();
+                    _labelEndedFrame = Time.frameCount;
+                }
+            }
             if (_editing != null)
             {
                 _blink += Time.unscaledDeltaTime;

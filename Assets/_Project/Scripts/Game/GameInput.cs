@@ -112,6 +112,8 @@ namespace Blackbox.Game
         }
 
         public static Vector2 PointerPosition => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        /// <summary>The left mouse button went down this frame, wherever it was.</summary>
+        public static bool PointerPressed => Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
 #else
         static KeyCode Map(Key k)
         {
@@ -166,6 +168,8 @@ namespace Blackbox.Game
         public static void Poll() { }
 
         public static Vector2 PointerPosition => Input.mousePosition;
+        /// <summary>The left mouse button went down this frame, wherever it was.</summary>
+        public static bool PointerPressed => Input.GetMouseButtonDown(0);
 #endif
 
         /// <summary>Space or Enter.</summary>

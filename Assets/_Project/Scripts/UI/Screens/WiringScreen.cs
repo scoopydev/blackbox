@@ -25,6 +25,8 @@ namespace Blackbox.UI.Screens
         WiringSession _session;
         WiringBoard _board;
         InkLayer _ink;
+        bool _labelByDoubleClick;
+        InkTool _toolBeforeLabel;
 
         VoidText _title, _record, _status, _moves;
         VoidText _matchedValue, _matchedLabel;
@@ -79,14 +81,23 @@ namespace Blackbox.UI.Screens
             _board.BlockDoubleClicked = id =>
             {
                 if (_running) return;
+                // Started from a double-click, the label puts the tools back as they were when it ends.
+                _toolBeforeLabel = _ink.Tool;
                 SetTool(InkTool.Text);
                 _ink.LabelBlock(id);
+                _labelByDoubleClick = _ink.TypingLabel;
             };
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
             _ink.TypingChanged = typing =>
             {
                 if (typing && _ink.TypingLabel) Say("Labelling a block. The label moves with the block. Enter finishes it.", 600f);
                 else if (typing) Say("Typing a note. Enter finishes it, Shift+Enter starts a new line.", 600f);
+                else if (_labelByDoubleClick)
+                {
+                    _labelByDoubleClick = false;
+                    SetTool(_toolBeforeLabel);
+                    Hush();
+                }
                 else if (_ink.Tool == InkTool.Text) Say("Click anywhere to start another note, click a block to label it, or drag a note to move it.", 3f);
                 else Hush();
             };
