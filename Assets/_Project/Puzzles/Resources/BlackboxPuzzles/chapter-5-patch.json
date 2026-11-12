@@ -7,7 +7,7 @@
   "circuits": [
     {
       "id": "patch-01",
-      "hint": "Three beeps, then quiet. A bit block reads any signal as a bit: a digit is 1 unless it's 0, so 0505 reads as 0101. You don't have to use every input.",
+      "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, so 0505 reads as 0101. You don't have to use every input.",
       "inputs": {
         "A": {
           "signal": "decimal 0505"
@@ -41,7 +41,7 @@
     },
     {
       "id": "patch-02",
-      "hint": "A flat ledge, then a slide down to 0. A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
+      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
           "signal": "binary 0110"
@@ -75,7 +75,7 @@
     },
     {
       "id": "patch-03",
-      "hint": "Stairs coming down, all in the top half. A wave block reads a digit as a level, 0 at the bottom up to 9 at the top.",
+      "hint": "A wave block reads a digit as a level, 0 at the bottom up to 9 at the top, so a steady digit is a steady level.",
       "inputs": {
         "A": {
           "signal": "decimal 1357"
@@ -109,7 +109,7 @@
     },
     {
       "id": "patch-04",
-      "hint": "A ramp knocked down for the middle half of the loop. A wave block reads a bit as the top for 1 and the bottom for 0.",
+      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0. One input already looks like part of the answer, but every block has to be used.",
       "inputs": {
         "A": {
           "signal": "binary 0110"
@@ -121,15 +121,23 @@
           "signal": "decimal 0369"
         },
         "D": {
-          "signal": "binary 1001"
+          "signal": "binary 0011"
         }
       },
       "blocks": {
         "g": {
-          "kind": "FLIP"
+          "kind": "LATER",
+          "at": [
+            1,
+            0.5
+          ]
         },
         "h": {
-          "kind": "MIX"
+          "kind": "MIX",
+          "at": [
+            1,
+            2.5
+          ]
         }
       },
       "outputs": {
@@ -146,13 +154,13 @@
     },
     {
       "id": "patch-05",
-      "hint": "A wave written in digits, upside down, and a single blip. Look at each target and ask which input could have made it.",
+      "hint": "Two readings you haven't met yet: a bit block reads a wave as 1 while it's above the middle, and a digit block reads a bit as the digit 0 or 1.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a7"
         },
         "B": {
-          "signal": "binary 0101"
+          "signal": "binary 1000"
         },
         "C": {
           "signal": "decimal 0660"
@@ -178,12 +186,12 @@
         }
       },
       "solution": [
-        "A -> h",
-        "h -> X",
-        "B -> g",
+        "A -> g",
         "g -> k.0",
         "C -> k.1",
-        "k -> Y"
+        "k -> X",
+        "B -> h",
+        "h -> Y"
       ]
     }
   ]

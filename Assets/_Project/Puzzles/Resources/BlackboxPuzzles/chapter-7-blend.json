@@ -7,7 +7,7 @@
   "circuits": [
     {
       "id": "blend-01",
-      "hint": "A square wave made from bits, and a sine knocked up and down by other bits. A wave block reads a bit as the top for 1 and the bottom for 0.",
+      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0, so a bit pattern can become a square wave.",
       "inputs": {
         "A": {
           "signal": "binary 0011"
@@ -52,7 +52,7 @@
     },
     {
       "id": "blend-02",
-      "hint": "Two dips, one long and one short, from a wave meeting bits. A wave block reads a bit as the top or the bottom, and a digit as a level.",
+      "hint": "A wave into a bit block turns on and off as the wave rises and falls. A bit into a wave block is the top or the bottom.",
       "inputs": {
         "A": {
           "signal": "binary 0110"
@@ -91,7 +91,7 @@
     },
     {
       "id": "blend-03",
-      "hint": "Half-height bits, made by mixing them with silence. Two waves can cancel out: how could a wave cancel itself?",
+      "hint": "Two waves can cancel each other out. How could a wave cancel itself?",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a7"
@@ -145,38 +145,38 @@
     },
     {
       "id": "blend-04",
-      "hint": "A wave mixed with a late copy of itself, and the bits that light while it's above the middle. One input can feed two blocks.",
+      "hint": "No block here turns a digit around. Read a digit as a level and turn it upside down: what digit comes back?",
       "inputs": {
         "A": {
-          "signal": "wave sine f1 a7"
+          "signal": "wave saw f1 a7"
         },
         "B": {
-          "signal": "wave sine f2 a7"
+          "signal": "decimal 2"
         },
         "C": {
           "signal": "binary 0011"
         },
         "D": {
-          "signal": "decimal 5"
+          "signal": "decimal 6"
         }
       },
       "blocks": {
         "g": {
-          "kind": "LATER",
+          "kind": "FLIP",
           "at": [
             1,
             0
           ]
         },
         "h": {
-          "kind": "MIX",
+          "kind": "MIN",
           "at": [
             1,
             1.5
           ]
         },
         "k": {
-          "kind": "OR",
+          "kind": "MIX",
           "at": [
             1,
             3
@@ -192,7 +192,7 @@
         }
       },
       "solution": [
-        "A -> g",
+        "B -> g",
         "A -> h.0",
         "g -> h.1",
         "h -> X",
@@ -203,7 +203,7 @@
     },
     {
       "id": "blend-05",
-      "hint": "Bursts of a fast saw at the start and end of the loop. You met {g}'s kind in Resonance: here a bit pattern decides when it lets the signal through.",
+      "hint": "You met {g}'s kind in Resonance, with two waves. Here its bottom input is a bit pattern, but not one you've been given: how could you turn one over?",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -257,7 +257,7 @@
     },
     {
       "id": "blend-06",
-      "hint": "A gated wave, and a number that drops each time it switches on. {g} is a new kind of block.",
+      "hint": "{g} is a new kind of block. Can a digit go down while a count goes up?",
       "inputs": {
         "A": {
           "signal": "wave sine f4 a7"
@@ -315,7 +315,7 @@
     },
     {
       "id": "blend-07",
-      "hint": "One pulse, early in the middle half. {g} is a new kind of block. A digit read as a wave is a height: 0 at the bottom, 9 at the top.",
+      "hint": "{g} is a new kind of block. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The height you need isn't one of the inputs.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -369,7 +369,7 @@
     },
     {
       "id": "blend-08",
-      "hint": "Bursts of a fast saw while a wave is high, and a count of the bursts. Four blocks, two outputs.",
+      "hint": "One block's signal can feed two other blocks at once. Four blocks, two outputs.",
       "inputs": {
         "A": {
           "signal": "wave sine f3 a7"

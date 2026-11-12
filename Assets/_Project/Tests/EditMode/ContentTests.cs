@@ -157,13 +157,14 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void EveryPuzzleAfterLearnHasItsOwnPicture()
+        public void NoTwoPuzzlesAfterLearnUseTheSameBlocks()
         {
-            // Each circuit after Learn is meant to be remembered by what its target
-            // looks or sounds like, which its hint names, so no two share a hint.
+            // Each circuit after Learn is meant to be solved by its own idea, so no
+            // two of them hand the player the same set of blocks.
             var later = TestContent.Library.Parts.Skip(1).SelectMany(part => part.Chapters).SelectMany(c => c.Puzzles).ToList();
-            var dupes = later.GroupBy(p => p.Hint).Where(g => g.Count() > 1).Select(g => string.Join(", ", g.Select(p => p.Id))).ToList();
-            Assert.That(dupes, Is.Empty, "circuits sharing a hint");
+            string BlockSet(PuzzleDef p) => string.Join("+", p.Blocks.Select(b => b.Kind.Id).OrderBy(id => id, System.StringComparer.Ordinal));
+            var dupes = later.GroupBy(BlockSet).Where(g => g.Count() > 1).Select(g => $"{g.Key}: {string.Join(", ", g.Select(p => p.Id))}").ToList();
+            Assert.That(dupes, Is.Empty, "circuits with the same set of blocks");
         }
 
         [Test]

@@ -80,7 +80,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn has its own picture, something the player can name and remember (a valley, a heartbeat, an echo, a siren), and its hint leads with that picture; no two share a hint (`ContentTests.EveryPuzzleAfterLearnHasItsOwnPicture`). Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -170,8 +170,8 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 1 | AND reads a pattern of digits as bits, then NOT; a steady digit is the spare | 64 | 1 |
 | 2 | MIRROR reads a saw by its height, then MIN with a digit | 64 | 1 |
 | 3 | FLIP reads digits as levels, then MIX with a steady 9 lifts them to the top half | 64 | 1 |
-| 4 | FLIP reads bits as top and bottom, then MIX with a saw; two spares, one of them the same bits upside down | 125 | 1 |
-| 5 | Three blocks, two outputs: a wave into MIRROR; bits into NOT, then AND with a pattern of digits | 625 | 1 |
+| 4 | LATER reads bits as top and bottom and delays them, then MIX with a saw. A decoy: one spare input already shows LATER's result, but every block must be used, so it has to be built | 125 | 1 |
+| 5 | The two readings Patch hasn't shown: NOT reads a wave as bits (then AND with a pattern of digits), and MIRROR reads bits as the digits 0 and 1 | 625 | 1 |
 
 ### Chapter VI: Junction
 
@@ -182,7 +182,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 1 | AND of a pattern of digits and a pattern of bits, then XOR with a square wave | 256 | 1 |
 | 2 | MIX of a wave and bits, then LATER, then FASTER: the order matters | 1,296 | 1 |
 | 3 | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR, then MIN with a saw read as a rising digit | 3,125 | 1 |
-| 4 | XOR of a digit and a saw, then OR with bits, then FLIP reads the bits as a square wave | 3,125 | 1 |
+| 4 | XOR of a pattern and its own LATER copy lights where the pattern changed, then AND with a saw read as bits | 3,125 | 1 |
 | 5 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again (one input feeding two blocks), then MIRROR | 7,776 | 1 |
 | 6 | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 1 |
 
@@ -195,7 +195,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 1 | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 1,296 | 1 |
 | 2 | A wave into AND blinks a bit, FLIP turns the bits back into a wave, and MIX with a digit lifts it | 3,125 | 1 |
 | 3 | A wave and its own copy half a cycle later (LATER) cancel in MIX, and the silence halves a bit pattern in a second MIX (either MIX can do either job) | 7,776 | 2 |
-| 4 | LATER and MIX on one input: a wave mixed with its own late copy, then OR with bits | 7,776 | 1 |
+| 4 | No MIRROR, but FLIP turns a digit read as a level upside down, which is the same thing: MIN of a saw and the flipped digit, then MIX with bits | 7,776 | 1 |
 | 5 | GATE lets a sped-up saw through a pattern made by XOR | 7,776 | 1 |
 | 6 | COUNT counts the switch-ons of a gated wave, and DIFF takes the count from a digit; the gate feeds an output too | 7,776 | 1 |
 | 7 | COMPARE against a mirrored digit makes a pulse, and AND cuts it with bits | 7,776 | 1 |
@@ -203,38 +203,36 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter VIII: Unmarked
 
-*Every block you've met, all mixed up.* Each circuit draws one picture the player can name, and the chapter climbs on from where Blend ends, from three blocks to five (12 Nov 2026, after play-testing found the old two-block Unmarked easier than late Blend).
+*Every block you've met, all mixed up.* The chapter climbs on from where Blend ends, from three blocks to five (12 Nov 2026, after play-testing found the old two-block Unmarked easier than late Blend), and each circuit turns on its own trick.
 
-| # | Picture | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 1 | Valley | DIFF folds a saw into a V around a digit, MIRROR turns the V into a hill, and MIN flattens its top | 3,125 | 1 |
-| 2 | Squared | COMPARE turns a sine into bits, FLIP reads them as a square wave, and MIX blends the square with the sine | 3,125 | 1 |
-| 3 | Heartbeat | A sine sped up by FASTER beats through COMPARE, and AND with a pattern leaves the beats in pairs | 7,776 | 2 |
-| 4 | Clipped | MIN and MAX slice a sine flat top and bottom, and COMPARE lights while the top is sliced | 15,625 | 2 |
-| 5 | Countdown | Two FASTERs make a wave fast enough for COUNT to reach 9 in one loop, and DIFF from 9 turns it into a countdown | 16,807 | 2 |
-| 6 | Full Wave | GATE with one signal in both inputs keeps only the wave's top half; done again on the flipped wave and MIXed, every dip becomes a bump | 279,936 | 2 |
-| 7 | Interference | Three machines, five blocks: a wave and its shifted twin half cancel in MIX, a wave twice as fast, and a level gated on halfway | 2,097,152 | 2 |
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | A signal meets its own MIRROR: MIN of the two is a rise and fall, MAX a fall and rise | 3,125 | 1 |
+| 2 | One input feeds both ends of a chain: COMPARE squares a sine off, FLIP reads the bits as a wave, and MIX adds the sine back | 3,125 | 1 |
+| 3 | FASTER before COMPARE, so the beats come at the target's rate, and AND with a pattern pairs them | 7,776 | 2 |
+| 4 | MIN cuts off the top and MAX the bottom; COMPARE shares MIN's limit | 15,625 | 2 |
+| 5 | No FLIP: two LATERs put a one-cycle sine half a loop late, which is the same as upside down, then MIX and COMPARE | 117,649 | 2 |
+| 6 | One signal in both of GATE's inputs keeps only its top half; again on the flipped wave, and MIX adds the two | 279,936 | 2 |
+| 7 | Three separate machines, five blocks: sort out which blocks belong together | 2,097,152 | 2 |
 
 The circuits with two solutions have two alike blocks that can swap, or one block whose inputs can swap without changing what it sends.
 
 ### Chapter IX: Blackbox
 
-*Everything at once.* Each circuit is a small machine with a name. 01 to 05 climb in size from bigger than Unmarked's opener. From 06 on, each circuit brings in a block with three inputs, on a smaller board so the new block is the puzzle, and the finale uses one.
+*Everything at once.* 01 to 05 climb in size from bigger than Unmarked's opener. From 06 on, each circuit brings in a block with three inputs, on a smaller board so the new block is the puzzle, and the finale uses one.
 
-| # | Picture | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 1 | Metronome | A sine sped up twice ticks through COMPARE, and COUNT counts the ticks | 7,776 | 2 |
-| 2 | Echo | GATE lets a short burst through, LATER makes its echo, and MIX plays both | 7,776 | 1 |
-| 3 | Pulse Width | COMPARE cuts pulses from a saw against a line DIFF makes from two digits; NOT and COUNT read the pulses | 46,656 | 2 |
-| 4 | Tide | A quiet sine sped up twice rides on a slow one in MIX, and COMPARE lights while the tide is high | 117,649 | 2 |
-| 5 | Signal Box | One saw read three ways: NOT then AND, XOR, and DIFF from 9 | 279,936 | 2 |
-| 6 | Vote | MAJORITY of two bit patterns and COMPARE's pulse, then NOT | 46,656 | 1 |
-| 7 | Clamp | MIDDLE holds a saw between a digit and its MIRROR (Unmarked's Clipped in one block), then FLIP | 7,776 | 1 |
-| 8 | Window | BETWEEN lights while a sine is between a digit and its MIRROR, and COUNT counts the times | 7,776 | 1 |
-| 9 | Siren | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 7,776 | 1 |
-| 10 | Black Box | The higher of two waves (COMPARE choosing for SWITCH), how many times they cross, and a gated saw | 1,679,616 | 2 |
-
-The picture names live only in these notes; in the game every circuit is named by its chapter and number, and its hint describes the picture.
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | A count read as a bit is 0 until the first switch-on and 1 after it, so COUNT drives GATE and AND | 7,776 | 1 |
+| 2 | A count read as a level by MIX climbs in steps; MAX holds it at a floor | 7,776 | 1 |
+| 3 | DIFF of two waves read as digits is how far apart they are; COMPARE and COUNT read the gap | 7,776 | 1 |
+| 4 | A quiet sine sped up twice rides on a slow one in MIX, and COMPARE lights while the sum is high | 117,649 | 2 |
+| 5 | One saw read three ways: NOT then AND, XOR, and DIFF from 9 | 279,936 | 2 |
+| 6 | MAJORITY of two bit patterns and COMPARE's pulse, then NOT | 46,656 | 1 |
+| 7 | MIDDLE holds a saw between a digit and its MIRROR (Unmarked 4's two blocks in one), then FLIP | 7,776 | 1 |
+| 8 | BETWEEN with the steady level on top and a wave and its FLIP as the bounds: lit while the wave is far from the middle; COUNT counts | 7,776 | 1 |
+| 9 | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 7,776 | 1 |
+| 10 | The higher of two waves (COMPARE choosing for SWITCH), how many times they cross, and a gated saw | 1,679,616 | 2 |
 
 ## Look and sound
 

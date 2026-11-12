@@ -7,7 +7,7 @@
   "circuits": [
     {
       "id": "junction-01",
-      "hint": "A rhythm: beep, rest, beep beep. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
+      "hint": "Two kinds of signal can meet in one block. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
           "signal": "decimal 0505"
@@ -42,7 +42,7 @@
     },
     {
       "id": "junction-02",
-      "hint": "A wave riding up and down on a square, twice as fast as the inputs. A wave block reads a bit as the top for 1 and the bottom for 0.",
+      "hint": "The same blocks in a different order can send something different.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a4"
@@ -95,7 +95,7 @@
     },
     {
       "id": "junction-03",
-      "hint": "A ramp that climbs until it hits a ceiling. A digit block reads a bit as the digit 0 or 1, and a wave by its height: 0 at the bottom up to 9 at the top.",
+      "hint": "A digit block reads a bit as the digit 0 or 1, so a bit taken away from a digit takes off 0 or 1.",
       "inputs": {
         "A": {
           "signal": "decimal 7"
@@ -134,46 +134,50 @@
     },
     {
       "id": "junction-04",
-      "hint": "One long blip up, in the second quarter. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
+      "hint": "A bit block reads a wave as 1 while it's above the middle. What lights up where a pattern meets its own late copy?",
       "inputs": {
         "A": {
-          "signal": "decimal 5"
+          "signal": "binary 01101000"
         },
         "B": {
-          "signal": "wave saw f2 a7"
+          "signal": "decimal 5"
         },
         "C": {
-          "signal": "binary 0011"
+          "signal": "wave saw f1 a7"
         }
       },
       "blocks": {
         "g": {
-          "kind": "XOR"
+          "kind": "LATER"
         },
         "h": {
-          "kind": "OR"
+          "kind": "XOR"
         },
         "k": {
-          "kind": "FLIP"
+          "kind": "AND"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h.0",
-        "C -> h.1",
-        "h -> k",
-        "k -> X"
+        "A -> g",
+        "A -> h.0",
+        "g -> h.1",
+        "h -> X",
+        "h -> k.0",
+        "C -> k.1",
+        "k -> Y"
       ]
     },
     {
       "id": "junction-05",
-      "hint": "A staircase down from 9 to 3. A digit block reads a wave by its height, and one input can feed two blocks.",
+      "hint": "One input can feed two blocks. A digit block reads a wave by its height.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -227,7 +231,7 @@
     },
     {
       "id": "junction-06",
-      "hint": "Three pictures: a 6 that dips to 5 in the middle, a wave knocked down, up and down again by bits, and a wave in digits that can't climb past the first picture.",
+      "hint": "One block's signal can feed an output and another block at once. Work out one output at a time.",
       "inputs": {
         "A": {
           "signal": "decimal 6"
