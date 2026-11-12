@@ -338,31 +338,35 @@ Each kind of signal has four blocks, and each set starts with one that flips the
 
 | Kind | Signal | Inputs | Rule | Short form |
 |---|---|---|---|---|
-| NOT | bit | 1 | 1 becomes 0, 0 becomes 1 | swaps 0 and 1 |
-| AND | bit | 2 | 1 only while both are 1 | 1 only when both inputs are 1 |
-| OR | bit | 2 | 1 while either is 1 | 1 when either input is 1 |
-| XOR | bit | 2 | 1 while they are different | 1 when the two inputs differ |
-| MIRROR | digit | 1 | 9 minus the digit: 0 and 9 swap, 1 and 8, 2 and 7 | 9 minus the digit: 2 becomes 7 |
-| MAX | digit | 2 | the larger digit | the larger of the two digits |
-| MIN | digit | 2 | the smaller digit | the smaller of the two digits |
-| DIFF | digit | 2 | how far apart they are: the larger minus the smaller | the larger digit minus the smaller |
-| FILL (set aside) | shape | 1 | hollow becomes solid, solid becomes hollow | swaps solid and hollow |
-| NEXT (set aside) | shape | 1 | the next shape along: circle, triangle, square, hexagon, then circle again; fill and colour kept | next shape: circle, triangle, square, hexagon |
-| TAKEFILL (set aside) | shape | 2 | the top shape, with the bottom shape's fill | top shape, filled like the bottom one |
-| TAKECOLOUR (set aside) | shape | 2 | the top shape, in the bottom shape's colour | top shape, coloured like the bottom one |
-| FLIP | wave | 1 | the wave upside down | turns the wave upside down |
-| FASTER | wave | 1 | twice as fast, so it repeats twice as often | plays the wave twice as fast |
-| LATER | wave | 1 | a quarter of the loop later | delays the wave by a quarter loop |
-| MIX | wave | 2 | the two waves added together at half height (their average at every moment) | adds the two waves, at half height |
-| GATE | wave | 2 | the top signal, read as a wave, while the bottom is on; otherwise a flat line | lets the top through while the bottom is on |
-| COUNT | digit | 1 | how many times its input has switched on so far this loop, stopping at 9 | counts each switch-on, up to 9 |
-| COMPARE | bit | 2 | 1 while the top is higher than the bottom, both read as waves; otherwise 0 | 1 while the top is higher than the bottom |
-| MAJORITY | bit | 3 | 1 while at least two of the three are 1 | 1 when at least two inputs are 1 |
-| MIDDLE | digit | 3 | the middle one of the three digits: neither the largest nor the smallest | the middle one of the three digits |
-| BETWEEN | bit | 3 | 1 while the top is between the other two, all read as waves; otherwise 0 | 1 while the top is between the other two |
-| SWITCH | wave | 3 | the top signal while the bottom is on; otherwise the middle one, both read as waves | top while the bottom is on, else the middle |
+| NOT | bit | 1 | sends the opposite of its input bit | the opposite bit |
+| AND | bit | 2 | sends 1 while both inputs are 1, otherwise 0 | 1 only when both inputs are 1 |
+| OR | bit | 2 | sends 1 while either input is 1, otherwise 0 | 1 when either input is 1 |
+| XOR | bit | 2 | sends 1 while the two inputs differ, otherwise 0 | 1 when the two inputs differ |
+| MIRROR | digit | 1 | sends 9 minus the input digit | 9 minus the digit |
+| MAX | digit | 2 | sends the larger of the two digits | the larger digit |
+| MIN | digit | 2 | sends the smaller of the two digits | the smaller digit |
+| DIFF | digit | 2 | sends the gap between the two digits: the larger minus the smaller | the gap between the two digits |
+| FILL (set aside) | shape | 1 | sends the shape with its fill swapped between solid and hollow | the shape with the opposite fill |
+| NEXT (set aside) | shape | 1 | sends the next form in the cycle circle, triangle, square, hexagon, keeping its fill and colour | the next form in the cycle |
+| TAKEFILL (set aside) | shape | 2 | sends the top shape with the bottom shape's fill | the top shape with the bottom's fill |
+| TAKECOLOUR (set aside) | shape | 2 | sends the top shape in the bottom shape's colour | the top shape in the bottom's colour |
+| FLIP | wave | 1 | sends the wave turned upside down | the wave upside down |
+| FASTER | wave | 1 | sends the wave played twice as fast | the wave at double speed |
+| LATER | wave | 1 | sends the wave delayed by a quarter of a loop | the wave a quarter loop later |
+| MIX | wave | 2 | sends the two waves added together, at half height | the two waves added, at half height |
+| GATE | wave | 2 | sends the top signal as a wave while the bottom one is on, and a flat line while it is off | the top while the bottom is on |
+| COUNT | digit | 1 | sends how many times its input has switched on so far this loop, up to 9 | counts each switch-on, up to 9 |
+| COMPARE | bit | 2 | sends 1 while the top signal is higher than the bottom one, comparing both as waves, otherwise 0 | 1 while the top is higher than the bottom |
+| VOLUME | wave | 2 | sends the top wave with its peak set to the bottom digit | the top wave, as tall as the bottom digit |
+| MAJORITY | bit | 3 | sends 1 while at least two of its three inputs are 1, otherwise 0 | 1 when at least two inputs are 1 |
+| MIDDLE | digit | 3 | sends the middle one of the three digits | the middle of the three digits |
+| BETWEEN | bit | 3 | sends 1 while the top signal is between the other two, comparing all as waves, otherwise 0 | 1 while the top is between the other two |
+| SWITCH | wave | 3 | sends the top signal while the bottom one is on, and the middle one while it is off, as a wave | top while the bottom is on, else the middle |
+| PICK | bit | 3 | sends the top bit while the bottom one is 1, and the middle bit while it is 0 | top while the bottom is 1, else the middle |
 
-Bit and digit blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave, except the on/off input of GATE and SWITCH, read as a bit. COUNT reads its input as a bit. So every block always sends its own type, and its label says which (`ComponentTests.EveryBlockAlwaysSendsItsOwnKind`). Until 12 Nov 2026 GATE and SWITCH sent whatever type their top input was; they became wave blocks when labels started naming the type.
+Bit and digit blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave, except the on/off input of GATE and SWITCH, read as a bit, and VOLUME's bottom input, read as a digit. COUNT reads its input as a bit. So every block always sends its own type, and its label says which (`ComponentTests.EveryBlockAlwaysSendsItsOwnKind`). Until 12 Nov 2026 GATE and SWITCH sent whatever type their top input was; they became wave blocks when labels started naming the type.
+
+VOLUME and PICK (added 12 Nov 2026) work but no circuit uses them yet (`KindCatalog.Unplaced`); the test that every block is taught skips them until a circuit does.
 
 The four blocks with three inputs come last, late in Blackbox, one to a circuit at first: MAJORITY and MIDDLE are three-input cousins of the bit and digit blocks, BETWEEN reads all three as waves like COMPARE, and SWITCH is a wave block like GATE, reading its bottom input as a bit.
 

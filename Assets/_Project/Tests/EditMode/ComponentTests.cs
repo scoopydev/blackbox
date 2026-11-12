@@ -40,7 +40,12 @@ namespace Blackbox.Tests
         public void ThreeInputBlocks()
         {
             var three = KindCatalog.All.Where(k => k.InputCount == 3).Select(k => k.Id);
-            Assert.That(three, Is.EquivalentTo(new[] { "MAJORITY", "MIDDLE", "BETWEEN", "SWITCH" }));
+            Assert.That(three, Is.EquivalentTo(new[] { "MAJORITY", "MIDDLE", "BETWEEN", "SWITCH", "PICK" }));
+
+            Assert.That(Apply("PICK", 1, 0, 1), Is.EqualTo(1), "the top while the bottom is 1");
+            Assert.That(Apply("PICK", 0, 1, 1), Is.EqualTo(0));
+            Assert.That(Apply("PICK", 1, 0, 0), Is.EqualTo(0), "the middle while the bottom is 0");
+            Assert.That(Apply("PICK", 0, 1, 0), Is.EqualTo(1));
 
             Assert.That(Apply("MAJORITY", 1, 1, 0), Is.EqualTo(1));
             Assert.That(Apply("MAJORITY", 0, 1, 0), Is.EqualTo(0));
@@ -60,6 +65,20 @@ namespace Blackbox.Tests
             Assert.That(got.Medium, Is.EqualTo(Medium.Wave), "SWITCH is a wave block");
             Assert.That(got.Matches(T("decimal 2277").As(Medium.Wave)), Is.True, "the middle while the bottom is off, then the top, as waves");
             Assert.That(sw.Apply(new[] { T("decimal 7"), T("binary 1"), T("binary 0") }).First, Is.EqualTo(9f), "a bit comes through as a wave at the top");
+        }
+
+        [Test]
+        public void VolumeSetsTheTopWavesHeight()
+        {
+            Trace T(string spec) => Signals.Parse(spec).Trace;
+            var volume = KindCatalog.Get("VOLUME");
+            Assert.That(volume.Apply(new[] { T("wave sine f2 a7"), T("decimal 3") }).Matches(T("wave sine f2 a3")), Is.True, "taller or shorter, same form and speed");
+            Assert.That(volume.Apply(new[] { T("wave saw f1 a2 p1"), T("decimal 9") }).Matches(T("wave saw f1 a9 p1")), Is.True, "the start is kept");
+            Assert.That(volume.Apply(new[] { T("wave square f3 a5"), T("decimal 0") }).IsFlat, Is.True, "0 is a flat line");
+            Assert.That(volume.Apply(new[] { T("binary 0110"), T("decimal 4") }).Matches(T("binary 0110").As(Medium.Wave).Map(Medium.Wave, v => v * 4f / 9f)), Is.True, "a bit pattern is a square wave");
+            var changing = volume.Apply(new[] { T("wave square f6 a9"), T("decimal 2828") });
+            Assert.That(changing.Medium, Is.EqualTo(Medium.Wave));
+            Assert.That(changing.IsFlat, Is.False, "a changing digit changes the height as it goes");
         }
 
         [Test]
@@ -124,7 +143,7 @@ namespace Blackbox.Tests
         public void MixingKindsAreWellFormed()
         {
             var mixing = KindCatalog.All.Where(k => k.Mixing).Select(k => k.Id).ToList();
-            Assert.That(mixing, Is.EquivalentTo(new[] { "GATE", "COUNT", "COMPARE", "BETWEEN", "SWITCH", "STEPS" }));
+            Assert.That(mixing, Is.EquivalentTo(new[] { "GATE", "COUNT", "COMPARE", "VOLUME", "BETWEEN", "SWITCH", "STEPS" }));
             foreach (string id in mixing)
             {
                 var kind = KindCatalog.Get(id);

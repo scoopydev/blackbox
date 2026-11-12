@@ -754,7 +754,7 @@ namespace Blackbox.Tests
                     }
                     else Assert.That(met, Does.Contain(b.Kind.Id), $"{build[i].Id}: {b.Kind.Id} turns up in Build before it was ever met");
                 }
-            foreach (var kind in KindCatalog.All.Where(k => !k.Shelved))
+            foreach (var kind in KindCatalog.All.Where(k => !k.Shelved && !KindCatalog.Unplaced.Contains(k.Id)))
             {
                 if (kind.InputCount == 3) Assert.That(late, Does.Contain(kind.Id), $"{kind.Id} never turns up late in Build");
                 else Assert.That(met, Does.Contain(kind.Id), $"{kind.Id} is never taught");

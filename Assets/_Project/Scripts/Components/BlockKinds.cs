@@ -160,7 +160,7 @@ namespace Blackbox.Components
     /// Each kind of signal has four blocks, and each set starts with a block that
     /// flips the signal (NOT, MIRROR, FILL, FLIP), so a player who has learned one
     /// set has a head start on the next. The three mixing blocks come in Blend.
-    /// Four blocks with three inputs (MAJORITY, MIDDLE, BETWEEN, SWITCH) come late
+    /// Blocks with three inputs (MAJORITY, MIDDLE, BETWEEN, SWITCH, PICK) come late
     /// in Part Three.
     /// </summary>
     public static class KindCatalog
@@ -251,6 +251,24 @@ namespace Blackbox.Components
 
             s_Kinds["COMPARE"].ReadingAs(Medium.Wave, Medium.Wave);
 
+            // VOLUME is a wave block: the top input's shape, as tall as the bottom digit.
+            Whole("VOLUME", Medium.Wave, 2, true, "sends the top wave with its peak set to the bottom digit", "the top wave, as tall as the bottom digit",
+                x =>
+                {
+                    var top = x[0].As(Medium.Wave);
+                    var height = x[1].As(Medium.Decimal);
+                    // The top wave's peak, measured from the middle, scaled to the digit at every
+                    // step; a digit of 0, or a flat line at the middle, gives a flat line.
+                    float peak = 0f;
+                    for (int k = 0; k < Trace.Steps; k++) peak = Math.Max(peak, Math.Abs(top[k]));
+                    var levels = new float[Trace.Steps];
+                    if (peak > Trace.Tolerance)
+                        for (int k = 0; k < Trace.Steps; k++) levels[k] = top[k] / peak * height[k];
+                    return new Trace(Medium.Wave, levels);
+                });
+
+            s_Kinds["VOLUME"].ReadingAs(Medium.Wave, Medium.Decimal);
+
             // ---- Three inputs: met late in Part Three ---------------------------------
 
             Value("MAJORITY", Medium.Binary, 3, "sends 1 while at least two of its three inputs are 1, otherwise 0", "1 when at least two inputs are 1",
@@ -287,6 +305,10 @@ namespace Blackbox.Components
                 });
 
             s_Kinds["SWITCH"].ReadingAs(Medium.Wave, Medium.Wave, Medium.Binary);
+
+            // PICK is SWITCH for bits: every input read as a bit, a bit sent.
+            Value("PICK", Medium.Binary, 3, "sends the top bit while the bottom one is 1, and the middle bit while it is 0", "top while the bottom is 1, else the middle",
+                x => x[2] == 1 ? x[0] : x[1]);
 
             // ---- Set aside: stepped waves ---------------------------------------------
 
@@ -329,6 +351,14 @@ namespace Blackbox.Components
             ["AND"] = 0, ["OR"] = 0, ["XOR"] = 0, ["MAX"] = 0, ["MIN"] = 0, ["DIFF"] = 0, ["MIX"] = 0,
             ["MAJORITY"] = 0, ["MIDDLE"] = 0, ["BETWEEN"] = 1,
         };
+
+        /// <summary>
+        /// Kinds that work but no circuit uses yet (VOLUME and PICK, added
+        /// 12 Nov 2026). Unlike <see cref="Shelved"/> kinds, a circuit may use them;
+        /// the test that every kind is taught skips them until one does. Take an id
+        /// out of here once a circuit teaches it.
+        /// </summary>
+        public static readonly HashSet<string> Unplaced = new HashSet<string> { "VOLUME", "PICK" };
 
         /// <summary>
         /// Kinds set aside for now. Their code and tests stay, and the loader
