@@ -319,7 +319,7 @@ namespace Blackbox.Tests
             // the middle, where the pattern 01 is already 1.
             var p = TestContent.ParseWired(@"{
                 ""id"": ""t"", ""name"": ""Test"",
-                ""inputs"": { ""A"": ""binary 01"", ""B"": { ""signal"": ""wave sine f1 a7 p2"", ""optional"": true }, ""C"": { ""signal"": ""binary 0101"", ""optional"": true } },
+                ""inputs"": { ""A"": ""binary 01"", ""B"": ""wave sine f1 a7 p2"", ""C"": ""binary 0101"" },
                 ""blocks"": { ""g"": ""NOT"" },
                 ""outputs"": { ""X"": ""display"" },
                 ""solution"": [ ""A -> g"", ""g -> X"" ]
@@ -420,10 +420,10 @@ namespace Blackbox.Tests
             s.Connect(b, h, 0);
             report = s.Check();
             Assert.That(report.UnusedBlocks, Is.EqualTo(new[] { 0 }), "h now reads B, so g leads nowhere");
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block B1 isn't used: its signal doesn't reach an output. Every block has to lead to an output."));
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block B1 isn't used: its signal doesn't reach an output. Every block with a solid outline has to lead to an output."));
             s.Disconnect(g, 1);
             report = s.Check();
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block B1 has an input with no wire, so it sends nothing. Block B1 isn't used: its signal doesn't reach an output. Every block has to lead to an output. Every block input needs a wire."));
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block B1 has an input with no wire, so it sends nothing. Block B1 isn't used: its signal doesn't reach an output. Every block with a solid outline has to lead to an output. Every block input needs a wire."));
             s.Clear();
             report = s.Check();
             Assert.That(GoalText.BrokenRules(p, report), Does.StartWith("Blocks B1 and B2 have inputs with no wire, so they send nothing. Blocks B1 and B2 aren't used"));
@@ -435,12 +435,12 @@ namespace Blackbox.Tests
             s.Connect(h, x, 0);
             Assert.That(GoalText.BrokenRules(p, s.Check()), Is.Null, "every rule kept");
             Assert.That(WiringSession.AllBlocksUsed(p, s.Drivers), Is.True);
-            Assert.That(GoalText.WiringRules, Is.EqualTo("MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS."));
+            Assert.That(GoalText.WiringRules, Is.EqualTo("MATCH ALL OUTPUTS. USE EVERYTHING WITH A SOLID OUTLINE."));
         }
 
         const string WithSpares = @"{
             ""id"": ""t"", ""name"": ""Test"",
-            ""inputs"": { ""A"": ""binary 0110"", ""B"": ""binary 0011"", ""C"": { ""signal"": ""decimal 5"", ""optional"": true } },
+            ""inputs"": { ""A"": ""binary 0110"", ""B"": ""binary 0011"", ""C"": ""decimal 5"" },
             ""blocks"": { ""g"": { ""kind"": ""AND"" }, ""h"": { ""kind"": ""NOT"" }, ""k"": { ""kind"": ""FLIP"", ""optional"": true } },
             ""outputs"": { ""X"": ""display"" },
             ""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]
@@ -449,11 +449,11 @@ namespace Blackbox.Tests
         [Test]
         public void OptionalBlocksMayBeLeftOut()
         {
-            // A dotted outline marks what the answer leaves out. An optional block
-            // may go unused, wired or not; once it leads to an output, it's a block
-            // like any other and needs every input wired.
+            // A dotted block may be left out. It may go unused, wired or not; once
+            // it leads to an output, it's a block like any other and needs every
+            // input wired.
             var p = TestContent.ParseWired(WithSpares);
-            Assert.That(p.Inputs.Select(i => i.Optional), Is.EqualTo(new[] { false, false, true }));
+            Assert.That(p.Inputs.Select(i => i.Optional), Is.EqualTo(new[] { true, true, true }), "inputs are dotted unless a circuit needs one");
             Assert.That(p.Blocks.Select(b => b.Optional), Is.EqualTo(new[] { false, false, true }));
 
             var s = new WiringSession(p);
@@ -484,17 +484,69 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void OptionalIsWhatTheAnswerLeavesOut()
+        public void AnAnswerMayUseADottedBlock()
+        {
+            // The outline doesn't say whether a dotted block is needed: here the
+            // answer runs through it, and the solver counts answers that do.
+            var p = TestContent.ParseWired(WithSpares.Replace(@"""g -> h"", ""h -> X""", @"""g -> k"", ""k -> h"", ""h -> X"""));
+            Assert.That(p.Blocks[2].Optional, Is.True);
+            var s = new WiringSession(p);
+            foreach (var w in p.Solution) s.Connect(s.NodeOf(w.From), s.NodeOf(w.To), w.ToPort);
+            var report = s.Check();
+            Assert.That(report.Solved, Is.True);
+            Assert.That(report.IdleBlocks, Is.Empty, "the dotted block is in use");
+            var analysis = WiringSolver.Analyse(p);
+            Assert.That(analysis.Examples.Any(e => e.Contains("-> k")), Is.True, "the solver counts answers through a dotted block");
+        }
+
+        const string Needs = @"{
+            ""id"": ""t"", ""name"": ""Test"",
+            ""inputs"": { ""A"": { ""signal"": ""binary 0110"", ""required"": true }, ""B"": ""binary 0011"", ""C"": ""decimal 5"" },
+            ""blocks"": { ""g"": { ""kind"": ""AND"" }, ""h"": { ""kind"": ""NOT"" } },
+            ""outputs"": { ""X"": ""display"" },
+            ""solution"": [ ""A -> g.0"", ""B -> g.1"", ""g -> h"", ""h -> X"" ]
+        }";
+
+        [Test]
+        public void ARequiredInputHasToBeUsed()
+        {
+            // A solid input has to lead to an output: a run names it while it doesn't,
+            // and an answer without it isn't one.
+            var p = TestContent.ParseWired(Needs);
+            Assert.That(p.Inputs.Select(i => i.Optional), Is.EqualTo(new[] { false, true, true }), "A is solid, the rest dotted");
+            var s = new WiringSession(p);
+            int a = 0, b = 1, c = 2, g = s.BlockNode(0), h = s.BlockNode(1), x = s.OutputNode(0);
+            s.Connect(b, g, 0);
+            s.Connect(c, g, 1);
+            s.Connect(g, h, 0);
+            s.Connect(h, x, 0);
+            var report = s.Check();
+            Assert.That(report.UnusedInputs, Is.EqualTo(new[] { 0 }));
+            Assert.That(report.RulesKept, Is.False);
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Input A isn't used, and its solid outline means it has to be."));
+            s.Connect(a, g, 1);
+            report = s.Check();
+            Assert.That(report.UnusedInputs, Is.Empty);
+            Assert.That(WiringSession.RequiredUsed(p, s.Drivers), Is.True);
+
+            // B AND A gives the same as A AND B; without A, nothing else does.
+            var analysis = WiringSolver.Analyse(p);
+            Assert.That(analysis.Solutions, Is.EqualTo(1));
+            Assert.That(analysis.Examples[0], Does.Contain("A ->"));
+        }
+
+        [Test]
+        public void SolidAndDottedAreChecked()
         {
             void Refused(string json, string reason, string expect)
             {
                 var ex = Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(json), reason);
                 Assert.That(ex.Message, Does.Contain(expect), reason);
             }
-            Refused(Small.Replace(@"""B -> g.1""", @"""A -> g.1"""), "an input the answer leaves out must be marked", "mark it \"optional\"");
-            Refused(Small.Replace(@"""B"": ""wave sine f1 a7""", @"""B"": { ""signal"": ""wave sine f1 a7"", ""optional"": true }"), "an optional input the answer uses", "is optional, but the solution uses it");
-            Refused(WithSpares.Replace(@"""h -> X"" ]", @"""h -> X"", ""C -> k"" ]"), "the answer wires nothing into an optional block", "wires nothing into it");
-            Refused(WithSpares.Replace(@"""g -> h"", ""h -> X""", @"""g -> h"", ""h -> k"", ""k -> X"""), "an optional block the answer uses", "is optional");
+            Refused(Small.Replace(@"""B"": ""wave sine f1 a7""", @"""B"": { ""signal"": ""wave sine f1 a7"", ""optional"": true }"), "inputs are dotted already; only required ones are marked", "optional unless marked \"required\"");
+            Refused(Needs.Replace(@"""A -> g.0""", @"""C -> g.0"""), "a solid input is in the answer", "input 'A' is required");
+            Refused(WithSpares.Replace(@"""k"": { ""kind"": ""FLIP"", ""optional"": true }", @"""k"": { ""kind"": ""FLIP"" }").Replace(@"""h -> X"" ]", @"""h -> X"", ""C -> k"" ]"), "a solid block is in the answer", "unless it's marked \"optional\"");
+            Refused(WithSpares.Replace(@"""h -> X"" ]", @"""h -> X"", ""C -> k"" ]"), "the answer doesn't wire up a dotted block that goes nowhere", "leads nowhere");
             Refused(Small.Replace(@"""X"": ""display""", @"""X"": { ""device"": ""display"", ""optional"": true }"), "outputs are never optional", "only inputs and blocks");
         }
 

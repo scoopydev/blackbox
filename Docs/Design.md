@@ -7,11 +7,11 @@ The block rules are listed near the end, under a spoiler heading.
 
 Every circuit gives the player **inputs** on the left, **blocks** in the middle and **outputs** on the right. The player **draws the wires** so every output does what its target shows. Only the outputs count. Each block hides a rule; the player never reads it, they work it out by wiring the block into something and running it.
 
-1. **Read the goal.** Above the board, beside GOAL, the same line for every circuit: "MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS." (`GoalText.WiringRules`), with a count of the outputs met at the right. Every output shows its target beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
+1. **Read the goal.** Above the board, beside GOAL, the same line for every circuit: "MATCH ALL OUTPUTS. USE EVERYTHING WITH A SOLID OUTLINE." (`GoalText.WiringRules`), with a count of the outputs met at the right. Every output shows its target beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
 2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires. Dragging a block by its body moves it, and its wires follow, so the player can untangle a circuit; a block can't be dropped on another card. The circuit remembers where its blocks were left, and RESET in the menu puts them back.
 3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs show what reaches them, top to bottom, each playing its sound. An output lights up as met whenever its signal does what its target does, whatever wiring made it: the designer's solution is only one way there. A blip of up to 3 of the loop's 288 steps (about 1%), too short to see or hear, doesn't count against it (`Trace.LooksLike`); such blips come where a wave is read as a bit at the very step it crosses the middle, so two wirings can disagree there and nowhere else. A change to the wires hides the outputs again, except an output that was solved on the last run with nothing feeding it rewired since: it stays solved, and the next run leaves it as it is and doesn't play it again, so only the outputs still in question sound (`WiringSession.OutputsUnchanged`). Each block keeps the signal it showed until the next run, unless its own input wires change or a block feeding it changes; rewiring where a block's signal goes leaves it showing (`WiringSession.BlocksUnchanged`). So every signal on show is still what that block sends as wired now.
-4. **Keep the rules.** Every block must be used: each must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused, so a circuit can offer more signals than it needs and the player is free to try any of them. **Optional** inputs and blocks (12 Nov 2026) are the ones a circuit's answer leaves out: the file marks them `"optional": true` and the board draws them with a dotted outline, so the player can see what isn't needed. The loader insists optional means exactly what the solution leaves out (`ContentTests.DottedOutlinesMarkWhatEachAnswerLeavesOut`), and the solution wires nothing into an optional block. An optional block may go unused, wired or not, and then shows no note; once it leads to an output it is a block like any other and needs every input wired. The solver counts an optional block left out, or wired but going nowhere, as one answer. No circuit has an optional block yet; 41 inputs across 32 circuits are optional. FIRST LIGHT 1's hint and How to Play explain the dotted outline. The verdict after a run names every broken rule and every block that broke it, such as "Block B2 isn't used: its signal doesn't reach an output. Every block has to lead to an output." (`GoalText.BrokenRules`), and the run marks each unused block NOT USED on the board.
-5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
+4. **Keep the rules.** Everything with a solid outline must be used: each solid block must lead to an output, through other blocks or straight there, and so must each solid input. Every input of a block needs a wire, and a block with an empty input sends nothing. **Inputs are optional by default** (12 Nov 2026) and drawn with a dotted outline, so a circuit can offer more signals than it needs and the player is free to try any of them; a circuit marks an input `"required": true` to make it solid, and the answer always uses a solid input. **Blocks are solid by default**; one marked `"optional": true` is dotted, and the answer may use it or leave it out, so the outline never says which. An optional block may go unused, wired or not, and then shows no note; once it leads to an output it is a block like any other and needs every input wired. The solver counts an optional block left out, or wired but going nowhere, as one answer (`ContentTests.SolidOutlinesMarkWhatHasToBeUsed`). Outline, in Part Two, is the chapter that teaches both; FIRST LIGHT 1's hint and How to Play explain the dotted outline. The verdict after a run names every broken rule and every block or input that broke it, such as "Block B2 isn't used: its signal doesn't reach an output. Every block with a solid outline has to lead to an output." or "Input A isn't used, and its solid outline means it has to be." (`GoalText.BrokenRules`); the run marks each unused block NOT USED and turns an unused solid input's outline violet.
+5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it. A **listen-only** block (`"listen": true`, Earshot) never shows what it sends: a speaker beside its label marks it, and after a run a speaker sits over it in place of its signal, which plays when clicked; an output wired straight from it shows a speaker too. In a **dark** chapter (`"dark": true`, Lights Out) every signal is drawn that way, inputs, blocks, outputs and targets, and a run always plays each output, whatever the sound setting. The = or ≠ beside each output still shows. A wave sounds the same started later, turned upside down or raised (`SignalSound.SoundsAlike`), so in every circuit with a heard signal nothing the player could wire to an output sounds like its target without being it, and the answer is still the only one (`ContentTests.HeardCircuitsCanBeSolvedByEar`, which uses the solver's by-ear search).
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
 7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered. Each block's rule is then written under it, in a few words, and pointing at the block puts the whole rule in the status line.
 
@@ -80,7 +80,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Outline, Blend, Earshot) teaches how kinds of signal read each other, how two kinds meet in one block, solid and dotted outlines, the three mixing blocks, and listen-only blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox, Lights Out) is the main game, with every kind of signal, and ends in the dark: Lights Out draws no signal at all. It climbs inside, and opens bigger than Blackbox, but needn't close bigger than Blackbox's three-input finale, since hearing a circuit through is the hard part. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -90,8 +90,10 @@ A signal that changes through the loop plays each of its values in turn. Signal 
   * Tally, **reading a digit**: a steady digit, large, shown as just its number, and 0, 3, 6 and 9 in a row, each a higher tone.
   * Ticker, **digits that change**: a steady digit for comparison, a busy one with only its highest and lowest written, and a stepped line with a 0-to-9 scale beside it and each step's digit written on it.
   * Resonance, **reading a wave**: one cycle bracketed (F), the height from the middle to a peak bracketed (A), where F and A are written, the three forms, and a wave starting a quarter cycle late over the same wave on time. Then a second page, **which way round**: the same two waves wired into a block's top and bottom inputs one way and then swapped, with a question mark for what comes out; some blocks treat both inputs alike, others give each its own job, so a run that is close but wrong may only need the wires swapped. It shows no block's rule and no result.
-  * Patch, Junction and Blend, **how a block reads each kind**: a bit, a digit and a wave, each drawn as a bit block, a digit block and a wave block reads it, with the reading written under it.
+  * Patch, Junction, Outline and Blend, **how a block reads each kind**: a bit, a digit and a wave, each drawn as a bit block, a digit block and a wave block reads it, with the reading written under it.
+  * Earshot, **listen-only blocks**: a listen-only block as the board draws it, the speaker beside its label and the speaker over it that plays what it sends, then how each kind sounds and what can't be heard (when a wave starts, and which way up it is).
   * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
+  * Lights Out, **by ear alone**: nothing is drawn, so three steps to try (listen to the targets, listen to the inputs, wire and run), what can't be heard, and the promise that an output that sounds like its target is its target.
 * Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
 * Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
   1. **Pre-wired.** Two inputs and one block, every wire drawn, but the block's wire starts at the wrong input. The player moves it to the other one.
@@ -186,7 +188,19 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 5 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again (one input feeding two blocks), then MIRROR | 7,776 | 1 |
 | 6 | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 1 |
 
-### Chapter VII: Blend
+### Chapter VII: Outline
+
+*Solid has to be used. Dotted may not be.* Required (solid) inputs and optional (dotted) blocks, each circuit with its own way of reading the outlines. Every circuit here has a solid input or a dotted block; outside this chapter every input is dotted and no block is.
+
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | The one solid input is the place to start: MIN of it and a wave, then DIFF | 625 | 1 |
+| 2 | Two dotted blocks: LATER is in the answer, FLIP isn't, and the outlines look the same | 900 | 1 |
+| 3 | The solid digit pattern doesn't fit MAX as it is; the dotted MIRROR turns it round first, and the dotted NOT is a decoy | 900 | 1 |
+| 4 | Both dotted blocks are needed, LATER then FASTER, and the order matters; two solid inputs | 63,504 | 1 |
+| 5 | Two solid waves: a dotted FASTER is used, a dotted NOT isn't, and the MIX feeds both an output and AND | 63,504 | 1 |
+
+### Chapter VIII: Blend
 
 *Signals of different kinds, mixed together.* Wave blocks meet other kinds, then the three mixing blocks: GATE, first met in Resonance with two waves, now with a bit pattern; then COUNT and COMPARE, each met beside a block the player already knows.
 
@@ -201,7 +215,19 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 7 | COMPARE against a mirrored digit makes a pulse, and AND cuts it with bits | 7,776 | 1 |
 | 8 | Four blocks: COMPARE makes pulses that COUNT counts and that GATE lets a sped-up saw through | 117,649 | 1 |
 
-### Chapter VIII: Unmarked
+### Chapter IX: Earshot
+
+*Some blocks you can only hear.* Listen-only blocks, after Blend so they can be mixing blocks too. Every circuit has one or two in its answer, and each sends something that sounds different from what goes in, except the one LATER taught as what can't be heard (`ContentTests.ListenOnlyBlocksAreHeardAndMarked`).
+
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | A listen-only MIRROR: the tune turned upside down, then MAX with a digit; a dotted FLIP decoy | 1,512 | 1 |
+| 2 | A listen-only MIX straight into an output, so the output is heard too: compare it with the target by ear; FASTER feeds the MIX and MAX | 7,776 | 1 |
+| 3 | A listen-only COUNT climbs like a scale; DIFF from 9 and MAX | 7,776 | 1 |
+| 4 | Two listen-only blocks: FASTER can be heard, LATER can't, so it has to be worked out from what it does further on | 117,649 | 1 |
+| 5 | A listen-only GATE and MIRROR, worked out by ear before wiring the rest | 823,543 | 1 |
+
+### Chapter X: Unmarked
 
 *Every block you've met, all mixed up.* The chapter climbs on from where Blend ends, from three blocks to five (12 Nov 2026, after play-testing found the old two-block Unmarked easier than late Blend), and each circuit turns on its own trick.
 
@@ -217,7 +243,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 The circuits with two solutions have two alike blocks that can swap, or one block whose inputs can swap without changing what it sends.
 
-### Chapter IX: Blackbox
+### Chapter XI: Blackbox
 
 *Everything at once.* 01 to 05 climb in size from bigger than Unmarked's opener. From 06 on, each circuit brings in a block with three inputs, on a smaller board so the new block is the puzzle, and the finale uses one.
 
@@ -233,6 +259,18 @@ The circuits with two solutions have two alike blocks that can swap, or one bloc
 | 8 | BETWEEN with the steady level on top and a wave and its FLIP as the bounds: lit while the wave is far from the middle; COUNT counts | 7,776 | 1 |
 | 9 | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 7,776 | 1 |
 | 10 | The higher of two waves (COMPARE choosing for SWITCH), how many times they cross, and a gated saw | 1,679,616 | 2 |
+
+### Chapter XII: Lights Out
+
+*Nothing is drawn. Listen.* The whole board is heard, never seen: inputs, blocks, outputs and targets are speakers. The circuits use mostly bits and digits, whose order through the loop can be heard, and waves mainly where a bit or digit block reads them. They were found by a search for circuits with one answer and nothing that sounds right but isn't, then picked for clear tunes and rhythms.
+
+| # | The trick | Wirings | Solutions |
+|---|---|---|---|
+| 1 | Hear a rising tune turned upside down and held at a floor; a rhythm cut by a wave's top half | 16,807 | 1 |
+| 2 | A loud square wave heard as a digit is 9 then 0: DIFF with a tune, and a rhythm XORed then clipped by it | 117,649 | 1 |
+| 3 | Two inputs each go two places: MIN of a tune and a square, and a mirrored tune turned to a beat | 117,649 | 1 |
+| 4 | Both targets follow one input's rhythm: COMPARE then MIRROR, and NOT then DIFF | 262,144 | 1 |
+| 5 | One target climbs step by step: start there | 823,543 | 1 |
 
 ## Look and sound
 
@@ -282,7 +320,7 @@ Values are small whole numbers, one range per medium: 2 for bits, 10 for digits,
 
 ### Adding a chapter
 
-1. Write `chapter-10-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
+1. Write `chapter-13-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to a part in `chapters.json`.
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.

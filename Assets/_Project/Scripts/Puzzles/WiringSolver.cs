@@ -21,6 +21,12 @@ namespace Blackbox.Puzzles
         public long Solutions;
         /// <summary>A few of them, as wire lists.</summary>
         public readonly List<string> Examples = new List<string>();
+        /// <summary>
+        /// Searched by ear: block wirings in which some signal that's only heard
+        /// (see <see cref="PuzzleDef.Heard"/>) sounds like an output's target without
+        /// matching it, so wired to that output it would sound right and be judged wrong.
+        /// </summary>
+        public long Confusable;
 
         public override string ToString()
         {
@@ -28,6 +34,7 @@ namespace Blackbox.Puzzles
             sb.Append($"{Puzzle.Id} {Puzzle.Name}: solution {(SolutionWorks ? "works" : "FAILS")}");
             if (!Searched) sb.Append($", {Space} block wirings: too many to search");
             else sb.Append($", {Solutions} solving wiring(s) out of {Space} block wirings");
+            if (Searched && Confusable > 0) sb.Append($", {Confusable} that sound right but aren't");
             foreach (var e in Examples) sb.Append("\n    ").Append(e);
             return sb.ToString();
         }
@@ -37,15 +44,20 @@ namespace Blackbox.Puzzles
     /// Searches every way to wire a wired circuit and counts those that solve it.
     /// Each block input takes any input or other block, without loops; then each
     /// output takes any signal its device reads the way its target wants, and the
-    /// wiring counts if every block ends up leading to an output. Inputs may go unused.
+    /// wiring counts if every block ends up leading to an output. Inputs may go unused,
+    /// unless the circuit marks them required.
     /// An optional block is either left out, with no wires in, or wired and leading
     /// to an output: wired but going nowhere is the same answer as left out.
     /// Swapping the wires into a block that treats its inputs alike (AND, MIX, the
     /// two bounds of BETWEEN ...) is the same answer, so those are tried in one order only.
+    /// With <c>byEar</c>, an output whose signal is only heard (every output of a dark
+    /// circuit, and one wired straight from a listen-only block) also counts when it
+    /// sounds like its target (<see cref="SignalSound.SoundsAlike"/>): that finds the
+    /// wirings a player listening can't tell from an answer.
     /// </summary>
     public static class WiringSolver
     {
-        public static WiringAnalysis Analyse(PuzzleDef p, long maxSpace = 5_000_000, int keep = 6)
+        public static WiringAnalysis Analyse(PuzzleDef p, long maxSpace = 5_000_000, int keep = 6, bool byEar = false)
         {
             var result = new WiringAnalysis { Puzzle = p };
             var session = new WiringSession(p);
@@ -85,7 +97,7 @@ namespace Blackbox.Puzzles
             var inputIds = new int[inputs];
             for (int i = 0; i < inputs; i++) inputIds[i] = Intern(p.Inputs[i].Signal.Trace);
             var blockMemo = new Dictionary<string, int>();
-            var matchMemo = new Dictionary<(int output, int trace), bool>();
+            var matchMemo = new Dictionary<(int output, int trace, bool ear), bool>();
             var value = new int[sources];
 
             bool Reaches(int source, int target)
@@ -130,13 +142,14 @@ namespace Blackbox.Puzzles
                 return result;
             }
 
-            bool Matches(int output, int traceId)
+            bool Matches(int output, int source, int traceId)
             {
                 if (traceId < 0) return false;
-                if (matchMemo.TryGetValue((output, traceId), out bool m)) return m;
+                bool ear = byEar && p.Heard(source);
+                if (matchMemo.TryGetValue((output, traceId, ear), out bool m)) return m;
                 var o = p.Outputs[output];
-                m = Devices.Same(o.Device, traces[traceId], o.Want);
-                matchMemo[(output, traceId)] = m;
+                m = Devices.Same(o.Device, traces[traceId], o.Want) || (ear && SignalSound.SoundsAlike(traces[traceId], o.Want));
+                matchMemo[(output, traceId, ear)] = m;
                 return m;
             }
 
@@ -155,21 +168,44 @@ namespace Blackbox.Puzzles
                 // apart from an optional block left out.
                 int dangling = 0;
                 for (int b = 0; b < blocks; b++) if (!consumed[b] && !Off(b)) dangling++;
-                if (dangling > outputs) return;
+                if (dangling > outputs && !byEar) return;
 
                 var done = new bool[sources];
                 for (int n = inputs; n < sources; n++) Value(n, done);
+                if (byEar && Confusable()) result.Confusable++;
+                if (dangling > outputs) return;
                 for (int o = 0; o < outputs; o++)
                 {
                     candidates[o].Clear();
                     for (int s = 0; s < sources; s++)
                     {
                         int id = s < inputs ? inputIds[s] : value[s];
-                        if (Matches(o, id)) candidates[o].Add(s);
+                        if (Matches(o, s, id)) candidates[o].Add(s);
                     }
                     if (candidates[o].Count == 0) return;
                 }
                 Choose(0);
+            }
+
+            // Whether any signal of this wiring that would only be heard on an output
+            // sounds like the output's target without matching it.
+            var confusableMemo = new Dictionary<(int output, int trace), bool>();
+            bool Confusable()
+            {
+                for (int o = 0; o < outputs; o++)
+                    for (int s = 0; s < sources; s++)
+                    {
+                        int id = s < inputs ? inputIds[s] : value[s];
+                        if (id < 0 || !p.Heard(s)) continue;
+                        if (!confusableMemo.TryGetValue((o, id), out bool c))
+                        {
+                            var want = p.Outputs[o].Want;
+                            c = !Devices.Same(p.Outputs[o].Device, traces[id], want) && SignalSound.SoundsAlike(traces[id], want);
+                            confusableMemo[(o, id)] = c;
+                        }
+                        if (c) return true;
+                    }
+                return false;
             }
 
             void Choose(int o)
@@ -177,7 +213,7 @@ namespace Blackbox.Puzzles
                 if (o == outputs)
                 {
                     for (int k = 0; k < outputs; k++) driver[sources + k][0] = choice[k];
-                    if (WiringSession.AllBlocksUsed(p, driver) && OptionalUsedOrOff())
+                    if (WiringSession.RequiredUsed(p, driver) && OptionalUsedOrOff())
                     {
                         result.Solutions++;
                         if (result.Examples.Count < keep) result.Examples.Add(Describe(session, driver));

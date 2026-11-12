@@ -79,6 +79,25 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void WhatCantBeHeard()
+        {
+            // A wave is heard as a tone, so where it starts and which way up it is
+            // can't be heard, and every flat wave is silence. Patterns play in turn,
+            // so their order can.
+            Trace T(string spec) => Signals.Parse(spec).Trace;
+            Assert.That(SignalSound.SoundsAlike(T("wave sine f1 a7"), T("wave sine f1 a7 p1")), Is.True, "started late");
+            Assert.That(SignalSound.SoundsAlike(T("wave saw f2 a5"), KindCatalog.Get("FLIP").Apply(new[] { T("wave saw f2 a5") })), Is.True, "upside down");
+            Assert.That(SignalSound.SoundsAlike(T("wave sine f1 a7"), T("wave sine f1 a5")), Is.False, "quieter");
+            Assert.That(SignalSound.SoundsAlike(T("wave sine f1 a7"), T("wave sine f2 a7")), Is.False, "higher");
+            Assert.That(SignalSound.SoundsAlike(T("wave sine f1 a7"), T("wave square f1 a7")), Is.False, "another form");
+            Assert.That(SignalSound.SoundsAlike(T("binary 0110"), T("binary 0011")), Is.False, "a pattern a quarter late");
+            Assert.That(SignalSound.SoundsAlike(T("decimal 2709"), T("decimal 2709")), Is.True);
+            Assert.That(SignalSound.SoundsAlike(T("binary 1"), T("decimal 1")), Is.False, "a beep isn't a tone");
+            var mix = KindCatalog.Get("MIX");
+            Assert.That(SignalSound.SoundsAlike(mix.Apply(new[] { T("wave sine f1 a7"), T("decimal 9") }), mix.Apply(new[] { T("wave sine f1 a7"), T("decimal 0") })), Is.True, "raised or lowered");
+        }
+
+        [Test]
         public void EveryBlockHasOneFixedRule()
         {
             foreach (var kind in KindCatalog.All)

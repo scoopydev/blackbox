@@ -17,7 +17,7 @@ The game in parts, each a list of chapter files (names without `.json`) in play 
     { "id": "learn", "title": "Learn", "tagline": "PART ONE  ·  WHAT EACH SIGNAL AND BLOCK DOES",
       "chapters": ["chapter-1-first-light", "chapter-2-tally", "chapter-3-ticker", "chapter-4-resonance"] },
     { "id": "combine", "title": "Combine", "tagline": "PART TWO  ·  WIRING, AND HOW SIGNALS COMBINE",
-      "afterPrevious": true, "chapters": ["chapter-5-patch", "chapter-6-junction", "chapter-7-blend"] }
+      "afterPrevious": true, "chapters": ["chapter-5-patch", "chapter-6-junction", "chapter-7-outline", "chapter-8-blend", "chapter-9-earshot"] }
   ]
 }
 ```
@@ -52,10 +52,11 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 | `title` | yes | Shown on the chapter map and the title card. |
 | `medium` | no, for wired chapters | The kind of signal: `binary`, `decimal` or `wave` (analog). `shape` and `sampled` are set aside for now (see below). A Learn chapter names its one medium, for its title card and chapter page; a chapter that mixes kinds (Parts Two and Three) leaves it out. |
 | `mode` | no | `"wiring"` for a chapter of wired circuits. The default is `"settings"`. |
+| `dark` | no | `true` for a wired chapter played by ear: no signal is drawn anywhere in its circuits, not even a target, only a speaker that plays it. Lights Out is the one dark chapter. A test checks that in a dark circuit nothing the player could wire to an output sounds like its target without being it ([SignalSound.SoundsAlike](../Assets/_Project/Scripts/Components/SignalSound.cs): a wave started late, turned upside down or raised sounds the same). |
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
 | `signals` | no | One line about the medium, shown in the help, and on the title card of a chapter without a signal guide. The `recap` guide shows it under its heading. |
-| `guide` | no | The signal guide shown after the title card, before the first circuit: `bits`, `digits` (steady ones), `changing-digits`, `waves`, `readings` (how each kind of block reads each kind of signal), `recap` (all three kinds side by side) or `none`. By default it follows `medium`, and a chapter that mixes kinds gets `readings`. |
+| `guide` | no | The signal guide shown after the title card, before the first circuit: `bits`, `digits` (steady ones), `changing-digits`, `waves`, `readings` (how each kind of block reads each kind of signal), `recap` (all three kinds side by side), `listening` (listen-only blocks, and how each kind sounds), `dark` (playing a dark chapter by ear) or `none`. By default it follows `medium`, and a chapter that mixes kinds gets `readings`. |
 | `unlock` | no | `{ "after": "first-light", "solved": 4 }` makes the chapter wait until `solved` circuits of chapter `after` are solved. Leave it out for a chapter that is open from the start, as all the shipped chapters are. |
 | `circuits` | yes | The circuits, easiest first. |
 
@@ -170,10 +171,11 @@ One source can feed any number of wires. Signals flow one way, from inputs to ou
 A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inputs, the blocks and the outputs, with no wires, and wires them so every output does what its target shows. A wired circuit is solved when, in one run:
 
 * every output's device does the same as its target does (see [Devices](#devices)),
-* every input port of every block has a wire, and
-* every block leads to an output, through other blocks or straight there.
+* every input port of every block has a wire,
+* every block with a solid outline leads to an output, through other blocks or straight there, and
+* so does every input marked `"required"`.
 
-Inputs may go unused, so a circuit can hold spare inputs for the player to rule out; the loader refuses a `solution` that leaves a block leading nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled by the type of signal they send, B for a bit, D for a digit and W for a wave, numbered per letter down each column of the board in turn (B1, B2, D1, W1...). The label comes from the kind, so a file never gives one. A block shows only its label and its ports.
+Inputs are optional, and drawn dotted, unless the circuit marks one `"required": true`: then it's solid and has to be used. Blocks are solid unless marked `"optional": true`: a dotted block may be left out or used, and the outline doesn't say which. The loader refuses a `solution` that leaves a solid block or a required input out, or that wires up an optional block that then leads nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled by the type of signal they send, B for a bit, D for a digit and W for a wave, numbered per letter down each column of the board in turn (B1, B2, D1, W1...). The label comes from the kind, so a file never gives one. A block shows only its label and its ports.
 
 ```json
 {
@@ -195,8 +197,8 @@ Inputs may go unused, so a circuit can hold spare inputs for the player to rule 
 
 | Key | Meaning |
 |---|---|
-| `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. |
-| `blocks` | Each block is its kind alone, `"AND"`, or `{ "kind": "AND", "at": [col, row] }`. A `state` is refused: blocks have no settings. Any kind can be wired, and every kind reads any signal (see [Mixing kinds](#mixing-kinds)). |
+| `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. Add `"required": true` for a solid input the answer has to use; `"optional"` is refused, since inputs are optional already. |
+| `blocks` | Each block is its kind alone, `"AND"`, or `{ "kind": "AND", "at": [col, row] }`. A `state` is refused: blocks have no settings. Any kind can be wired, and every kind reads any signal (see [Mixing kinds](#mixing-kinds)). Add `"optional": true` for a dotted block that may be left out, and `"listen": true` for a listen-only block: what it sends is never drawn, on the block or on an output wired straight to it, only heard, and a speaker beside its label marks it. |
 | `outputs` | Each output is a device name, or `{ "device": "display", "at": [col, row] }`. The default device is `display`, and for now it is the only one the loader accepts (see [Devices](#devices)). |
 | `solution` | The intended wiring, as wires. It must keep the rules above. The targets come from it: each output wants what the solution sends it. |
 | `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts fully wired with one wire wrong, the second half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |

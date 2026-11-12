@@ -22,7 +22,9 @@
       "chapters": [
         "chapter-5-patch",
         "chapter-6-junction",
-        "chapter-7-blend"
+        "chapter-7-outline",
+        "chapter-8-blend",
+        "chapter-9-earshot"
       ]
     },
     {
@@ -31,8 +33,9 @@
       "tagline": "PART THREE  ·  EVERY SIGNAL, EVERY BLOCK",
       "afterPrevious": true,
       "chapters": [
-        "chapter-8-unmarked",
-        "chapter-9-blackbox"
+        "chapter-10-unmarked",
+        "chapter-11-blackbox",
+        "chapter-12-lights-out"
       ]
     }
   ]

@@ -97,7 +97,9 @@ namespace Blackbox.Puzzles
                 Number = chapterNumber,
                 Wiring = wiring,
                 Mixed = wiring && !root.Has("medium"),
+                Dark = root["dark"].AsBool(false),
             };
+            if (chapter.Dark && !wiring) throw new PuzzleFormatException($"{sourceName}: only a wired chapter can be \"dark\" (played by ear).");
             chapter.Guide = ReadGuide(root, sourceName, chapter);
 
             var unlock = root["unlock"];
@@ -128,7 +130,7 @@ namespace Blackbox.Puzzles
         /// <summary>A circuit's name: its chapter's title and its number, "TALLY 1".</summary>
         public static string NameOf(ChapterDef chapter, int number) => $"{chapter.Title.ToUpperInvariant()} {number + 1}";
 
-        static readonly string[] GuideKeys = { "none", "bits", "digits", "changing-digits", "waves", "readings", "recap" };
+        static readonly string[] GuideKeys = { "none", "bits", "digits", "changing-digits", "waves", "readings", "recap", "listening", "dark" };
 
         /// <summary>
         /// The chapter's signal guide: "guide" names one, or else it follows the
@@ -382,14 +384,15 @@ namespace Blackbox.Puzzles
                 if (!driven.Add((w.To, w.ToPort)))
                     throw new PuzzleFormatException($"{where}: {w.To.Id} port {w.ToPort} has two wires running into it.");
             foreach (var b in p.Blocks)
+            {
+                // An optional block may be left out of the answer, with no wires in at all.
+                bool any = false;
+                for (int port = 0; port < b.Kind.InputCount; port++) any |= driven.Contains((b, port));
+                if (b.Optional && !any) continue;
                 for (int port = 0; port < b.Kind.InputCount; port++)
-                {
-                    // An optional block is what the answer leaves out, so the answer wires nothing into it.
-                    if (b.Optional && driven.Contains((b, port)))
-                        throw new PuzzleFormatException($"{where}: block '{b.Id}' is optional, so the solution wires nothing into it.");
-                    if (!b.Optional && !driven.Contains((b, port)))
+                    if (!driven.Contains((b, port)))
                         throw new PuzzleFormatException($"{where}: block '{b.Id}' port {port} has nothing wired into it.");
-                }
+            }
             foreach (var o in p.Outputs)
                 if (!driven.Contains((o, 0)))
                     throw new PuzzleFormatException($"{where}: output '{o.Id}' has nothing wired into it.");
@@ -454,7 +457,10 @@ namespace Blackbox.Puzzles
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': {Media.Key(node.Signal.Medium)} signals are set aside for now, so no circuit may use them.");
                 if (v.IsObject && (v.Has("adjustable") || v.Has("target") || v.Has("value")))
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs of a wired circuit are fixed signals, so they take no \"value\", \"adjustable\" or \"target\".");
-                if (v.IsObject) node.Optional = v["optional"].AsBool(false);
+                // Inputs are optional, and dotted, unless the circuit needs one: then it's solid and must be used.
+                if (v.IsObject && v.Has("optional"))
+                    throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs are optional unless marked \"required\": true.");
+                node.Optional = !(v.IsObject && v["required"].AsBool(false));
                 p.Inputs.Add(node);
             }
 
@@ -483,6 +489,8 @@ namespace Blackbox.Puzzles
                     ReadPosition(b["at"], block, where);
                     if (b.Has("target")) throw new PuzzleFormatException($"{where}: block '{block.Id}': in a wired circuit only outputs have targets.");
                     block.Optional = b["optional"].AsBool(false);
+                    // A listen-only block's signal is heard, never drawn.
+                    block.Listen = b["listen"].AsBool(false);
                 }
                 p.Blocks.Add(block);
             }
@@ -551,24 +559,21 @@ namespace Blackbox.Puzzles
             foreach (var o in p.Outputs)
                 o.Want = values[p.Inputs.Count + p.Blocks.Count + o.Index]
                     ?? throw new PuzzleFormatException($"{where}: the solution sends nothing to output '{o.Id}'.");
-            // Optional means exactly what the answer leaves out, so the dotted outlines never mislead.
+            // The answer uses every required input and block. It may use an optional
+            // block or leave it out, but a block it wires up has to lead somewhere.
             var used = WiringSession.UsedNodes(p, p.Solution);
             for (int i = 0; i < p.Inputs.Count; i++)
-            {
-                var input = p.Inputs[i];
-                if (!used[i] && !input.Optional)
-                    throw new PuzzleFormatException($"{where}: the solution doesn't use input '{input.Id}', so mark it \"optional\": true.");
-                if (used[i] && input.Optional)
-                    throw new PuzzleFormatException($"{where}: input '{input.Id}' is optional, but the solution uses it.");
-            }
+                if (!p.Inputs[i].Optional && !used[i])
+                    throw new PuzzleFormatException($"{where}: input '{p.Inputs[i].Id}' is required, but the solution doesn't use it.");
             for (int b = 0; b < p.Blocks.Count; b++)
             {
                 var block = p.Blocks[b];
                 bool on = used[p.Inputs.Count + b];
+                bool wired = p.Solution.Exists(w => w.To == block);
                 if (!on && !block.Optional)
                     throw new PuzzleFormatException($"{where}: the solution doesn't use block '{block.Id}': every block must lead to an output, unless it's marked \"optional\": true.");
-                if (on && block.Optional)
-                    throw new PuzzleFormatException($"{where}: block '{block.Id}' is optional, but the solution uses it.");
+                if (!on && wired)
+                    throw new PuzzleFormatException($"{where}: the solution wires optional block '{block.Id}' up, but it leads nowhere. Leave it out, or use it.");
             }
 
             BoardLayout.ApplyWiring(p);

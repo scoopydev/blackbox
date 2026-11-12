@@ -26,9 +26,11 @@ namespace Blackbox.Puzzles
         /// <summary>The value this node must end on, if it has a target.</summary>
         public int? Target;
         /// <summary>
-        /// In a circuit the player wires: an input or block the answer doesn't need,
-        /// drawn with a dotted outline. An optional block may be left out, where every
-        /// other block has to lead to an output. Outputs are never optional.
+        /// In a circuit the player wires: drawn with a dotted outline, and may be left
+        /// out. Inputs are optional unless the circuit marks one required: a solid
+        /// input has to lead to an output. Blocks are required unless the circuit
+        /// marks one optional; the answer may use an optional block or leave it out,
+        /// so a dotted block doesn't say whether it's needed. Outputs are never optional.
         /// </summary>
         public bool Optional;
     }
@@ -86,6 +88,12 @@ namespace Blackbox.Puzzles
         public int State;
         /// <summary>A locked block keeps its state. It is drawn with a dashed outline and a padlock.</summary>
         public bool Locked;
+        /// <summary>
+        /// A listen-only block in a wired circuit: what it sends is never drawn, on
+        /// the block or on an output wired straight to it, only heard when clicked.
+        /// A speaker beside its label marks it out.
+        /// </summary>
+        public bool Listen;
     }
 
     /// <summary>A readout on the right of the board.</summary>
@@ -166,6 +174,16 @@ namespace Blackbox.Puzzles
         /// <summary>Position within the chapter, from 0.</summary>
         public int Number;
 
+        /// <summary>No signal in the circuit is drawn, not even a target: every one is only heard. See <see cref="ChapterDef.Dark"/>.</summary>
+        public bool Dark => Chapter != null && Chapter.Dark;
+
+        /// <summary>
+        /// True when the signal a node sends is heard but never drawn: every node in
+        /// a dark circuit, and a listen-only block. Node numbers are inputs, then
+        /// blocks, as in <see cref="WiringSession"/>.
+        /// </summary>
+        public bool Heard(int node) => Dark || (node >= Inputs.Count && node < Inputs.Count + Blocks.Count && Blocks[node - Inputs.Count].Listen);
+
         public IEnumerable<NodeDef> AllNodes
         {
             get
@@ -231,6 +249,10 @@ namespace Blackbox.Puzzles
         Readings,
         /// <summary>All three kinds side by side, with what to look for in each.</summary>
         Recap,
+        /// <summary>A listen-only block: how it's marked, and how each kind of signal sounds.</summary>
+        Listening,
+        /// <summary>A dark chapter: nothing is drawn, so how to play by ear, and what can't be heard.</summary>
+        Dark,
     }
 
     public sealed class ChapterDef
@@ -253,6 +275,12 @@ namespace Blackbox.Puzzles
         public bool Wiring;
         /// <summary>A wired chapter with no one medium: its signals are of every type.</summary>
         public bool Mixed;
+        /// <summary>
+        /// A wired chapter played by ear: no signal is drawn anywhere in its
+        /// circuits (inputs, blocks, outputs or targets), only a speaker that plays
+        /// it. Whether each output matches its target still shows.
+        /// </summary>
+        public bool Dark;
 
         /// <summary>The part of the game the chapter belongs to.</summary>
         public PartDef Part;

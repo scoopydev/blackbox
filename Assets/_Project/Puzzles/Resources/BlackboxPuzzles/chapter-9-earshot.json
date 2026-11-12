@@ -1,0 +1,303 @@
+{
+  "id": "earshot",
+  "title": "Earshot",
+  "mode": "wiring",
+  "tagline": "Some blocks you can only hear.",
+  "signals": "Every kind of signal, as before. A block with a speaker beside its label is listen-only: what it sends is never drawn, only heard. A 1 beeps and a 0 taps, a bigger digit sounds higher, and a wave sounds higher the faster it repeats and louder the taller it is.",
+  "guide": "listening",
+  "circuits": [
+    {
+      "id": "earshot-01",
+      "hint": "{g} has a speaker beside its label, so it's listen-only: after a run, click the speaker over it to hear what it sends. It's never drawn.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 2709"
+        },
+        "B": {
+          "signal": "decimal 4"
+        },
+        "C": {
+          "signal": "binary 0110"
+        },
+        "D": {
+          "signal": "wave saw f1 a7"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR",
+          "listen": true
+        },
+        "h": {
+          "kind": "MAX"
+        },
+        "k": {
+          "kind": "FLIP",
+          "optional": true
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h.0",
+        "B -> h.1",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "earshot-02",
+      "hint": "An output wired straight from a listen-only block can only be heard too. Click it, then its target, and listen for the difference.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave saw f2 a5"
+        },
+        "C": {
+          "signal": "decimal 0505"
+        },
+        "D": {
+          "signal": "binary 0011"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIX",
+          "at": [
+            1,
+            0
+          ],
+          "listen": true
+        },
+        "h": {
+          "kind": "FASTER",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "MAX",
+          "at": [
+            1,
+            3
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> h",
+        "h -> g.0",
+        "B -> g.1",
+        "g -> X",
+        "C -> k.0",
+        "h -> k.1",
+        "k -> Y"
+      ]
+    },
+    {
+      "id": "earshot-03",
+      "hint": "A bigger digit sounds higher. Play {g} a few times and follow its tune: that says what it does.",
+      "inputs": {
+        "A": {
+          "signal": "binary 01010101"
+        },
+        "B": {
+          "signal": "decimal 9"
+        },
+        "C": {
+          "signal": "wave sine f2 a7"
+        },
+        "D": {
+          "signal": "decimal 0369"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "COUNT",
+          "at": [
+            1,
+            0
+          ],
+          "listen": true
+        },
+        "h": {
+          "kind": "DIFF",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "MAX",
+          "at": [
+            1,
+            3
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h.0",
+        "B -> h.1",
+        "h -> k.0",
+        "D -> k.1",
+        "k -> X"
+      ]
+    },
+    {
+      "id": "earshot-04",
+      "hint": "Two listen-only blocks. You can hear what one of them does, but not the other: when a wave starts, and which way up it is, can't be heard.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave saw f1 a7"
+        },
+        "C": {
+          "signal": "decimal 3"
+        },
+        "D": {
+          "signal": "binary 0110"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "FASTER",
+          "at": [
+            1,
+            0.5
+          ],
+          "listen": true
+        },
+        "h": {
+          "kind": "LATER",
+          "at": [
+            1,
+            2.5
+          ],
+          "listen": true
+        },
+        "k": {
+          "kind": "MIX",
+          "at": [
+            2,
+            0.5
+          ]
+        },
+        "m": {
+          "kind": "MIN",
+          "at": [
+            2,
+            2.5
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "B -> h",
+        "g -> k.0",
+        "h -> k.1",
+        "k -> X",
+        "C -> m.0",
+        "h -> m.1",
+        "m -> Y"
+      ]
+    },
+    {
+      "id": "earshot-05",
+      "hint": "Work out each listen-only block by ear first, then wire the rest around them.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "decimal 2709"
+        },
+        "D": {
+          "signal": "wave saw f2 a5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "GATE",
+          "at": [
+            1,
+            0.5
+          ],
+          "listen": true
+        },
+        "h": {
+          "kind": "MIRROR",
+          "at": [
+            1,
+            2.5
+          ],
+          "listen": true
+        },
+        "k": {
+          "kind": "MIX",
+          "at": [
+            2,
+            0.5
+          ]
+        },
+        "m": {
+          "kind": "MAX",
+          "at": [
+            2,
+            2.5
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> k.0",
+        "D -> k.1",
+        "k -> X",
+        "C -> h",
+        "h -> m.0",
+        "g -> m.1",
+        "m -> Y"
+      ]
+    }
+  ]
+}

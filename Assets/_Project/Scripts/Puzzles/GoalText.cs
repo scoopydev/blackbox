@@ -99,8 +99,8 @@ namespace Blackbox.Puzzles
         /// <summary>
         /// Every rule a run broke, naming each block that broke it, then the rules
         /// those break: "Block D1 isn't used: its signal doesn't reach an output.
-        /// Every block has to lead to an output." Null when the rules are kept.
-        /// Inputs may go unused.
+        /// Every block with a solid outline has to lead to an output." Null when the
+        /// rules are kept. Dotted inputs and blocks may go unused; solid ones may not.
         /// </summary>
         public static string BrokenRules(PuzzleDef p, WiringReport r)
         {
@@ -118,14 +118,18 @@ namespace Blackbox.Puzzles
                 said.Add(r.UnusedBlocks.Count == 1
                     ? $"Block {Names(r.UnusedBlocks, b => p.Blocks[b].Label)} isn't used: its signal doesn't reach an output."
                     : $"Blocks {Names(r.UnusedBlocks, b => p.Blocks[b].Label)} aren't used: their signals don't reach an output.");
+            if (r.UnusedInputs.Count > 0)
+                said.Add(r.UnusedInputs.Count == 1
+                    ? $"Input {Names(r.UnusedInputs, i => p.Inputs[i].Id)} isn't used, and its solid outline means it has to be."
+                    : $"Inputs {Names(r.UnusedInputs, i => p.Inputs[i].Id)} aren't used, and their solid outlines mean they have to be.");
             if (said.Count == 0) return null;
-            if (r.UnusedBlocks.Count > 0) said.Add("Every block has to lead to an output.");
+            if (r.UnusedBlocks.Count > 0) said.Add("Every block with a solid outline has to lead to an output.");
             if (r.EmptyBlocks.Count > 0) said.Add("Every block input needs a wire.");
             return string.Join(" ", said);
         }
 
         /// <summary>The rules of every wired circuit, shown under its goal.</summary>
-        public const string WiringRules = "MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS.";
+        public const string WiringRules = "MATCH ALL OUTPUTS. USE EVERYTHING WITH A SOLID OUTLINE.";
 
         /// <summary>
         /// "Make light X and display Y do what their targets show", or "Make displays

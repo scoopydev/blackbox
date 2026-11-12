@@ -13,8 +13,7 @@
           "signal": "decimal 0505"
         },
         "B": {
-          "signal": "decimal 3",
-          "optional": true
+          "signal": "decimal 3"
         },
         "C": {
           "signal": "binary 0011"
@@ -45,8 +44,7 @@
       "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
-          "signal": "binary 0110",
-          "optional": true
+          "signal": "binary 0110"
         },
         "B": {
           "signal": "decimal 4"
@@ -83,8 +81,7 @@
           "signal": "decimal 1357"
         },
         "B": {
-          "signal": "binary 0110",
-          "optional": true
+          "signal": "binary 0110"
         },
         "C": {
           "signal": "decimal 9"
@@ -112,7 +109,7 @@
     },
     {
       "id": "patch-04",
-      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0. One dotted input looks like part of the answer, but every block has to be used.",
+      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0. One input already looks like part of the answer, but every block has to be used.",
       "inputs": {
         "A": {
           "signal": "binary 0110"
@@ -121,12 +118,10 @@
           "signal": "wave saw f1 a7"
         },
         "C": {
-          "signal": "decimal 0369",
-          "optional": true
+          "signal": "decimal 0369"
         },
         "D": {
-          "signal": "binary 0011",
-          "optional": true
+          "signal": "binary 0011"
         }
       },
       "blocks": {

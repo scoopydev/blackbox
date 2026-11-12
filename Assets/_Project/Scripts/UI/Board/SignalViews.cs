@@ -36,10 +36,29 @@ namespace Blackbox.UI.Board
         readonly List<VoidText> _digits = new List<VoidText>();
         readonly List<VoidText> _scale = new List<VoidText>();
         VoidText _nothing, _caption;
-        bool _waveSettings, _captionInside;
+        GlyphGraphic _speaker;
+        bool _waveSettings, _captionInside, _heardOnly;
 
         public Trace Trace => _trace;
         public float Width => _w;
+
+        /// <summary>
+        /// The signal is heard, never seen: only a speaker is drawn in its place,
+        /// which plays it when clicked (see <see cref="MakePlayable"/>) and lights up
+        /// as it plays. For a listen-only block, and every signal of a dark circuit.
+        /// Nothing still shows as a faint dash.
+        /// </summary>
+        public bool HeardOnly
+        {
+            get => _heardOnly;
+            set
+            {
+                if (_heardOnly == value) return;
+                _heardOnly = value;
+                if (_hasTrace) Rebuild();
+                Restyle();
+            }
+        }
 
         public static SignalView Create(Transform parent, float w, float h, string name = "Signal")
         {
@@ -161,6 +180,22 @@ namespace Blackbox.UI.Board
             _strip.gameObject.SetActive(false);
             if (_value != null) _value.gameObject.SetActive(false);
             _nothing.enabled = _trace == null;
+            if (_speaker != null) _speaker.enabled = false;
+            if (_heardOnly)
+            {
+                // Not even a wave's settings: they'd tell what it is.
+                if (_caption != null) _caption.text = "";
+                if (_trace == null) return;
+                if (_speaker == null)
+                {
+                    float size = Mathf.Min(_h * 0.9f, _w * 0.5f);
+                    _speaker = UIKit.Glyph(_rt, "sound", Palette.Dim, Mathf.Clamp(size * 0.045f, 1.2f, 2f), "Speaker");
+                    _speaker.raycastTarget = false;
+                    _speaker.rectTransform.Centered(0f, 0f, size, size);
+                }
+                _speaker.enabled = true;
+                return;
+            }
             if (_waveSettings)
             {
                 string settings = Waves.Describe(_trace);
@@ -345,6 +380,14 @@ namespace Blackbox.UI.Board
         {
             bool live = _look == ValueLook.Live;
             Color quiet = Color.Lerp(_look == ValueLook.Met ? Palette.Text : Palette.Dim, Color.white, _ping);
+            if (_speaker != null && _speaker.enabled)
+            {
+                _speaker.Paint = live ? Paint.Signal : Paint.Solid;
+                _speaker.Tint = live ? Color.white : quiet;
+                _speaker.GlowAmount = live ? 0.2f + 0.5f * _ping : 0.3f * _ping;
+                float scale = 1f + (App.ReduceMotion ? 0f : 0.12f * _ping);
+                _speaker.rectTransform.localScale = new Vector3(scale, scale, 1f);
+            }
             if (_caption != null) _caption.color = live ? NumberDim : quiet;
             foreach (var d in _scale) d.color = live ? NumberDim : quiet;
             if (_value != null && _value.gameObject.activeSelf) _value.Look = _look;
@@ -429,6 +472,13 @@ namespace Blackbox.UI.Board
         public void ShowWaveSettings()
         {
             if (_display != null) _display.ShowWaveSettings(inside: false);
+        }
+
+        /// <summary>A display shows only a speaker in place of its signal, which is heard when clicked (see <see cref="SignalView.HeardOnly"/>).</summary>
+        public bool HeardOnly
+        {
+            get => _display != null && _display.HeardOnly;
+            set { if (_display != null) _display.HeardOnly = value; }
         }
 
         public static DeviceView Create(Transform parent, Device device, float size, string name = "Device")

@@ -1,0 +1,228 @@
+{
+  "id": "outline",
+  "title": "Outline",
+  "mode": "wiring",
+  "tagline": "Solid has to be used. Dotted may not be.",
+  "signals": "Every kind of signal, as before. What's new is the outlines: a solid input or block has to lead to an output, and a dotted one may be left out, or used. A dotted outline never says which.",
+  "circuits": [
+    {
+      "id": "outline-01",
+      "hint": "B has a solid outline, so the answer has to use it. The dotted inputs may be left out. Solid tells you where to start.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f2 a7"
+        },
+        "B": {
+          "signal": "decimal 3",
+          "required": true
+        },
+        "C": {
+          "signal": "decimal 6"
+        },
+        "D": {
+          "signal": "binary 0110"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIN"
+        },
+        "h": {
+          "kind": "DIFF"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h.0",
+        "C -> h.1",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "outline-02",
+      "hint": "A dotted block may be left out, or used: its outline doesn't say which. Only the solid one has to lead to an output.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "decimal 9"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "LATER",
+          "optional": true
+        },
+        "h": {
+          "kind": "MIX"
+        },
+        "k": {
+          "kind": "FLIP",
+          "optional": true
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> h.0",
+        "B -> h.1",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "outline-03",
+      "hint": "B has to be used, but wired in as it is, it doesn't fit. A dotted block can change it on the way.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 2709"
+        },
+        "B": {
+          "signal": "decimal 0369",
+          "required": true
+        },
+        "C": {
+          "signal": "binary 0110"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MAX"
+        },
+        "h": {
+          "kind": "MIRROR",
+          "optional": true
+        },
+        "k": {
+          "kind": "NOT",
+          "optional": true
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "B -> h",
+        "A -> g.0",
+        "h -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "outline-04",
+      "hint": "Dotted doesn't mean spare. Sometimes every dotted block is needed, one after the other, and then the order matters.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7",
+          "required": true
+        },
+        "B": {
+          "signal": "wave saw f1 a7"
+        },
+        "C": {
+          "signal": "decimal 0505",
+          "required": true
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIX"
+        },
+        "h": {
+          "kind": "MAX"
+        },
+        "k": {
+          "kind": "LATER",
+          "optional": true
+        },
+        "m": {
+          "kind": "FASTER",
+          "optional": true
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k",
+        "k -> m",
+        "m -> g.0",
+        "B -> g.1",
+        "g -> X",
+        "C -> h.0",
+        "B -> h.1",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "outline-05",
+      "hint": "Two solid inputs and two dotted blocks. Work out what each output needs, and leave out what nothing needs.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7",
+          "required": true
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "wave saw f2 a5",
+          "required": true
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIX"
+        },
+        "h": {
+          "kind": "AND"
+        },
+        "k": {
+          "kind": "NOT",
+          "optional": true
+        },
+        "m": {
+          "kind": "FASTER",
+          "optional": true
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> m",
+        "m -> g.0",
+        "C -> g.1",
+        "g -> X",
+        "B -> h.0",
+        "g -> h.1",
+        "h -> Y"
+      ]
+    }
+  ]
+}

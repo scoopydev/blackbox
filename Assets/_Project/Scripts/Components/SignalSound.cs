@@ -259,5 +259,36 @@ namespace Blackbox.Components
         }
 
         static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
+
+        /// <summary>
+        /// True when the two can't be told apart by ear, so a circuit played by ear
+        /// can't ask the player to hear the difference. A bit, digit or shape plays
+        /// its values in turn from the start of the loop, so it sounds alike only
+        /// when it looks alike. A wave is heard as a tone repeating every loop, so
+        /// where it starts, which way up it is and how far it sits off the middle
+        /// can't be heard: a wave sounds like the same wave started later, turned
+        /// upside down, or raised, and every flat wave is silence.
+        /// </summary>
+        public static bool SoundsAlike(Trace a, Trace b)
+        {
+            if (a == null || b == null) return a == null && b == null;
+            if (a.LooksLike(b)) return true;
+            if (a.Medium != b.Medium || !Media.IsWave(a.Medium)) return false;
+            int n = Trace.Steps;
+            double meanA = 0, meanB = 0;
+            for (int k = 0; k < n; k++) { meanA += a[k]; meanB += b[k]; }
+            meanA /= n;
+            meanB /= n;
+            const float slack = 0.1f;
+            for (int shift = 0; shift < n; shift++)
+                for (int sign = 1; sign >= -1; sign -= 2)
+                {
+                    int off = 0;
+                    for (int k = 0; k < n && off <= Trace.Blip; k++)
+                        if (Math.Abs((a[k] - meanA) - sign * (b[(k + shift) % n] - meanB)) > slack) off++;
+                    if (off <= Trace.Blip) return true;
+                }
+            return false;
+        }
     }
 }

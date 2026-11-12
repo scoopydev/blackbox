@@ -603,6 +603,7 @@ namespace Blackbox.UI.Board
         {
             _shown = false;
             foreach (var b in Blocks) b.Conceal();
+            foreach (var i in Inputs) i.Unused = false;
             for (int o = 0; o < Outputs.Count; o++)
             {
                 if (keepOutputs != null && keepOutputs[o] && Outputs[o].Showing) _shown = true;
@@ -621,6 +622,8 @@ namespace Blackbox.UI.Board
         public void ConcealChanged(bool[] keep, WiringReport now, bool[] keepOutputs = null)
         {
             bool any = false;
+            // A required input marked unused by the last run is let off as soon as it's wired in.
+            for (int i = 0; i < Inputs.Count; i++) if (!now.UnusedInputs.Contains(i)) Inputs[i].Unused = false;
             for (int b = 0; b < Blocks.Count; b++)
             {
                 var view = Blocks[b];
@@ -677,7 +680,10 @@ namespace Blackbox.UI.Board
         public void ShowOutput(int output, WiringReport report)
         {
             _shown = true;
-            Outputs[output].Show(report.Values[Session.OutputNode(output)], report.OutputMet[output]);
+            // What comes straight from a listen-only block is heard on the output too, not drawn.
+            int node = Session.OutputNode(output);
+            int from = Session.DriverOf(node, 0);
+            Outputs[output].Show(report.Values[node], report.OutputMet[output], Puzzle.Dark || (from >= 0 && Puzzle.Heard(from)));
         }
 
         /// <summary>
@@ -697,6 +703,7 @@ namespace Blackbox.UI.Board
         /// <summary>Shows everything a run found. Outputs in <paramref name="held"/> that are showing are left as they are.</summary>
         public void ShowAll(WiringReport report, bool[] held = null)
         {
+            for (int i = 0; i < Inputs.Count; i++) Inputs[i].Unused = report.UnusedInputs.Contains(i);
             for (int b = 0; b < Blocks.Count; b++) ShowBlock(b, report);
             for (int o = 0; o < Outputs.Count; o++)
                 if (held == null || !held[o] || !Outputs[o].Showing) ShowOutput(o, report);
@@ -1008,7 +1015,7 @@ namespace Blackbox.UI.Board
             view._card.raycastTarget = false;
             view._card.rectTransform.Stretch();
             view._card.Radius = 14f * s;
-            // An input the answer doesn't need has a dotted outline.
+            // Inputs are dotted unless the circuit needs them: a solid input has to be used.
             view._card.Dashed = def.Optional;
             view._card.SetDash(2.4f * s, 5.5f * s);
 
@@ -1020,6 +1027,8 @@ namespace Blackbox.UI.Board
             view._signal = SignalView.Create(rt, w - 36f * s, (wave ? 40f : 46f) * s);
             view._signal.GetComponent<RectTransform>().Centered(0f, wave ? 6f * s : 0f, w - 36f * s, (wave ? 40f : 46f) * s);
             view._signal.ShowWaveSettings(inside: false);
+            // In a dark circuit every signal is only heard.
+            view._signal.HeardOnly = board.Puzzle.Dark;
             view._signal.Set(spec.Trace, ValueLook.Live);
             view._signal.MakePlayable(() => board.Host.PlayTrace(spec.Trace));
 
@@ -1039,9 +1048,13 @@ namespace Blackbox.UI.Board
 
         public bool Solved { get => _solved; set { _solved = value; Out.Solved = value; Restyle(); } }
 
+        /// <summary>A required input the last run found unused: its outline turns violet, as a block's does.</summary>
+        public bool Unused { get => _unused; set { if (_unused != value) { _unused = value; Restyle(); } } }
+        bool _unused;
+
         void Restyle()
         {
-            Color edge = _solved ? Color.white : Palette.Outline;
+            Color edge = _solved ? Color.white : _unused ? Palette.Violet.WithAlpha(0.7f) : Palette.Outline;
             _card.Style(Paint.Solid, Color.black, _solved ? Paint.Signal : Paint.Solid, edge, _solved ? 1.6f : 1.2f);
             _card.Glow = _solved ? 0.3f : 0f;
             _card.GlowPaint = Paint.Signal;
@@ -1067,9 +1080,10 @@ namespace Blackbox.UI.Board
 
         ShapeGraphic _outline;
         VoidText _code, _note, _rule, _tag;
+        GlyphGraphic _speaker;
         SignalView _readout;
         float _scale;
-        bool _tagged;
+        bool _tagged, _listen;
         bool _solved, _broken, _lifted, _crowded, _hover;
         float _flash, _noteY;
 
@@ -1105,7 +1119,15 @@ namespace Blackbox.UI.Board
             // B1, D1, W1 ... The label says what comes out, never which rule makes
             // it, and a block has no settings to show.
             view._code = UIKit.Text(rt, def.Label, TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Label");
-            view._code.rectTransform.Centered(0f, -3f * s, w, h * 0.55f);
+            // A listen-only block has a speaker beside its label: what it sends is only
+            // ever heard. In a dark circuit every signal is, so no block needs the mark.
+            view._listen = def.Listen && !board.Puzzle.Dark;
+            if (view._listen)
+            {
+                view._speaker = UIKit.Glyph(rt, "sound", Palette.Dim, 1.4f, "Listen");
+                view._speaker.raycastTarget = false;
+            }
+            view.PlaceLabel(false);
 
             int node = board.NodeOf(def);
             int n = def.Kind.InputCount;
@@ -1122,6 +1144,7 @@ namespace Blackbox.UI.Board
             view._readout.GetComponent<RectTransform>().Centered(0f, h * 0.5f + 24f * s, 118f * s, 32f * s);
             // The block's card is right under its signal, so a wave's settings go inside the box.
             view._readout.ShowWaveSettings(inside: true);
+            view._readout.HeardOnly = board.Puzzle.Heard(node);
             view._readout.MakePlayable(() => { if (view._readout.Trace != null) board.Host.PlayTrace(view._readout.Trace); });
 
             view._note = UIKit.Text(rt, "", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.24f).WithColor(Palette.Violet), TextAnchor.MiddleCenter, "Note");
@@ -1161,9 +1184,27 @@ namespace Blackbox.UI.Board
             bool tagged = _tag != null && _tag.enabled;
             if (tagged == _tagged) return;
             _tagged = tagged;
+            PlaceLabel(tagged);
+        }
+
+        /// <summary>
+        /// The block's label, centred, or a little up with the player's label under
+        /// it. A listen-only block's speaker sits just left of it, the pair centred.
+        /// </summary>
+        void PlaceLabel(bool tagged)
+        {
             float s = _scale;
-            _code.rectTransform.Centered(0f, tagged ? 9f * s : -3f * s, Size.x, Size.y * (tagged ? 0.45f : 0.55f));
-            _code.fontSize = Mathf.RoundToInt((tagged ? 24 : 28) * s);
+            float y = tagged ? 9f * s : -3f * s;
+            int size = Mathf.RoundToInt((tagged ? 24 : 28) * s);
+            _code.fontSize = size;
+            float shift = 0f;
+            if (_listen)
+            {
+                float icon = size * 0.8f;
+                shift = icon * 0.62f;
+                _speaker.rectTransform.Centered(-shift - size * 0.5f, y, icon, icon);
+            }
+            _code.rectTransform.Centered(shift, y, Size.x, Size.y * (tagged ? 0.45f : 0.55f));
         }
 
         public void Conceal()
@@ -1274,6 +1315,7 @@ namespace Blackbox.UI.Board
             _outline.GlowPaint = Paint.Signal;
             _outline.GlowRadius = 22f;
             _code.color = Palette.Dim;
+            if (_speaker != null) _speaker.Tint = Palette.Dim;
         }
     }
 
@@ -1383,6 +1425,7 @@ namespace Blackbox.UI.Board
             view._now = DeviceView.Create(rt, def.Device, size, "Now");
             view._now.GetComponent<RectTransform>().Centered(nowX, 0f, deviceW, size);
             view._now.ShowWaveSettings();
+            view._now.HeardOnly = board.Puzzle.Dark;
             view._now.MakePlayable(() => { if (view._now.Trace != null) board.Host.PlayTrace(view._now.Trace); });
             view._unknown = UIKit.Text(rt, "?", TextStyle.Value.WithSize(Mathf.RoundToInt(size * 0.6f)).WithWeight(200).WithColor(Palette.Faint), TextAnchor.MiddleCenter, "Unknown");
             view._unknown.rectTransform.Centered(nowX, 0f, half, size);
@@ -1393,6 +1436,7 @@ namespace Blackbox.UI.Board
             view._want = DeviceView.Create(rt, def.Device, size, "Want");
             view._want.GetComponent<RectTransform>().Centered(wantX, 0f, deviceW, size);
             view._want.ShowWaveSettings();
+            view._want.HeardOnly = board.Puzzle.Dark;
             view._want.Set(def.Want, ValueLook.Target);
             view._want.MakePlayable(() => board.Host.PlayTrace(def.Want));
             view._wantLabel = UIKit.Text(rt, "TARGET", TextStyle.Label.WithSize(Mathf.RoundToInt(11 * s)).WithTracking(0.26f), TextAnchor.MiddleCenter, "Target label");
@@ -1413,10 +1457,16 @@ namespace Blackbox.UI.Board
             Restyle();
         }
 
-        public void Show(Trace got, bool matched)
+        /// <summary>
+        /// What arrived on the run, and whether it matches the target. A signal that
+        /// is only heard (from a listen-only block, or anything in a dark circuit)
+        /// shows as a speaker.
+        /// </summary>
+        public void Show(Trace got, bool matched, bool heard = false)
         {
             _known = true;
             _matched = matched;
+            _now.HeardOnly = heard;
             _now.gameObject.SetActive(true);
             _now.Set(got, ValueLook.Live);
             _unknown.enabled = false;

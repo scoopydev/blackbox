@@ -20,6 +20,8 @@ namespace Blackbox.Puzzles
         public readonly List<int> StarvedBlocks = new List<int>();
         /// <summary>Blocks whose signal doesn't lead to any output.</summary>
         public readonly List<int> UnusedBlocks = new List<int>();
+        /// <summary>Required inputs whose signal doesn't lead to any output.</summary>
+        public readonly List<int> UnusedInputs = new List<int>();
         /// <summary>Optional blocks left out of the circuit: they lead to no output, and that breaks no rule.</summary>
         public readonly List<int> IdleBlocks = new List<int>();
         /// <summary>Outputs with no wire into them.</summary>
@@ -36,8 +38,8 @@ namespace Blackbox.Puzzles
             }
         }
 
-        /// <summary>Every block is used, and every block input is connected. Inputs and optional blocks may go unused.</summary>
-        public bool RulesKept => EmptyBlocks.Count == 0 && UnusedBlocks.Count == 0;
+        /// <summary>Every required block and input is used, and every block input is connected. Optional ones may go unused.</summary>
+        public bool RulesKept => EmptyBlocks.Count == 0 && UnusedBlocks.Count == 0 && UnusedInputs.Count == 0;
 
         /// <summary>Every output gets what it wants, and the rules are kept.</summary>
         public bool Solved => RulesKept && Met == OutputMet.Length;
@@ -377,6 +379,7 @@ namespace Blackbox.Puzzles
                 report.OutputMet[o] = got != null && Devices.Same(p.Outputs[o].Device, got, p.Outputs[o].Want);
             }
             report.UnusedBlocks.AddRange(UnusedBlocks(p, driver));
+            for (int i = 0; i < inputs; i++) if (!p.Inputs[i].Optional && !used[i]) report.UnusedInputs.Add(i);
             return report;
         }
 
@@ -452,6 +455,15 @@ namespace Blackbox.Puzzles
         public static bool AllBlocksUsed(PuzzleDef p, int[][] driver)
         {
             var used = Used(p, driver);
+            for (int b = 0; b < p.Blocks.Count; b++) if (!used[p.Inputs.Count + b] && !p.Blocks[b].Optional) return false;
+            return true;
+        }
+
+        /// <summary>Every block and input that isn't optional leads to an output: the rule on what must be used.</summary>
+        public static bool RequiredUsed(PuzzleDef p, int[][] driver)
+        {
+            var used = Used(p, driver);
+            for (int i = 0; i < p.Inputs.Count; i++) if (!used[i] && !p.Inputs[i].Optional) return false;
             for (int b = 0; b < p.Blocks.Count; b++) if (!used[p.Inputs.Count + b] && !p.Blocks[b].Optional) return false;
             return true;
         }

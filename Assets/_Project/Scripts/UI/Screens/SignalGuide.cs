@@ -110,6 +110,8 @@ namespace Blackbox.UI.Screens
                 case SignalGuide.ChangingDigits: return new List<System.Action> { BuildChangingDigits };
                 case SignalGuide.Waves: return new List<System.Action> { BuildWaves, BuildWaveSettings, BuildInputOrder };
                 case SignalGuide.Readings: return new List<System.Action> { BuildReadings };
+                case SignalGuide.Listening: return new List<System.Action> { BuildListening };
+                case SignalGuide.Dark: return new List<System.Action> { BuildDark };
                 default: return new List<System.Action> { BuildRecap };
             }
         }
@@ -473,6 +475,104 @@ namespace Blackbox.UI.Screens
                     Reveal(g);
                 }
             }
+        }
+
+        /// <summary>
+        /// Earshot: a listen-only block as the board draws it, a speaker beside its
+        /// label and a speaker over it in place of its signal, then what can and
+        /// can't be heard in each kind of signal.
+        /// </summary>
+        void BuildListening()
+        {
+            Header("LISTEN-ONLY BLOCKS", "SOME BLOCKS NEVER SHOW WHAT THEY SEND. YOU CAN ONLY HEAR IT.");
+
+            // The block, as on the board.
+            const float bx = 560f, by = 560f, bw = 150f, bh = 88f;
+            var g = NoteGroup();
+            var box = UIKit.Shape(g, "Block");
+            box.rectTransform.At(bx, by, bw, bh);
+            box.Radius = 16f;
+            box.Style(Paint.Solid, Color.black, Paint.Solid, Palette.Faint, 1.4f);
+            var label = UIKit.Text(g, "W1", TextStyle.Value.WithSize(28).WithWeight(200).WithTracking(0.08f).WithColor(Palette.Dim));
+            label.raycastTarget = false;
+            label.rectTransform.At(bx + 17f, by + 3f, bw, bh * 0.55f);
+            var mark = UIKit.Glyph(g, "sound", Palette.Dim, 1.4f, "Mark");
+            mark.raycastTarget = false;
+            mark.rectTransform.At(bx - 31f, by + 3f, 22f, 22f);
+            foreach (var port in new[] { new Vector2(bx - bw * 0.5f, by - 24f), new Vector2(bx - bw * 0.5f, by + 24f), new Vector2(bx + bw * 0.5f, by) })
+            {
+                var dot = UIKit.Shape(g, "Port", ShapeKind.Circle);
+                dot.Style(Paint.Solid, Palette.Text, Paint.None, Color.clear, 0f);
+                dot.rectTransform.At(port.x, port.y, 7f, 7f);
+            }
+            Reveal(g);
+            // What it sent on the run: a speaker that plays it.
+            _lead = Heard("wave saw f2 a5", bx, by - bh * 0.5f - 30f, 118f, 34f);
+            Note(new Vector2(bx - 44f, by + 3f), new Vector2(bx - 150f, by + 3f), Side.Left, "THE MARK", "A SPEAKER BESIDE THE LABEL", 240f, dot: false);
+            Note(new Vector2(bx + 30f, by - bh * 0.5f - 30f), new Vector2(bx + 140f, by - bh * 0.5f - 30f), Side.Right, "WHAT IT SENDS", "AFTER A RUN, ONLY A SPEAKER. CLICK IT TO HEAR THE SIGNAL.", 300f, dot: false);
+            Caption(bx, by + bh * 0.5f + 40f, "WIRED STRAIGHT TO AN OUTPUT", "IT'S ONLY HEARD THERE TOO. CLICK THE OUTPUT, THEN ITS TARGET, AND LISTEN.", 420f);
+
+            // How each kind sounds.
+            const float cx = 1340f;
+            Section(cx, 300f, "WHAT YOU CAN HEAR");
+            var rows = new (string spec, string title, string detail)[]
+            {
+                ("binary 0110", "BITS", "A 1 BEEPS AND A 0 TAPS, IN TURN"),
+                ("decimal 2709", "DIGITS", "A BIGGER DIGIT SOUNDS HIGHER"),
+                ("wave sine f3 a7", "WAVES", "HIGHER THE BIGGER F IS, LOUDER THE BIGGER A IS. EACH FORM HAS ITS OWN SOUND."),
+            };
+            for (int i = 0; i < rows.Length; i++)
+            {
+                float y = 370f + 112f * i;
+                Example(rows[i].spec, cx - 190f, y, 210f, 56f);
+                var t = NoteGroup();
+                Words(t, new Vector2(cx - 60f, y), Side.Right, rows[i].title, rows[i].detail, 360f);
+                Reveal(t);
+            }
+            Section(cx, 724f, "WHAT YOU CAN'T HEAR");
+            Example("wave sine f1 a6", cx - 190f, 800f, 210f, 56f);
+            Example("wave sine f1 a6 p1", cx - 190f, 880f, 210f, 56f);
+            var u = NoteGroup();
+            Words(u, new Vector2(cx - 60f, 812f), Side.Right, "WHEN A WAVE STARTS", "OR WHICH WAY UP IT IS. THESE TWO SOUND THE SAME, SO LISTEN TO WHAT A BLOCK DOES FURTHER ON.", 360f);
+            Reveal(u);
+        }
+
+        /// <summary>
+        /// Lights Out: nothing is drawn, so the page says how a circuit is played by
+        /// ear, with speakers to try, and what can't be heard.
+        /// </summary>
+        void BuildDark()
+        {
+            Header("BY EAR ALONE", "IN THIS CHAPTER NO SIGNAL IS DRAWN: NOT THE INPUTS, THE BLOCKS, THE OUTPUTS OR THE TARGETS. EACH ONE IS A SPEAKER. CLICK IT TO HEAR IT.");
+
+            var steps = new (string spec, string title, string detail)[]
+            {
+                ("decimal 8655", "1  LISTEN TO THE TARGETS", "EACH OUTPUT'S TARGET PLAYS WHAT IT WANTS."),
+                ("binary 0110", "2  LISTEN TO THE INPUTS", "A BEAT OF BITS, A TUNE OF DIGITS, OR A WAVE'S TONE. WORK OUT WHICH IS WHICH."),
+                ("decimal 1357", "3  WIRE, THEN RUN", "EACH OUTPUT PLAYS WHAT CAME OUT. THE SIGN BESIDE IT SAYS WHETHER IT MATCHES ITS TARGET."),
+            };
+            for (int i = 0; i < steps.Length; i++)
+            {
+                float x = 500f + 460f * i;
+                var view = Heard(steps[i].spec, x, 400f, 140f, 64f);
+                if (i == 0) _lead = view;
+                Caption(x, 470f, steps[i].title, steps[i].detail, 380f);
+            }
+
+            Section(Cx, 690f, "WHAT YOU CAN'T HEAR");
+            Caption(Cx, 726f, null, "WHEN A WAVE STARTS, OR WHICH WAY UP IT IS. EVERY CIRCUIT HERE IS BUILT SO THAT WHEN AN OUTPUT SOUNDS LIKE ITS TARGET, IT IS ITS TARGET.", 820f);
+            Caption(Cx, 830f, "LISTEN AS OFTEN AS YOU LIKE", "A SIGNAL PLAYS EACH TIME YOU CLICK IT, AND THE PEN STILL WORKS FOR NOTES.", 820f);
+        }
+
+        /// <summary>A signal shown only as a speaker, as a listen-only block or a dark circuit shows it, that plays when clicked.</summary>
+        SignalView Heard(string spec, float x, float y, float w, float h)
+        {
+            var view = SignalView.Create(_content, w, h, "Heard");
+            view.GetComponent<RectTransform>().At(x, y, w, h);
+            view.HeardOnly = true;
+            view.Set(Signals.Parse(spec).Trace, ValueLook.Live);
+            view.MakePlayable(() => Play(view));
+            return view;
         }
 
         // ------------------------------------------------------------------ pieces

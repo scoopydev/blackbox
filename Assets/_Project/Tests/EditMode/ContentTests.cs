@@ -24,9 +24,10 @@ namespace Blackbox.Tests
             Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
             Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
-            Assert.That(library.Chapters.Count, Is.EqualTo(9));
+            Assert.That(library.Chapters.Count, Is.EqualTo(12));
             Assert.That(library.Parts[0].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "first-light", "tally", "ticker", "resonance" }), "bits, steady digits, changing digits, then waves; shapes are set aside");
-            Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend" }), "Combine reads, then meets, then mixes");
+            Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "outline", "blend", "earshot" }), "Combine reads, meets, sorts solid from dotted, mixes, then listens");
+            Assert.That(library.Parts[2].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "unmarked", "blackbox", "lights-out" }), "Build ends in the dark");
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
             Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
             foreach (var part in library.Parts)
@@ -69,10 +70,13 @@ namespace Blackbox.Tests
                 ["resonance"] = SignalGuide.Waves,
                 ["patch"] = SignalGuide.Readings,
                 ["junction"] = SignalGuide.Readings,
+                ["outline"] = SignalGuide.Readings,
                 ["blend"] = SignalGuide.Readings,
+                ["earshot"] = SignalGuide.Listening,
                 ["unmarked"] = SignalGuide.Recap,
                 ["blackbox"] = SignalGuide.Recap,
-            }), "each Learn chapter explains its kind, Combine how blocks read each kind, and the last chapters recap them all");
+                ["lights-out"] = SignalGuide.Dark,
+            }), "each Learn chapter explains its kind, Combine how blocks read each kind, the last chapters recap them all, and the listening chapters how to play by ear");
 
             ContentLibrary Load(string guide) => ContentLibrary.Load(name =>
             {
@@ -115,14 +119,17 @@ namespace Blackbox.Tests
         [Test]
         public void PuzzlesGetHarderAfterLearn()
         {
-            // Patch, Junction, Blend and Unmarked each climb: inside a chapter no
+            // Every chapter of Combine, then Unmarked, climbs: inside a chapter no
             // circuit has fewer blocks, or fewer ways to wire them, than the one
             // before it, and each chapter opens and closes on a bigger circuit than
             // the one before. Blackbox brings in the three-input blocks halfway, so
             // only its first half has to climb, from an opener bigger than Unmarked's.
+            // Lights Out is played by ear alone: it climbs inside and opens bigger
+            // than Blackbox, but needn't close bigger than Blackbox's three-input
+            // finale, since hearing a circuit through is the hard part there.
             var library = TestContent.Library;
             var climbing = library.Parts[1].Chapters.Concat(library.Chapters.Where(c => c.Id == "unmarked")).ToList();
-            Assert.That(climbing.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend", "unmarked" }));
+            Assert.That(climbing.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "outline", "blend", "earshot", "unmarked" }));
             long Space(PuzzleDef p) => WiringSolver.Analyse(p, maxSpace: 0).Space;
             PuzzleDef openerBefore = null, finaleBefore = null;
             foreach (var chapter in climbing)
@@ -154,24 +161,89 @@ namespace Blackbox.Tests
                 Assert.That(Space(firstHalf[i]), Is.GreaterThanOrEqualTo(Space(firstHalf[i - 1])), $"{firstHalf[i].Id} has fewer ways to wire it than {firstHalf[i - 1].Id}");
             foreach (var p in blackbox)
                 Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(3), $"{p.Id}: every Blackbox circuit has three blocks or more");
+
+            var dark = library.Chapters.Single(c => c.Id == "lights-out").Puzzles;
+            Assert.That(Space(dark[0]), Is.GreaterThan(Space(blackbox[0])), "Lights Out opens bigger than Blackbox");
+            for (int i = 1; i < dark.Count; i++)
+            {
+                Assert.That(dark[i].Blocks.Count, Is.GreaterThanOrEqualTo(dark[i - 1].Blocks.Count), $"{dark[i].Id} has fewer blocks than {dark[i - 1].Id}");
+                Assert.That(Space(dark[i]), Is.GreaterThanOrEqualTo(Space(dark[i - 1])), $"{dark[i].Id} has fewer ways to wire it than {dark[i - 1].Id}");
+            }
         }
 
         [Test]
-        public void DottedOutlinesMarkWhatEachAnswerLeavesOut()
+        public void SolidOutlinesMarkWhatHasToBeUsed()
         {
-            // Every input and block a circuit's answer doesn't need is marked optional
-            // and drawn dotted; everything the answer uses is solid.
-            foreach (var p in TestContent.Library.AllPuzzles.Where(p => p.Wiring))
+            // Inputs are dotted unless a circuit needs one, and a solid input is
+            // always in the answer. Blocks are solid unless marked optional; the answer
+            // may use a dotted block or leave it out. Outline is the chapter that
+            // teaches both, so all of its circuits have one or the other.
+            var all = TestContent.Library.AllPuzzles.Where(p => p.Wiring).ToList();
+            foreach (var p in all)
             {
                 var used = WiringSession.UsedNodes(p, p.Solution);
                 for (int i = 0; i < p.Inputs.Count; i++)
-                    Assert.That(p.Inputs[i].Optional, Is.EqualTo(!used[i]), $"{p.Id} input {p.Inputs[i].Id}");
+                    if (!p.Inputs[i].Optional) Assert.That(used[i], Is.True, $"{p.Id}: solid input {p.Inputs[i].Id} is in the answer");
                 for (int b = 0; b < p.Blocks.Count; b++)
-                    Assert.That(p.Blocks[b].Optional, Is.EqualTo(!used[p.Inputs.Count + b]), $"{p.Id} block {p.Blocks[b].Id}");
+                    if (!p.Blocks[b].Optional) Assert.That(used[p.Inputs.Count + b], Is.True, $"{p.Id}: solid block {p.Blocks[b].Id} is in the answer");
             }
-            var first = TestContent.Library.AllPuzzles.First(p => p.Wiring);
-            Assert.That(first.Inputs.Any(i => i.Optional), Is.True, "the first circuit has an optional input");
+            Assert.That(all.Where(p => p.Chapter.Id != "outline").SelectMany(p => p.Inputs).All(i => i.Optional), Is.True, "outside Outline every input is dotted");
+            var outline = TestContent.Library.Chapters.Single(c => c.Id == "outline").Puzzles;
+            Assert.That(outline.All(p => p.Inputs.Any(i => !i.Optional) || p.Blocks.Any(b => b.Optional)), Is.True, "every Outline circuit has a solid input or a dotted block");
+            Assert.That(outline[0].Inputs.Count(i => !i.Optional), Is.EqualTo(1), "Outline opens on one solid input");
+            Assert.That(outline[0].Hint, Does.Contain("solid"), "and says what it means");
+            Assert.That(outline.Any(p => p.Blocks.Any(b => b.Optional && WiringSession.UsedNodes(p, p.Solution)[p.Inputs.Count + b.Index])), Is.True, "some answer uses a dotted block");
+            Assert.That(outline.Any(p => p.Blocks.Any(b => b.Optional && !WiringSession.UsedNodes(p, p.Solution)[p.Inputs.Count + b.Index])), Is.True, "and some answer leaves one out");
+            var first = all[0];
+            Assert.That(first.Inputs.All(i => i.Optional), Is.True, "the first circuit's inputs are dotted");
             Assert.That(first.Hint, Does.Contain("dotted"), "and its hint says what the dotted outline means");
+        }
+
+        [Test]
+        public void ListenOnlyBlocksAreHeardAndMarked()
+        {
+            // Earshot brings in listen-only blocks: every circuit has one in its
+            // answer, and each sends something that sounds different from what goes
+            // in, so listening to it tells the player something. Only Earshot has them.
+            var library = TestContent.Library;
+            foreach (var p in library.AllPuzzles)
+            {
+                bool earshot = p.Chapter.Id == "earshot";
+                Assert.That(p.Blocks.Any(b => b.Listen), Is.EqualTo(earshot), $"{p.Id}: listen-only blocks are Earshot's");
+                if (!earshot) continue;
+                var values = WiringSession.Evaluate(p, p.Solution);
+                var session = new WiringSession(p);
+                foreach (var b in p.Blocks.Where(b => b.Listen))
+                {
+                    var sent = values[session.BlockNode(b.Index)];
+                    Assert.That(sent, Is.Not.Null, $"{p.Id}: listen-only {b.Id} is in the answer");
+                    foreach (var w in p.Solution.Where(w => w.To == b))
+                    {
+                        var into = values[w.From.Role == NodeRole.Input ? w.From.Index : session.BlockNode(w.From.Index)];
+                        if (b.Kind.Id == "LATER") continue; // the one taught as what can't be heard
+                        Assert.That(SignalSound.SoundsAlike(sent, into), Is.False, $"{p.Id}: you can hear what {b.Id} does");
+                    }
+                }
+            }
+            Assert.That(library.Chapters.Single(c => c.Id == "earshot").Puzzles[0].Hint, Does.Contain("listen-only"));
+        }
+
+        [Test]
+        public void HeardCircuitsCanBeSolvedByEar()
+        {
+            // Lights Out draws no signal, and an output wired straight from a
+            // listen-only block draws none either. In those circuits nothing a player
+            // could wire to an output sounds like its target without being it, and
+            // the answer is still the only one.
+            foreach (var p in TestContent.Library.AllPuzzles.Where(p => p.Dark || p.Blocks.Any(b => b.Listen)))
+            {
+                var r = WiringSolver.Analyse(p, 5_000_000, 2, byEar: true);
+                Assert.That(r.Searched, Is.True, p.Id);
+                Assert.That(r.Confusable, Is.Zero, $"{p.Id}: some signal sounds like a target but isn't it");
+                Assert.That(r.Solutions, Is.EqualTo(1), $"{p.Id}: one answer");
+            }
+            Assert.That(TestContent.Library.Chapters.Single(c => c.Id == "lights-out").Dark, Is.True);
+            Assert.That(TestContent.Library.Chapters.Count(c => c.Dark), Is.EqualTo(1), "only Lights Out is dark");
         }
 
         [Test]

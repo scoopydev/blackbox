@@ -619,7 +619,8 @@ namespace Blackbox.UI.Screens
             for (int n = _session.InputCount; n < _session.NodeCount; n++) max = Mathf.Max(max, depth[n]);
             float flow = Mathf.Clamp(max * 0.45f, 1.0f, 2.6f);
             float step = flow / max;
-            bool sounds = Game.Save.Prefs.SignalSounds;
+            // A dark circuit is played by ear, so its outputs always sound on a run.
+            bool sounds = Game.Save.Prefs.SignalSounds || Puzzle.Dark;
 
             Plan(0f, () => App.Sound(Sfx.Run, 1f, 0.7f));
             foreach (var link in _board.Links)
