@@ -98,7 +98,7 @@ namespace Blackbox.Puzzles
 
         /// <summary>
         /// Every rule a run broke, naming each block that broke it, then the rules
-        /// those break: "Block K2 isn't used: its signal doesn't reach an output.
+        /// those break: "Block D1 isn't used: its signal doesn't reach an output.
         /// Every block has to lead to an output." Null when the rules are kept.
         /// Inputs may go unused.
         /// </summary>

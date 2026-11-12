@@ -85,7 +85,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 |---|---|---|
 | `id` | yes | Unique across all chapters. Saves refer to it. |
 | `name` | no | Ignored in a chapter: every circuit is named by its chapter's title and its number, such as TALLY 1. |
-| `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. In a wired circuit, write a block as `{g}` (its id in braces): the game shows it as the block's label, such as K1. Never name a kind (such as MIRROR) in a hint or chapter line; a test checks this. |
+| `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. In a wired circuit, write a block as `{g}` (its id in braces): the game shows it as the block's label, such as B1 or W2. Never name a kind (such as MIRROR) in a hint or chapter line; a test checks this. |
 | `goal` | no | The goal sentence. Leave it out and it is written from the targets, which is almost always what you want. |
 | `probes` | no | How many probes the player may place. Defaults to 0. |
 | `medium` | no | Overrides the chapter's medium for this circuit. |
@@ -173,7 +173,7 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 * every input port of every block has a wire, and
 * every block leads to an output, through other blocks or straight there.
 
-Inputs may go unused, so a circuit can hold spare inputs for the player to rule out; the loader refuses a `solution` that leaves a block leading nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled K1, K2 and so on, in the order `blocks` lists them, which is also the order the layout puts them down each column. A block shows only its label and its ports.
+Inputs may go unused, so a circuit can hold spare inputs for the player to rule out; the loader refuses a `solution` that leaves a block leading nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled by the type of signal they send, B for a bit, D for a digit and W for a wave, numbered per letter down each column of the board in turn (B1, B2, D1, W1...). The label comes from the kind, so a file never gives one. A block shows only its label and its ports.
 
 ```json
 {
@@ -239,11 +239,11 @@ Devices compare what they do, not the signal, so a digit display wanting 3 is me
 
 ### Mixing kinds
 
-Bit and digit blocks read any signal as their own kind, at every step of the loop: a digit is 1 unless it's 0, and a wave is 1 above its middle; a bit read as a digit is 0 or 1, and a wave its height from 0 to 9. Wave blocks read any signal as a wave: a bit at the top for 1 or the bottom for 0, and a digit as a flat level from 0 at the bottom to 9 at the top. (Set aside: a shape read as a bit is 1 when solid and as a digit its corners; anything read as a shape is a circle, solid when it would read as 1.) The mixing kinds (GATE, COUNT, COMPARE) work on any signal; their rules are in [Design.md](Design.md#spoilers-the-rules).
+Bit and digit blocks read any signal as their own kind, at every step of the loop: a digit is 1 unless it's 0, and a wave is 1 above its middle; a bit read as a digit is 0 or 1, and a wave its height from 0 to 9. Wave blocks read any signal as a wave: a bit at the top for 1 or the bottom for 0, and a digit as a flat level from 0 at the bottom to 9 at the top. (Set aside: a shape read as a bit is 1 when solid and as a digit its corners; anything read as a shape is a circle, solid when it would read as 1.) The mixing kinds (GATE, COUNT, COMPARE) take any signal, but each sends one type: GATE a wave, COUNT a digit, COMPARE a bit; their rules are in [Design.md](Design.md#spoilers-the-rules).
 
 ## Block kinds
 
-The player never sees a kind, only the block's label (K1, K2...) and its ports. Every kind has one rule and no settings. The rules are listed in [Design.md](Design.md#spoilers-the-rules).
+The player never sees a kind, only the block's label (B1, D1, W1...) and its ports. Every kind has one rule and no settings. The rules are listed in [Design.md](Design.md#spoilers-the-rules).
 
 | Sends | Kinds | Inputs |
 |---|---|---|
@@ -255,13 +255,13 @@ The player never sees a kind, only the block's label (K1, K2...) and its ports. 
 | shape | TAKEFILL, TAKECOLOUR (set aside) | 2 |
 | wave | FLIP, FASTER, LATER | 1 |
 | wave | MIX | 2 |
-| the top input's kind | GATE | 2 |
+| wave | GATE | 2 |
 | decimal | COUNT | 1 |
 | binary | COMPARE | 2 |
 | binary | MAJORITY | 3 |
 | decimal | MIDDLE | 3 |
 | binary | BETWEEN | 3 |
-| the top input's kind | SWITCH | 3 |
+| wave | SWITCH | 3 |
 | sampled | STEPS (set aside) | 1 |
 
 STEPS is set aside for now, with stepped waves: the loader refuses a circuit that holds it. The old kinds with settings (B1 to M8, Q1 to Q4) are gone, and a file that names one is refused.

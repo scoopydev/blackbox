@@ -89,10 +89,10 @@ namespace Blackbox.Tests
                 bool on = k >= 72 && k < 216;
                 Assert.That(gated[k], Is.EqualTo(on ? T("wave saw f3 a7")[k] : 0f).Within(0.0001f), $"step {k}");
             }
-            Assert.That(Mix("GATE", T("decimal 6"), T("binary 0")).Matches(T("decimal 0")), Is.True, "off is 0 for a digit");
-            Assert.That(Mix("GATE", T("binary 1"), T("binary 0")).Matches(T("binary 0")), Is.True, "and for a bit");
-            Assert.That(Mix("GATE", T("shape solid pink square"), T("binary 0")).Matches(T("shape hollow circle")), Is.True, "and an empty circle for a shape");
-            Assert.That(Mix("GATE", T("shape solid pink square"), T("binary 1")).Matches(T("shape solid pink square")), Is.True);
+            // GATE is a wave block: whatever comes in, a wave comes out, and off is the middle.
+            Assert.That(Mix("GATE", T("decimal 6"), T("binary 0")).Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "off is a flat line");
+            Assert.That(Mix("GATE", T("binary 1"), T("binary 1")).Matches(Trace.Flat(Medium.Wave, 7f)), Is.True, "a bit comes through as a wave at the top");
+            Assert.That(Mix("GATE", T("decimal 9"), T("binary 1")).Matches(Trace.Flat(Medium.Wave, 7f)), Is.True, "and a digit as a level");
         }
 
         [Test]
@@ -420,13 +420,13 @@ namespace Blackbox.Tests
             s.Connect(b, h, 0);
             report = s.Check();
             Assert.That(report.UnusedBlocks, Is.EqualTo(new[] { 0 }), "h now reads B, so g leads nowhere");
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block K1 isn't used: its signal doesn't reach an output. Every block has to lead to an output."));
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block B1 isn't used: its signal doesn't reach an output. Every block has to lead to an output."));
             s.Disconnect(g, 1);
             report = s.Check();
-            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block K1 has an input with no wire, so it sends nothing. Block K1 isn't used: its signal doesn't reach an output. Every block has to lead to an output. Every block input needs a wire."));
+            Assert.That(GoalText.BrokenRules(p, report), Is.EqualTo("Block B1 has an input with no wire, so it sends nothing. Block B1 isn't used: its signal doesn't reach an output. Every block has to lead to an output. Every block input needs a wire."));
             s.Clear();
             report = s.Check();
-            Assert.That(GoalText.BrokenRules(p, report), Does.StartWith("Blocks K1 and K2 have inputs with no wire, so they send nothing. Blocks K1 and K2 aren't used"));
+            Assert.That(GoalText.BrokenRules(p, report), Does.StartWith("Blocks B1 and B2 have inputs with no wire, so they send nothing. Blocks B1 and B2 aren't used"));
             Assert.That(GoalText.BrokenRules(p, report), Does.Not.Contain("Input"));
 
             s.Connect(a, g, 0);
@@ -507,14 +507,31 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void BlocksAreNumberedNotNamed()
+        public void BlocksAreLabelledByWhatTheySend()
         {
-            // The player sees K1, K2 ... on blocks, never their kind, and hints name
-            // blocks as {id} so they always match the numbers on the board.
+            // The player sees B1, D1, W1 ... on blocks: the kind of signal each sends
+            // and a number, never which rule it keeps. Hints name blocks as {id} so
+            // they always match the labels on the board.
             var hinted = Small.Replace(@"""name"": ""Test"",", @"""name"": ""Test"", ""hint"": ""Wire {g}, then {h}."",");
             var p = TestContent.ParseWired(hinted);
-            Assert.That(p.Blocks.Select(b => b.Label), Is.EqualTo(new[] { "K1", "K2" }));
-            Assert.That(p.Hint, Is.EqualTo("Wire K1, then K2."));
+            Assert.That(p.Blocks.Select(b => b.Label), Is.EqualTo(new[] { "B1", "B2" }));
+            Assert.That(p.Hint, Is.EqualTo("Wire B1, then B2."));
+
+            var mixed = TestContent.ParseWired(@"{
+                ""id"": ""t"", ""name"": ""Test"",
+                ""inputs"": { ""A"": ""wave sine f1 a7"", ""B"": ""decimal 3"" },
+                ""blocks"": { ""g"": ""MIRROR"", ""h"": ""FLIP"", ""k"": ""COMPARE"", ""m"": ""GATE"", ""n"": ""MAX"" },
+                ""outputs"": { ""X"": ""display"", ""Y"": ""display"" },
+                ""solution"": [ ""A -> g"", ""A -> h"", ""g -> n.0"", ""B -> n.1"", ""h -> k.0"", ""n -> k.1"", ""h -> m.0"", ""k -> m.1"", ""m -> X"", ""n -> Y"" ]
+            }");
+            var labels = mixed.Blocks.ToDictionary(b => b.Id, b => b.Label);
+            Assert.That(labels["g"], Does.StartWith("D"), "MIRROR sends a digit");
+            Assert.That(labels["n"], Does.StartWith("D"));
+            Assert.That(labels["h"], Does.StartWith("W"), "FLIP sends a wave");
+            Assert.That(labels["m"], Does.StartWith("W"), "and so does GATE, whatever comes in");
+            Assert.That(labels["k"], Does.StartWith("B"), "COMPARE sends a bit");
+            Assert.That(labels.Values, Is.Unique);
+            Assert.That(new[] { labels["g"], labels["n"] }, Is.EquivalentTo(new[] { "D1", "D2" }));
             var ex = Assert.Throws<PuzzleFormatException>(() => TestContent.ParseWired(hinted.Replace("{h}", "{q}")));
             Assert.That(ex.Message, Does.Contain("{q}"));
         }
@@ -573,8 +590,15 @@ namespace Blackbox.Tests
             Assert.That(puzzle.Hint, Is.Not.Empty, puzzle.Id);
             Assert.That(System.Text.RegularExpressions.Regex.IsMatch(puzzle.Hint, KindNames), Is.False, $"{puzzle.Id}: the hint names a kind code: {puzzle.Hint}");
             Assert.That(puzzle.Hint, Does.Not.Contain("{"), $"{puzzle.Id}: the hint names a block the loader didn't label");
-            for (int b = 0; b < puzzle.Blocks.Count; b++)
-                Assert.That(puzzle.Blocks[b].Label, Is.EqualTo("K" + (b + 1)), $"{puzzle.Id}: blocks are numbered in order");
+            // Each block is labelled by what it sends, numbered per letter down each column.
+            var order = puzzle.Blocks.OrderBy(b => b.At.Col).ThenBy(b => b.At.Row).ToList();
+            var seen = new Dictionary<string, int>();
+            foreach (var b in order)
+            {
+                string letter = Media.Letter(b.Kind.Medium);
+                seen[letter] = seen.TryGetValue(letter, out int n) ? n + 1 : 1;
+                Assert.That(b.Label, Is.EqualTo(letter + seen[letter]), $"{puzzle.Id}: {b.Id}");
+            }
             foreach (var o in puzzle.Outputs)
             {
                 Assert.That(o.Want, Is.Not.Null, $"{puzzle.Id}: {o.Id}");
@@ -590,7 +614,8 @@ namespace Blackbox.Tests
         }
 
         /// <summary>Any block kind's id, as a whole word: hints must never name one.</summary>
-        static readonly string KindNames = @"\b(" + string.Join("|", KindCatalog.All.Select(k => k.Id)) + @"|[BDSWQM][1-8])\b";
+        // Labels such as B1 are fine in a hint (that's what {g} becomes); kind ids are not.
+        static readonly string KindNames = @"\b(" + string.Join("|", KindCatalog.All.Select(k => k.Id)) + @")\b";
 
         [Test]
         public void EveryBlockIsTaughtBeforeBuild()

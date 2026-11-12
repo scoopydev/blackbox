@@ -633,7 +633,7 @@ namespace Blackbox.UI.Board
 
         /// <summary>
         /// For a wire into a block of another kind of signal, how that block reads
-        /// what the wire carries ("K3 reads this wave as a digit: 0 at the bottom up
+        /// what the wire carries ("D1 reads this wave as a digit: 0 at the bottom up
         /// to 9 at the top."), or null. Only once the player has seen the block
         /// send something, so it never gives away what kind of block it is.
         /// </summary>
@@ -1027,7 +1027,7 @@ namespace Blackbox.UI.Board
     }
 
     /// <summary>
-    /// A block in a wired circuit: its label (K1, K2 ...) and its ports. After a run it shows what it sent above it,
+    /// A block in a wired circuit: its label (B1, D1, W1 ...) and its ports. After a run it shows what it sent above it,
     /// and under it why it sent nothing (an empty input) or that it isn't used.
     /// </summary>
     public sealed class WiredBlockView : MonoBehaviour
@@ -1071,9 +1071,9 @@ namespace Blackbox.UI.Board
             view._outline.rectTransform.Stretch();
             view._outline.Radius = 16f * s;
 
-            // Every block is numbered K1, K2 ... in its circuit. The number only tells
-            // blocks apart: it says nothing about what a block does, and a block has
-            // no settings to show.
+            // Every block is labelled by the kind of signal it sends and a number:
+            // B1, D1, W1 ... The label says what comes out, never which rule makes
+            // it, and a block has no settings to show.
             view._code = UIKit.Text(rt, def.Label, TextStyle.Value.WithSize(Mathf.RoundToInt(28 * s)).WithWeight(200).WithTracking(0.08f), TextAnchor.MiddleCenter, "Label");
             view._code.rectTransform.Centered(0f, -3f * s, w, h * 0.55f);
 

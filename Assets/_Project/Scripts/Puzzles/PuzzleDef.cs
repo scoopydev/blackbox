@@ -63,12 +63,19 @@ namespace Blackbox.Puzzles
         public BlockKind Kind;
 
         /// <summary>
-        /// What the player sees on the block: K1, K2 and so on, counted down each
-        /// column of the board in turn (the order the file lists them). It says
-        /// nothing about the block's kind, so K1 is a different block in every
-        /// circuit. Hints name blocks as {id}, which the loader turns into this.
+        /// What the player sees on the block: the kind of signal it sends, B for a
+        /// bit, D for a digit and W for a wave, numbered per letter down each column
+        /// of the board in turn, such as B1, B2, D1. It says what comes out, never
+        /// which rule makes it, so B1 is a different block in every circuit. Hints
+        /// name blocks as {id}, which the loader turns into this. Set by
+        /// <see cref="PuzzleLoader.LabelBlocks"/>; "K" and the index until then.
         /// </summary>
-        public string Label => "K" + (Index + 1);
+        public string Label
+        {
+            get => _label ?? "K" + (Index + 1);
+            set => _label = value;
+        }
+        string _label;
         /// <summary>The state the block starts in.</summary>
         public int State;
         /// <summary>A locked block keeps its state. It is drawn with a dashed outline and a padlock.</summary>

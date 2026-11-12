@@ -215,7 +215,7 @@
           "signal": "wave sine f1 a7 p2"
         },
         "C": {
-          "signal": "decimal 4"
+          "signal": "decimal 2"
         },
         "D": {
           "signal": "binary 01"

@@ -361,7 +361,7 @@ namespace Blackbox.UI.Screens
                 "Wire the inputs to the outputs so every output matches its target.",
                 "Match all outputs, and use all the blocks: each block has to lead to an output, and every block input needs a wire. Inputs you don't need can stay unwired.",
                 "Each block has one simple rule it never tells you. Run the circuit and watch what comes out.",
-                "K1, K2 and so on are just names. K1 is a different block in each circuit.",
+                "A block's letter says what it sends: B a bit, 0 or 1; D a digit, 0 to 9; W a wave. B1 is a different block in each circuit.",
                 "A block reads any signal as its own kind.",
                 "Solve a circuit to see each block's rule written under it.",
             } : new List<string>

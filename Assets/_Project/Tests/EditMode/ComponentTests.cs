@@ -57,9 +57,25 @@ namespace Blackbox.Tests
 
             var sw = KindCatalog.Get("SWITCH");
             var got = sw.Apply(new[] { T("decimal 7"), T("decimal 2"), T("binary 0011") });
-            Assert.That(got.Medium, Is.EqualTo(Medium.Decimal));
-            Assert.That(got.Key, Is.EqualTo(T("decimal 2277").Key), "the middle while the bottom is off, then the top");
-            Assert.That(sw.Apply(new[] { T("decimal 7"), T("binary 1"), T("binary 0") }).First, Is.EqualTo(1f), "the middle is read as the top's kind");
+            Assert.That(got.Medium, Is.EqualTo(Medium.Wave), "SWITCH is a wave block");
+            Assert.That(got.Matches(T("decimal 2277").As(Medium.Wave)), Is.True, "the middle while the bottom is off, then the top, as waves");
+            Assert.That(sw.Apply(new[] { T("decimal 7"), T("binary 1"), T("binary 0") }).First, Is.EqualTo(7f), "a bit comes through as a wave at the top");
+        }
+
+        [Test]
+        public void EveryBlockAlwaysSendsItsOwnKind()
+        {
+            // A block's label says what it sends, so whatever comes in, a bit block
+            // sends bits, a digit block digits and a wave block a wave.
+            Trace T(string spec) => Signals.Parse(spec).Trace;
+            var samples = new[] { T("binary 0110"), T("decimal 3"), T("decimal 2468"), T("wave sine f2 a5"), T("wave saw f1 a7 p1") };
+            foreach (var kind in KindCatalog.All.Where(k => !k.Shelved))
+                foreach (var a in samples)
+                    foreach (var b in samples)
+                    {
+                        var ins = new[] { a, b, a }.Take(kind.InputCount).ToArray();
+                        Assert.That(kind.Apply(ins).Medium, Is.EqualTo(kind.Medium), $"{kind.Id} of {a.Medium} and {b.Medium}");
+                    }
         }
 
         [Test]
@@ -142,7 +158,7 @@ namespace Blackbox.Tests
             foreach (var kind in KindCatalog.All.Where(k => !k.Mixing))
                 for (int p = 0; p < kind.InputCount; p++)
                     Assert.That(kind.Reads(p), Is.EqualTo(kind.Medium), $"{kind.Id} input {p}");
-            Assert.That(KindCatalog.Get("GATE").Reads(0), Is.Null, "GATE passes its top input as it is");
+            Assert.That(KindCatalog.Get("GATE").Reads(0), Is.EqualTo(Medium.Wave), "GATE is a wave block");
             Assert.That(KindCatalog.Get("GATE").Reads(1), Is.EqualTo(Medium.Binary));
             Assert.That(KindCatalog.Get("COUNT").Reads(0), Is.EqualTo(Medium.Binary));
             Assert.That(KindCatalog.Get("COMPARE").Reads(0), Is.EqualTo(Medium.Wave));

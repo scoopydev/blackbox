@@ -548,14 +548,33 @@ namespace Blackbox.Puzzles
                 throw new PuzzleFormatException($"{where}: the solution doesn't use block '{p.Blocks[unused[0]].Id}': every block must lead to an output.");
 
             BoardLayout.ApplyWiring(p);
+            LabelBlocks(p);
             p.Hint = NameBlocks(p.Hint, p, where + " hint");
             p.Goal = NameBlocks(p.Goal, p, where + " goal");
             return p;
         }
 
         /// <summary>
+        /// Labels each block by the kind of signal it sends (<see cref="Media.Letter"/>:
+        /// B, D or W) and its number among those, counting down each column of the
+        /// board in turn: B1, B2, D1, W1 ...
+        /// </summary>
+        public static void LabelBlocks(PuzzleDef p)
+        {
+            var order = new List<BlockDef>(p.Blocks);
+            order.Sort((a, b) => a.At.Col != b.At.Col ? a.At.Col.CompareTo(b.At.Col) : a.At.Row != b.At.Row ? a.At.Row.CompareTo(b.At.Row) : a.Index.CompareTo(b.Index));
+            var counts = new Dictionary<Medium, int>();
+            foreach (var b in order)
+            {
+                counts.TryGetValue(b.Kind.Medium, out int n);
+                counts[b.Kind.Medium] = ++n;
+                b.Label = Media.Letter(b.Kind.Medium) + n;
+            }
+        }
+
+        /// <summary>
         /// Writes each "{id}" in a hint or goal as the block's label ("{g}" becomes
-        /// "K1"), so text never has to know the order the blocks are numbered in.
+        /// "B1"), so text never has to know how the blocks are numbered.
         /// </summary>
         static string NameBlocks(string text, PuzzleDef p, string where)
         {

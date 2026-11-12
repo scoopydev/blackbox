@@ -6,8 +6,10 @@ namespace Blackbox.Components
     /// <summary>
     /// A kind of block: one fixed rule, the same in every circuit, which is what
     /// lets the player carry what they learn from one circuit to the next. A block
-    /// has no settings. The player sees only its label (K1, K2 ...) and its ports,
-    /// never its kind or its rule, until its circuit is solved.
+    /// has no settings, and sends one kind of signal, always (<see cref="Medium"/>).
+    /// The player sees only its label, which says that kind (B1 for a bit block,
+    /// D1 for a digit block, W1 for a wave block), and its ports, never its kind
+    /// or its rule, until its circuit is solved.
     ///
     /// Every rule is meant to be simple enough to say in a few words and to work
     /// out by experiment, with no exceptions: no ties to break, no wrapping past
@@ -214,18 +216,18 @@ namespace Blackbox.Components
 
             // ---- Mixing: whole signals of any kind ------------------------------------
 
-            Whole("GATE", Medium.Wave, 2, true, "lets the top signal through while the bottom one is on, and sends nothing while it's off (0, a flat line or an empty circle)", "lets the top through while the bottom is on",
+            // GATE and SWITCH are wave blocks: whatever comes in, a wave comes out.
+            Whole("GATE", Medium.Wave, 2, true, "lets the top signal through, read as a wave, while the bottom one is on, and sends a flat line while it's off", "lets the top through while the bottom is on",
                 x =>
                 {
                     var gate = x[1].As(Medium.Binary);
-                    var top = x[0];
-                    float off = Off(top.Medium);
+                    var top = x[0].As(Medium.Wave);
                     var levels = new float[Trace.Steps];
-                    for (int k = 0; k < Trace.Steps; k++) levels[k] = gate[k] == 1f ? top[k] : off;
-                    return new Trace(top.Medium, levels);
+                    for (int k = 0; k < Trace.Steps; k++) levels[k] = gate[k] == 1f ? top[k] : 0f;
+                    return new Trace(Medium.Wave, levels);
                 });
 
-            s_Kinds["GATE"].ReadingAs(null, Medium.Binary);
+            s_Kinds["GATE"].ReadingAs(Medium.Wave, Medium.Binary);
 
             Whole("COUNT", Medium.Decimal, 1, true, "counts how many times its input has switched on so far this loop, up to 9", "counts each switch-on, up to 9",
                 x =>
@@ -273,18 +275,18 @@ namespace Blackbox.Components
 
             s_Kinds["BETWEEN"].ReadingAs(Medium.Wave, Medium.Wave, Medium.Wave);
 
-            Whole("SWITCH", Medium.Wave, 3, true, "sends the top signal while the bottom one is on, and the middle one, read as the top's kind, while it's off", "top while the bottom is on, else the middle",
+            Whole("SWITCH", Medium.Wave, 3, true, "sends the top signal while the bottom one is on, and the middle one while it's off, both read as waves", "top while the bottom is on, else the middle",
                 x =>
                 {
-                    var top = x[0];
-                    var middle = x[1].As(top.Medium);
+                    var top = x[0].As(Medium.Wave);
+                    var middle = x[1].As(Medium.Wave);
                     var on = x[2].As(Medium.Binary);
                     var levels = new float[Trace.Steps];
                     for (int k = 0; k < Trace.Steps; k++) levels[k] = on[k] == 1f ? top[k] : middle[k];
-                    return new Trace(top.Medium, levels);
+                    return new Trace(Medium.Wave, levels);
                 });
 
-            s_Kinds["SWITCH"].ReadingAs(null, null, Medium.Binary);
+            s_Kinds["SWITCH"].ReadingAs(Medium.Wave, Medium.Wave, Medium.Binary);
 
             // ---- Set aside: stepped waves ---------------------------------------------
 
@@ -292,9 +294,6 @@ namespace Blackbox.Components
                 x => SampleOf(x[0], 12));
             s_Kinds["STEPS"].ReadingAs(Medium.Wave);
         }
-
-        /// <summary>What a signal of this kind is while it's off: 0 for numbers and waves, a hollow circle for shapes.</summary>
-        static float Off(Medium m) => m == Medium.Shape ? Shapes.Make(Shapes.Circle, false) : 0f;
 
         /// <summary>The signal read as a wave <paramref name="times"/> times a loop, at the middle of each stretch, each reading rounded and held.</summary>
         static Trace SampleOf(Trace t, int times)

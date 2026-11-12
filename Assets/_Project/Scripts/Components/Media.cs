@@ -320,6 +320,20 @@ namespace Blackbox.Components
         /// <summary>The medium's name as puzzle files write it.</summary>
         public static string Key(Medium m) => m.ToString().ToLowerInvariant();
 
+        /// <summary>The letter on a block that sends this kind: B for bits, D for digits, W for waves (S for shapes, Q for stepped waves).</summary>
+        public static string Letter(Medium m)
+        {
+            switch (m)
+            {
+                case Medium.Binary: return "B";
+                case Medium.Decimal: return "D";
+                case Medium.Wave: return "W";
+                case Medium.Shape: return "S";
+                case Medium.Sampled: return "Q";
+                default: return "K";
+            }
+        }
+
         public static bool TryParseMedium(string s, out Medium m)
         {
             foreach (Medium candidate in Enum.GetValues(typeof(Medium)))

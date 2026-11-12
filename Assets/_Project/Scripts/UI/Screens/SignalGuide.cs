@@ -222,11 +222,11 @@ namespace Blackbox.UI.Screens
         /// <summary>The mixed chapters: one signal of each kind, as a block of each kind reads it.</summary>
         void BuildReadings()
         {
-            Header("HOW A BLOCK READS EACH KIND", "A BLOCK READS EVERY SIGNAL AS THE KIND IT SENDS.");
+            Header("HOW A BLOCK READS EACH KIND", "A BLOCK'S LETTER SAYS WHAT IT SENDS: B A BIT, D A DIGIT, W A WAVE. IT READS EVERY SIGNAL AS THAT KIND.");
 
             var kinds = new[] { Medium.Binary, Medium.Decimal, Medium.Wave };
             string[] names = { "A BIT", "A DIGIT", "A WAVE" };
-            string[] blocks = { "A BIT BLOCK SEES", "A DIGIT BLOCK SEES", "A WAVE BLOCK SEES" };
+            string[] blocks = { "A BIT BLOCK (B) SEES", "A DIGIT BLOCK (D) SEES", "A WAVE BLOCK (W) SEES" };
             string[] examples = { "binary 0110", "decimal 0396", "wave sine f1 a7" };
             float[] columns = { 830f, 1190f, 1550f };
             const float source = 450f, w = 250f, h = 66f;
@@ -266,19 +266,19 @@ namespace Blackbox.UI.Screens
                 {
                     "ABOVE THE MIDDLE IS 1, BELOW IS 0.",
                     "A 1 BEEPS; A 0 IS A SOFT TAP.",
-                    "A BIT BLOCK READS A DIGIT AS 1 UNLESS IT'S 0, AND A WAVE AS 1 WHILE IT'S ABOVE THE MIDDLE.",
+                    "A BIT BLOCK (B1, B2...) ONLY EVER SENDS 0 OR 1. IT READS A DIGIT AS 1 UNLESS IT'S 0, AND A WAVE AS 1 WHILE IT'S ABOVE THE MIDDLE.",
                 }),
                 ("DIGITS", "decimal 1357", new[]
                 {
                     "HEIGHT IS THE DIGIT: 0 AT THE BOTTOM, 9 AT THE TOP. A STEADY DIGIT IS JUST ITS NUMBER.",
                     "A BIGGER DIGIT SOUNDS HIGHER.",
-                    "A DIGIT BLOCK READS A BIT AS 0 OR 1, AND A WAVE BY ITS HEIGHT.",
+                    "A DIGIT BLOCK (D1, D2...) ONLY EVER SENDS 0 TO 9. IT READS A BIT AS 0 OR 1, AND A WAVE BY ITS HEIGHT.",
                 }),
                 ("WAVES", "wave sine f2 a5", new[]
                 {
                     "F IS HOW OFTEN IT REPEATS, AND HOW HIGH IT SOUNDS. A IS HOW TALL IT IS, AND HOW LOUD.",
                     "+1/4, +1/2 OR +3/4 STARTS IT THAT MUCH OF A CYCLE LATE.",
-                    "A WAVE BLOCK READS A BIT AS THE TOP OR THE BOTTOM, AND A DIGIT AS A LEVEL.",
+                    "A WAVE BLOCK (W1, W2...) ALWAYS SENDS A WAVE, WITH ITS OWN F AND A. IT READS A BIT AS THE TOP OR THE BOTTOM, AND A DIGIT AS A LEVEL.",
                 }),
             };
             for (int i = 0; i < columns.Length; i++)
