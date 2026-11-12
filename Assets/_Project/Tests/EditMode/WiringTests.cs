@@ -271,9 +271,9 @@ namespace Blackbox.Tests
             // Under a wave on a block or an output: the settings of the wave it is,
             // however it was made, or else what can be measured.
             Assert.That(Waves.Describe(T("wave sine f2 a7")), Is.EqualTo("F2 A7"));
-            Assert.That(Waves.Describe(Mix("FLIP", T("wave sine f2 a7"))), Is.EqualTo("F2 A7 +1/2"), "a flipped sine is the same sine half a cycle on");
+            Assert.That(Waves.Describe(Mix("FLIP", T("wave sine f2 a7"))), Is.EqualTo("F2 A7"), "a flipped sine is the same sine half a cycle on; the late start isn't written");
             Assert.That(Waves.Describe(Mix("FASTER", T("wave saw f1 a5"))), Is.EqualTo("F2 A5"));
-            Assert.That(Waves.Describe(Mix("LATER", T("wave square f1 a3"))), Is.EqualTo("F1 A3 +1/4"));
+            Assert.That(Waves.Describe(Mix("LATER", T("wave square f1 a3"))), Is.EqualTo("F1 A3"));
             Assert.That(Waves.Describe(Mix("MIX", T("wave sine f3 a6"), T("wave sine f3 a6"))), Is.EqualTo("F3 A6"));
             Assert.That(Waves.Describe(Mix("MIX", T("wave sine f2 a4"), T("binary 1"))), Is.EqualTo("F2 A2"), "lifted and halved: it swings 2 each way");
             Assert.That(Waves.Describe(Mix("MIX", T("wave sine f2 a7"), T("binary 1"))), Is.EqualTo("F2 A3.5"));

@@ -294,7 +294,7 @@ namespace Blackbox.UI.Screens
             onTime.Look = ValueLook.Target;
             onTime.Group().alpha = 0.55f;
             Example("wave sine f1 a6 p1", 1440f, 752f, 220f, 64f);
-            Caption(1440f, 800f, "+1/4: a quarter cycle late", "+1/2 and +3/4 are half and three quarters late. The faint line starts on time.", 340f);
+            Caption(1440f, 800f, "A quarter cycle late", "A wave can also start half or three quarters of a cycle late. The faint line starts on time.", 340f);
         }
 
         /// <summary>
@@ -456,7 +456,7 @@ namespace Blackbox.UI.Screens
                 ("WAVES", "wave sine f2 a5", new[]
                 {
                     "F is how often it repeats, and how high it sounds. A is how tall it is, and how loud.",
-                    "+1/4, +1/2 or +3/4 starts it that much of a cycle late.",
+                    "A wave can start a quarter, half or three quarters of a cycle late.",
                     "A wave block (W1, W2...) always sends a wave, with its own F and A. It reads a bit as the top or the bottom, and a digit as a level.",
                 }),
             };

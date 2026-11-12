@@ -112,8 +112,8 @@ namespace Blackbox.Components
         public static double AtStep(int v, int step, int steps) =>
             (Height(v) + 1) * Shape(Form(v), (double)(Cycles[Frequency(v)] * step) / steps - Phase(v) * 0.25);
 
-        /// <summary>"F3 A5", "F1 A7 +1/4": frequency and amplitude as the player reads them.</summary>
-        public static string Settings(int v) => $"F{Frequency(v) + 1} A{Height(v) + 1}{PhaseMarks[Phase(v)]}";
+        /// <summary>"F3 A5": frequency and amplitude as the player reads them. A late start isn't written; it shows in the line.</summary>
+        public static string Settings(int v) => $"F{Frequency(v) + 1} A{Height(v) + 1}";
 
         static Trace[] s_All;
 
