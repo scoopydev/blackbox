@@ -83,6 +83,8 @@ namespace Blackbox.Core
         public int X, Y;
         public int Color;
         public string Text = string.Empty;
+        /// <summary>The id of the block this note labels, or null for a note placed freely on the circuit.</summary>
+        public string Block;
     }
 
     /// <summary>
@@ -213,6 +215,7 @@ namespace Blackbox.Core
                     obj.Set("x", note.X);
                     obj.Set("y", note.Y);
                     obj.Set("c", note.Color);
+                    if (note.Block != null) obj.Set("b", note.Block);
                     obj.Set("t", JsonValue.From(note.Text));
                     arr.Add(obj);
                 }
@@ -288,7 +291,7 @@ namespace Blackbox.Core
                     foreach (var n in m.Value.Items)
                     {
                         if (!n.IsObject || !n["t"].IsString || string.IsNullOrWhiteSpace(n["t"].AsString())) continue;
-                        list.Add(new TextNote { X = n["x"].AsInt(), Y = n["y"].AsInt(), Color = n["c"].AsInt(), Text = n["t"].AsString() });
+                        list.Add(new TextNote { X = n["x"].AsInt(), Y = n["y"].AsInt(), Color = n["c"].AsInt(), Text = n["t"].AsString(), Block = n["b"].IsString ? n["b"].AsString() : null });
                     }
                     if (list.Count > 0) data.Notes[m.Key] = list;
                 }

@@ -15,7 +15,8 @@ namespace Blackbox.UI.Board
     /// <list type="bullet">
     /// <item>Pen: click and drag to draw. Right-drag rubs out.</item>
     /// <item>Eraser: any drag rubs out strokes and typed notes.</item>
-    /// <item>Text: click anywhere and type. Click a note to edit it, drag it to move it, click away to finish. Right-drag rubs out.</item>
+    /// <item>Text: click anywhere and type. Click a note to edit it, drag it to move it, click away to finish. Right-drag rubs out.
+    /// Clicking a block types a label inside the block instead, which moves with it.</item>
     /// </list>
     /// With every tool off the layer lets every click through to the board.
     /// </summary>
@@ -48,7 +49,13 @@ namespace Blackbox.UI.Board
             public TextNote Note;
             public RectTransform Rt;
             public VoidText Text;
+            /// <summary>A label inside a block: the text belongs to the block's card, so it moves with it.</summary>
+            public bool OnBlock => Note.Block != null;
         }
+
+        /// <summary>The id of the block under a screen point, or null. Set by the screen.</summary>
+        public Func<Vector2, Camera, string> BlockAt;
+        Func<string, VoidText> _tagOf;
 
         List<InkStroke> _strokes;
         List<TextNote> _notes;
@@ -100,9 +107,12 @@ namespace Blackbox.UI.Board
 
         /// <summary>True while a note is being typed. The screen should hand its keys to <see cref="HandleTyping"/>.</summary>
         public bool Typing => _editing != null;
+        /// <summary>The note being typed is a block's label.</summary>
+        public bool TypingLabel => _editing != null && _editing.OnBlock;
 
         /// <param name="area">Where notes can go, in frame coordinates from the top-left.</param>
-        public static InkLayer Create(Transform parent, List<InkStroke> strokes, List<TextNote> notes, Rect area)
+        /// <param name="tagOf">The text inside a block's card that holds its label, by block id, or null if there's no such block.</param>
+        public static InkLayer Create(Transform parent, List<InkStroke> strokes, List<TextNote> notes, Rect area, Func<string, VoidText> tagOf = null)
         {
             var rt = UIKit.Rect(parent, "Ink").Centered(0f, 0f, VoidFrame.Width, VoidFrame.Height);
             var layer = rt.gameObject.AddComponent<InkLayer>();
@@ -110,6 +120,9 @@ namespace Blackbox.UI.Board
             layer._strokes = strokes;
             layer._notes = notes;
             layer._area = area;
+            layer._tagOf = tagOf;
+            // A label for a block this circuit no longer has is dropped.
+            notes.RemoveAll(n => n.Block != null && (tagOf == null || tagOf(n.Block) == null));
             layer._strokeLayer = UIKit.Rect(rt, "Strokes").Stretch();
             layer._noteLayer = UIKit.Rect(rt, "Notes").Stretch();
 
@@ -162,7 +175,7 @@ namespace Blackbox.UI.Board
             foreach (var g in _graphics) Destroy(g.gameObject);
             _graphics.Clear();
             _notes.Clear();
-            foreach (var v in _noteViews) Destroy(v.Rt.gameObject);
+            foreach (var v in _noteViews) DropView(v);
             _noteViews.Clear();
             _history.Clear();
             _lastTyped = null;
@@ -203,7 +216,7 @@ namespace Blackbox.UI.Board
             if (_editing == _noteViews[i]) StopEditing();
             if (_lastTyped == _noteViews[i]) _lastTyped = null;
             _notes.RemoveAt(i);
-            Destroy(_noteViews[i].Rt.gameObject);
+            DropView(_noteViews[i]);
             _noteViews.RemoveAt(i);
             Changed?.Invoke();
             return true;
@@ -282,7 +295,7 @@ namespace Blackbox.UI.Board
                 var v = _noteViews[i];
                 if (v == _editing || !Touches(Bounds(v), local, EraserRadius)) continue;
                 if (v == _lastTyped) _lastTyped = null;
-                Destroy(v.Rt.gameObject);
+                DropView(v);
                 _noteViews.RemoveAt(i);
                 _notes.RemoveAt(i);
                 erased = true;
@@ -303,6 +316,16 @@ namespace Blackbox.UI.Board
 
         NoteView AddNoteView(TextNote note)
         {
+            if (note.Block != null)
+            {
+                var tag = _tagOf(note.Block);
+                tag.text = note.Text;
+                tag.color = Inks[Mathf.Clamp(note.Color, 0, Inks.Length - 1)];
+                tag.enabled = true;
+                var labelView = new NoteView { Note = note, Rt = tag.rectTransform, Text = tag };
+                _noteViews.Add(labelView);
+                return labelView;
+            }
             var rt = UIKit.Rect(_noteLayer, "Note");
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0f, 1f);
@@ -329,9 +352,38 @@ namespace Blackbox.UI.Board
             return _measure.MeasureWidth();
         }
 
+        /// <summary>A free note's view is its own; a block's label is the block's text, which is only emptied.</summary>
+        void DropView(NoteView v)
+        {
+            if (!v.OnBlock) { Destroy(v.Rt.gameObject); return; }
+            if (v.Text == null) return;
+            v.Text.text = "";
+            v.Text.enabled = false;
+        }
+
+        /// <summary>Where a block's label text is centred, in the layer's local coordinates.</summary>
+        Vector2 TagCentre(NoteView v) => _rt.InverseTransformPoint(v.Rt.TransformPoint(v.Rt.rect.center));
+
+        /// <summary>The width of one line of a note, in its own text style.</summary>
+        float NoteWidth(NoteView v, string line)
+        {
+            if (!v.OnBlock) return LineWidth(line);
+            string was = v.Text.text;
+            v.Text.text = line;
+            float w = v.Text.MeasureWidth();
+            v.Text.text = was;
+            return w;
+        }
+
         /// <summary>The space a note takes up, in the layer's local coordinates.</summary>
         Rect Bounds(NoteView v)
         {
+            if (v.OnBlock)
+            {
+                Vector2 c = TagCentre(v);
+                float tw = Mathf.Max(18f, v.Text.MeasureWidth()) + 8f, th = v.Text.fontSize * 1.3f + 4f;
+                return new Rect(c.x - tw * 0.5f, c.y - th * 0.5f, tw, th);
+            }
             Vector2 topLeft = ToLocal(v.Note.X, v.Note.Y);
             float w = Mathf.Max(18f, v.Text.MeasureWidth());
             float h = NoteSize * (1f + (LineCount(v.Note.Text) - 1) * NoteLineHeight);
@@ -352,6 +404,19 @@ namespace Blackbox.UI.Board
             int x = Mathf.Clamp(FrameX(local) - 2, Mathf.RoundToInt(_area.xMin + 6f), Mathf.RoundToInt(_area.xMax - 200f));
             int y = Mathf.Clamp(FrameY(local) - Mathf.RoundToInt(NoteSize * 0.5f), Mathf.RoundToInt(_area.yMin + 4f), Mathf.RoundToInt(_area.yMax - NoteSize - 6f));
             var note = new TextNote { X = x, Y = y, Color = _colour };
+            _notes.Add(note);
+            _history.Add(note);
+            StartEditing(AddNoteView(note));
+        }
+
+        void LabelBlock(string block)
+        {
+            foreach (var v in _noteViews)
+                if (v.Note.Block == block) { StartEditing(v); return; }
+            var tag = _tagOf?.Invoke(block);
+            if (tag == null) return;
+            FinishTyping();
+            var note = new TextNote { Block = block, Color = _colour };
             _notes.Add(note);
             _history.Add(note);
             StartEditing(AddNoteView(note));
@@ -509,7 +574,7 @@ namespace Blackbox.UI.Board
                 int lineStart = inserted.LastIndexOf('\n', _at) + 1;
                 int lineEnd = inserted.IndexOf('\n', _at);
                 string line = inserted.Substring(lineStart, (lineEnd < 0 ? inserted.Length : lineEnd) - lineStart);
-                if (LineWidth(line) > LineLimit(note)) return;
+                if (NoteWidth(_editing, line) > LineLimit(note)) return;
                 note.Text = inserted;
                 _at++;
                 return;
@@ -523,7 +588,7 @@ namespace Blackbox.UI.Board
             string text = note.Text + ch;
             int lastBreak = text.LastIndexOf('\n');
             string last = text.Substring(lastBreak + 1);
-            if (LineWidth(last) <= LineLimit(note)) { note.Text = text; return; }
+            if (NoteWidth(_editing, last) <= LineLimit(note)) { note.Text = text; return; }
             if (LineCount(text) >= LinesAllowed(note)) return;
             if (ch == ' ') { note.Text += "\n"; return; }
             int space = last.LastIndexOf(' ');
@@ -532,11 +597,15 @@ namespace Blackbox.UI.Board
                 : note.Text + "\n" + ch;
         }
 
-        float LineLimit(TextNote note) => Mathf.Clamp(_area.xMax - note.X - 12f, 160f, MaxNoteWidth);
+        float LineLimit(TextNote note) => _editing != null && _editing.OnBlock
+            ? _editing.Rt.rect.width
+            : Mathf.Clamp(_area.xMax - note.X - 12f, 160f, MaxNoteWidth);
 
         /// <summary>How many lines fit between the note's top and the bottom of the notes area.</summary>
         int LinesAllowed(TextNote note)
         {
+            // A block's label is one line inside its card.
+            if (note.Block != null) return 1;
             float room = _area.yMax - 4f - note.Y - NoteSize;
             return Mathf.Clamp(1 + Mathf.FloorToInt(room / (NoteSize * NoteLineHeight)), 1, MaxNoteLines);
         }
@@ -545,6 +614,16 @@ namespace Blackbox.UI.Board
         {
             if (_editing == null) return;
             string text = _editing.Note.Text.Substring(0, Mathf.Clamp(_at, 0, _editing.Note.Text.Length));
+            if (_editing.OnBlock)
+            {
+                // The label is centred in the block, so the caret sits after the typed part of the centred line.
+                Vector2 c = TagCentre(_editing);
+                float full = NoteWidth(_editing, _editing.Note.Text);
+                float cx = c.x - full * 0.5f + NoteWidth(_editing, text) + (text.Length > 0 ? 2f : 0f);
+                _caret.rectTransform.anchoredPosition = new Vector2(cx, c.y);
+                _caret.rectTransform.sizeDelta = new Vector2(2f, _editing.Text.fontSize * 1.15f);
+                return;
+            }
             int lines = LineCount(text);
             int lastBreak = text.LastIndexOf('\n');
             string last = lastBreak >= 0 ? text.Substring(lastBreak + 1) : text;
@@ -583,7 +662,15 @@ namespace Blackbox.UI.Board
             if (_tool == InkTool.Text)
             {
                 var hit = NoteAt(local);
-                if (hit != null)
+                string block = hit == null ? BlockAt?.Invoke(e.position, e.pressEventCamera) : null;
+                if (hit != null && hit.OnBlock) block = hit.Note.Block;
+                if (block != null)
+                {
+                    // Clicking a block labels it: the text goes inside the card and moves with it.
+                    LabelBlock(block);
+                    App.Sound(Sfx.Tick, 1.2f, 0.6f);
+                }
+                else if (hit != null)
                 {
                     // Pressing a note picks it up: a drag moves it, a click edits it.
                     _pressed = hit;

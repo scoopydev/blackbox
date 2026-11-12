@@ -434,6 +434,21 @@ namespace Blackbox.UI.Board
         WiredBlockView _moving;
         Vector2 _moveFrom, _grabOffset;
 
+        /// <summary>The id of the block whose card is under a screen point, or null.</summary>
+        public string BlockAt(Vector2 screen, Camera cam)
+        {
+            for (int i = Blocks.Count - 1; i >= 0; i--)
+                if (RectTransformUtility.RectangleContainsScreenPoint((RectTransform)Blocks[i].transform, screen, cam)) return Blocks[i].Def.Id;
+            return null;
+        }
+
+        /// <summary>The text that holds a block's player label, by block id, or null.</summary>
+        public VoidText TagOf(string id)
+        {
+            foreach (var b in Blocks) if (b.Def.Id == id) return b.Tag();
+            return null;
+        }
+
         /// <summary>Any block sits somewhere other than where the circuit put it.</summary>
         public bool BlocksMoved
         {
@@ -1045,8 +1060,10 @@ namespace Blackbox.UI.Board
         public readonly List<PortView> Ins = new List<PortView>();
 
         ShapeGraphic _outline;
-        VoidText _code, _note, _rule;
+        VoidText _code, _note, _rule, _tag;
         SignalView _readout;
+        float _scale;
+        bool _tagged;
         bool _solved, _broken, _lifted, _crowded, _hover;
         float _flash, _noteY;
 
@@ -1061,6 +1078,7 @@ namespace Blackbox.UI.Board
             view.Centre = view.Home = c;
             view.Size = new Vector2(w, h);
             view._board = board;
+            view._scale = s;
 
             // The body is what the player grabs to move the block. The dots sit on top of it.
             var body = UIKit.Hit(rt, "Body");
@@ -1113,6 +1131,33 @@ namespace Blackbox.UI.Board
 
             view.Restyle();
             return view;
+        }
+
+        /// <summary>
+        /// The player's label for this block: one short line inside the bottom of the
+        /// card, under the block's own label. Above the card is the signal, below it
+        /// the warnings and either side the dots, so inside is the only free room.
+        /// </summary>
+        public VoidText Tag()
+        {
+            if (_tag != null) return _tag;
+            float s = _scale;
+            _tag = UIKit.Text(transform, "", new TextStyle(300, Mathf.Max(12, Mathf.RoundToInt(15 * s)), 0.04f, true, Palette.Text), TextAnchor.MiddleCenter, "Player label");
+            _tag.raycastTarget = false;
+            _tag.rectTransform.Centered(0f, -Size.y * 0.5f + 17f * s, Size.x - 26f * s, 20f * s);
+            _tag.enabled = false;
+            return _tag;
+        }
+
+        void LateUpdate()
+        {
+            // With a label, the block's own label moves up to make room for it.
+            bool tagged = _tag != null && _tag.enabled;
+            if (tagged == _tagged) return;
+            _tagged = tagged;
+            float s = _scale;
+            _code.rectTransform.Centered(0f, tagged ? 9f * s : -3f * s, Size.x, Size.y * (tagged ? 0.45f : 0.55f));
+            _code.fontSize = Mathf.RoundToInt((tagged ? 24 : 28) * s);
         }
 
         public void Conceal()

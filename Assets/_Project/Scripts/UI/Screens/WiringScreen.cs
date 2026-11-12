@@ -74,12 +74,14 @@ namespace Blackbox.UI.Screens
             _board = WiringBoard.Create(Root, _session, this, places);
             _board.SetShowRules(RulesShown);
 
-            _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f));
+            _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f), _board.TagOf);
+            _ink.BlockAt = _board.BlockAt;
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
             _ink.TypingChanged = typing =>
             {
-                if (typing) Say("Typing a note. Enter finishes it, Shift+Enter starts a new line.", 600f);
-                else if (_ink.Tool == InkTool.Text) Say("Click anywhere to start another note, or drag a note to move it.", 3f);
+                if (typing && _ink.TypingLabel) Say("Labelling a block. The label moves with the block. Enter finishes it.", 600f);
+                else if (typing) Say("Typing a note. Enter finishes it, Shift+Enter starts a new line.", 600f);
+                else if (_ink.Tool == InkTool.Text) Say("Click anywhere to start another note, click a block to label it, or drag a note to move it.", 3f);
                 else Hush();
             };
 
