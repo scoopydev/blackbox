@@ -47,7 +47,7 @@ namespace Blackbox.Tests
             foreach (var chapter in LearnChapters)
             {
                 Assert.That(chapter.Mixed, Is.False, $"{chapter.Title} is about one kind of signal");
-                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" ? 7 : chapter.Id == "tally" ? 5 : 6), chapter.Title);
+                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" || chapter.Id == "resonance" ? 7 : chapter.Id == "tally" ? 5 : 6), chapter.Title);
             }
             foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
                 Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");
@@ -139,7 +139,9 @@ namespace Blackbox.Tests
         public void EachLearnChapterSticksToItsSignal()
         {
             // Part One teaches one kind of signal per chapter, with that kind's four
-            // blocks, before Part Two mixes them.
+            // blocks, before Part Two mixes them. The one exception is Resonance's
+            // TURNAROUND, where the wave block GATE, met with two waves, shows that
+            // which input goes on top can matter (no wave block of the four cares).
             foreach (var chapter in LearnChapters)
             {
                 var kinds = new HashSet<string>();
@@ -148,6 +150,7 @@ namespace Blackbox.Tests
                     foreach (var i in p.Inputs) Assert.That(i.Signal.Medium, Is.EqualTo(chapter.Medium), $"{p.Id}: input {i.Id}");
                     foreach (var b in p.Blocks)
                     {
+                        if (p.Id == TurnaroundId && b.Kind.Id == "GATE") continue;
                         Assert.That(b.Kind.Mixing, Is.False, $"{p.Id}: {b.Kind.Id} belongs in Part Two");
                         Assert.That(b.Kind.Medium, Is.EqualTo(chapter.Medium), $"{p.Id}: {b.Kind.Id}");
                         kinds.Add(b.Kind.Id);
@@ -197,6 +200,37 @@ namespace Blackbox.Tests
             Assert.That(TestContent.Library.Chapters[1].Puzzles[0].Name, Is.EqualTo("TALLY 1"));
         }
 
+        /// <summary>The Resonance circuit that teaches that which input goes on top can matter.</summary>
+        const string TurnaroundId = "resonance-03";
+
+        [Test]
+        public void TurnaroundTeachesThatInputOrderCanMatter()
+        {
+            // It comes wired with its block's two inputs the wrong way round: every
+            // wire is in, the run fails, and swapping the two wires solves it.
+            var resonance = LearnChapters.First(c => c.Id == "resonance");
+            var p = resonance.Puzzles.First(q => q.Id == TurnaroundId);
+            Assert.That(resonance.Puzzles.IndexOf(p), Is.EqualTo(2), "after MIX's circuit, whose two inputs are alike");
+            Assert.That(p.Blocks.Count, Is.EqualTo(1));
+            Assert.That(p.Blocks[0].Kind.InputCount, Is.EqualTo(2));
+            Assert.That(p.Blocks[0].Kind.AlikeFrom, Is.LessThan(0), "a block whose inputs are not alike");
+
+            var session = new WiringSession(p);
+            var report = session.Check();
+            Assert.That(report.EmptyBlocks, Is.Empty, "every input wired");
+            Assert.That(report.Solved, Is.False, "wired the wrong way round");
+
+            int block = session.BlockNode(0);
+            int top = session.DriverOf(block, 0), bottom = session.DriverOf(block, 1);
+            Assert.That(top, Is.Not.EqualTo(bottom), "two different signals go in");
+            session.Disconnect(block, 0);
+            session.Disconnect(block, 1);
+            session.Connect(bottom, block, 0);
+            session.Connect(top, block, 1);
+            Assert.That(session.Check().Solved, Is.True, "swapping the two wires solves it");
+            Assert.That(WiringSolver.Analyse(p).Solutions, Is.EqualTo(1), "and nothing else does");
+        }
+
         [Test]
         public void EachLearnChapterTeachesWiringStepByStep()
         {
@@ -218,7 +252,7 @@ namespace Blackbox.Tests
                 Assert.That(half.WireCount, Is.GreaterThan(0), $"{second.Id} starts half wired");
                 Assert.That(half.Check().EmptyBlocks, Is.Not.Empty, $"{second.Id} leaves a block input for the player");
 
-                foreach (var p in chapter.Puzzles.Skip(2))
+                foreach (var p in chapter.Puzzles.Skip(2).Where(p => p.Id != TurnaroundId))
                     Assert.That(p.Start, Is.Empty, $"{p.Id}: from the third circuit on, the player draws every wire");
             }
             foreach (var p in TestContent.Library.Parts.Skip(1).SelectMany(part => part.Chapters).SelectMany(c => c.Puzzles))

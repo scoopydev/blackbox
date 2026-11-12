@@ -3,7 +3,7 @@
   "title": "Blend",
   "mode": "wiring",
   "tagline": "Signals of different kinds, mixed together.",
-  "signals": "A bit block reads a wave as 1 while it's above the middle, and a wave block reads a bit as a wave at the top for 1 and the bottom for 0. The new blocks work on any signal: they let a signal through, count, and compare.",
+  "signals": "A bit block reads a wave as 1 while it's above the middle, and a wave block reads a bit as a wave at the top for 1 and the bottom for 0. A block from Resonance comes back with a bit pattern, and two new blocks work on any signal: one counts and one compares.",
   "circuits": [
     {
       "id": "blend-01",
@@ -149,7 +149,7 @@
     },
     {
       "id": "blend-05",
-      "hint": "{g} is a new kind of block. Listen to the target, then to what you make.",
+      "hint": "You met {g}'s kind in Resonance, with two waves. Here its bottom input is a bit pattern. Listen to the target, then to what you make.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"

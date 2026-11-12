@@ -13,8 +13,10 @@ namespace Blackbox.UI.Screens
     /// height reads, what a wave's F and A mean, and how each kind of block reads
     /// the other kinds. It follows the chapter's title card on the first visit,
     /// before the first circuit, and opens again from the pause menu. The chapter
-    /// says which page it shows (<see cref="SignalGuide"/>). Every signal on it
-    /// can be clicked to hear it, with a playhead running through the loop.
+    /// says which guide it shows (<see cref="SignalGuide"/>); most guides are one
+    /// page, and the waves guide has a second on which way round two wires go
+    /// into a block, taught by Resonance's TURNAROUND. Every signal on it can be
+    /// clicked to hear it, with a playhead running through the loop.
     /// </summary>
     public sealed class SignalGuideOverlay : Overlay
     {
@@ -41,6 +43,8 @@ namespace Blackbox.UI.Screens
 
         readonly List<Loop> _loops = new List<Loop>();
         RectTransform _content;
+        List<System.Action> _pages;
+        int _page;
         VoidText _prompt;
         float _shownAt;
         float _nextNote;
@@ -59,22 +63,49 @@ namespace Blackbox.UI.Screens
             c.ClickSound = Sfx.Hover;
             c.Clicked = TryDismiss;
 
+            _pages = PagesOf(Chapter.Guide);
+            _page = 0;
+            BuildPage();
+        }
+
+        /// <summary>The pages of a guide, in the order they're shown.</summary>
+        List<System.Action> PagesOf(SignalGuide guide)
+        {
+            switch (guide)
+            {
+                case SignalGuide.Bits: return new List<System.Action> { BuildBits };
+                case SignalGuide.Digits: return new List<System.Action> { BuildDigits };
+                case SignalGuide.ChangingDigits: return new List<System.Action> { BuildChangingDigits };
+                case SignalGuide.Waves: return new List<System.Action> { BuildWaves, BuildInputOrder };
+                case SignalGuide.Readings: return new List<System.Action> { BuildReadings };
+                default: return new List<System.Action> { BuildRecap };
+            }
+        }
+
+        bool LastPage => _page >= _pages.Count - 1;
+
+        /// <summary>Clears whatever page was showing and builds the current one.</summary>
+        void BuildPage()
+        {
+            Tweener.Kill(this, "play");
+            App.Audio?.StopSignals();
+            _loops.Clear();
+            _lead = null;
+            if (_content != null)
+            {
+                _content.gameObject.SetActive(false);
+                Destroy(_content.gameObject);
+            }
+
             _content = UIKit.Rect(Root, "Guide").Stretch();
             _nextNote = 0.35f;
-            switch (Chapter.Guide)
-            {
-                case SignalGuide.Bits: BuildBits(); break;
-                case SignalGuide.Digits: BuildDigits(); break;
-                case SignalGuide.ChangingDigits: BuildChangingDigits(); break;
-                case SignalGuide.Waves: BuildWaves(); break;
-                case SignalGuide.Readings: BuildReadings(); break;
-                default: BuildRecap(); break;
-            }
+            _pages[_page]();
 
             var hint = UIKit.Text(_content, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
             hint.raycastTarget = false;
             hint.rectTransform.At(Cx, 968f, 600f, 16f);
-            _prompt = UIKit.Text(_content, FromMenu ? "CLICK OR PRESS ENTER TO GO BACK" : "CLICK OR PRESS ENTER TO BEGIN", TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
+            string prompt = !LastPage ? "CLICK OR PRESS ENTER FOR THE NEXT PAGE" : FromMenu ? "CLICK OR PRESS ENTER TO GO BACK" : "CLICK OR PRESS ENTER TO BEGIN";
+            _prompt = UIKit.Text(_content, prompt, TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
             _prompt.raycastTarget = false;
             _prompt.rectTransform.At(Cx, 1006f, 700f, 18f);
             if (!App.ReduceMotion)
@@ -219,6 +250,79 @@ namespace Blackbox.UI.Screens
             Caption(1440f, 800f, "+1/4: A QUARTER CYCLE LATE", "+1/2 AND +3/4 ARE HALF AND THREE QUARTERS LATE. THE FAINT LINE STARTS ON TIME.", 340f);
         }
 
+        /// <summary>
+        /// Resonance, second page: the same two waves wired into a block's two
+        /// inputs one way round and then the other. It shows no block's rule and
+        /// no result, only that the two wirings are different and why that can
+        /// matter.
+        /// </summary>
+        void BuildInputOrder()
+        {
+            Header("WHICH WAY ROUND", "A BLOCK WITH TWO INPUTS HAS TWO DOTS ON ITS LEFT, A TOP ONE AND A BOTTOM ONE. THE SAME TWO WIRES CAN GO IN EITHER WAY ROUND.");
+
+            float[] centres = { 613f, 1433f };
+            const float topY = 380f, bottomY = 520f, waveW = 180f, waveH = 56f;
+            for (int d = 0; d < 2; d++)
+            {
+                bool swapped = d == 1;
+                float cx = centres[d];
+                float waveX = cx - 230f;
+                Example("wave sine f1 a6", waveX, topY, waveW, waveH);
+                Example("wave square f3 a4", waveX, bottomY, waveW, waveH);
+                Letter(waveX - waveW * 0.5f - 22f, topY, "A");
+                Letter(waveX - waveW * 0.5f - 22f, bottomY, "B");
+
+                var g = NoteGroup();
+                var block = new Vector2(cx + 60f, (topY + bottomY) * 0.5f);
+                const float bw = 150f, bh = 88f;
+                var topPort = new Vector2(block.x - bw * 0.5f, block.y - 22f);
+                var bottomPort = new Vector2(block.x - bw * 0.5f, block.y + 22f);
+                var outPort = new Vector2(block.x + bw * 0.5f, block.y);
+                float from = waveX + waveW * 0.5f + 8f;
+                var aTo = swapped ? bottomPort : topPort;
+                var bTo = swapped ? topPort : bottomPort;
+                Color wire = Palette.SignalAtX(from).WithAlpha(0.75f);
+                Line(g, wire, new Vector2(from, topY), new Vector2(cx - 80f, topY), new Vector2(cx - 80f, aTo.y), aTo);
+                Line(g, wire, new Vector2(from, bottomY), new Vector2(cx - 55f, bottomY), new Vector2(cx - 55f, bTo.y), bTo);
+                Line(g, wire, outPort, outPort + new Vector2(46f, 0f));
+
+                var box = UIKit.Shape(g, "Block");
+                box.rectTransform.At(block.x, block.y, bw, bh);
+                box.Radius = 16f;
+                box.Style(Paint.Solid, Color.black, Paint.Solid, Palette.Dim, 1.2f);
+                var label = UIKit.Text(g, "W1", TextStyle.Value.WithSize(28).WithWeight(200).WithTracking(0.08f).WithColor(Palette.Dim));
+                label.raycastTarget = false;
+                label.rectTransform.At(block.x, block.y + 3f, bw, bh * 0.6f);
+                foreach (var port in new[] { topPort, bottomPort, outPort })
+                {
+                    var dot = UIKit.Shape(g, "Port", ShapeKind.Circle);
+                    dot.Style(Paint.Solid, Palette.Text, Paint.None, Color.clear, 0f);
+                    dot.rectTransform.At(port.x, port.y, 7f, 7f);
+                }
+                var unknown = UIKit.Text(g, "?", TextStyle.Value.WithSize(30).WithWeight(200).WithColor(Palette.Dim));
+                unknown.raycastTarget = false;
+                unknown.rectTransform.At(outPort.x + 66f, block.y, 30f, 40f);
+                Reveal(g);
+
+                Caption(cx, 600f, swapped ? "B ON TOP, A BELOW" : "A ON TOP, B BELOW", null);
+            }
+            var or = UIKit.Text(_content, "OR", TextStyle.Label.WithSize(14).WithTracking(0.3f).WithColor(Palette.Faint));
+            or.raycastTarget = false;
+            or.rectTransform.At(Cx, (topY + bottomY) * 0.5f, 60f, 20f);
+
+            Caption(centres[0], 690f, "SOME BLOCKS DON'T MIND", "THEY TREAT BOTH INPUTS ALIKE, SO EITHER WAY ROUND SENDS THE SAME.", 420f);
+            Caption(centres[1], 690f, "OTHERS DO", "EACH INPUT HAS ITS OWN JOB, SO SWAPPING THE WIRES CHANGES WHAT COMES OUT.", 420f);
+            Caption(Cx, 830f, "CLOSE, BUT NOT RIGHT?", "TRY THE SAME WIRES THE OTHER WAY ROUND. CLICK A WIRE TO TAKE IT OFF, THEN DRAG A NEW ONE TO THE OTHER DOT.", 760f);
+        }
+
+        /// <summary>An input's letter, beside its signal.</summary>
+        void Letter(float x, float y, string letter)
+        {
+            var t = UIKit.Text(_content, letter, TextStyle.Label.WithSize(16).WithTracking(0.2f).WithColor(Palette.Text));
+            t.raycastTarget = false;
+            t.rectTransform.At(x, y, 30f, 22f);
+        }
+
         /// <summary>The mixed chapters: one signal of each kind, as a block of each kind reads it.</summary>
         void BuildReadings()
         {
@@ -302,7 +406,8 @@ namespace Blackbox.UI.Screens
 
         void Header(string heading, string sub)
         {
-            var where = UIKit.Text(_content, $"CHAPTER {Chapter.Numeral}  ·  {Chapter.Title}  ·  SIGNALS", TextStyle.Label.WithSize(13).WithTracking(0.4f).WithColor(Palette.Faint));
+            string page = _pages.Count > 1 ? $"  ·  PAGE {_page + 1} OF {_pages.Count}" : "";
+            var where = UIKit.Text(_content, $"CHAPTER {Chapter.Numeral}  ·  {Chapter.Title}  ·  SIGNALS{page}", TextStyle.Label.WithSize(13).WithTracking(0.4f).WithColor(Palette.Faint));
             where.raycastTarget = false;
             where.rectTransform.At(Cx, 92f, 1200f, 20f);
             var title = UIKit.Text(_content, heading, TextStyle.Heading.WithSize(40).WithWeight(200));
@@ -529,7 +634,23 @@ namespace Blackbox.UI.Screens
 
         // ------------------------------------------------------------------ closing
 
+        /// <summary>Goes on to the next page, or closes after the last.</summary>
         void TryDismiss()
+        {
+            if (Time.unscaledTime - _shownAt < 0.6f) return;
+            if (!LastPage)
+            {
+                App.Sound(Sfx.Click);
+                _page++;
+                BuildPage();
+                return;
+            }
+            App.Sound(Sfx.Close);
+            Close();
+        }
+
+        /// <summary>Closes at once, skipping any pages left.</summary>
+        void TryClose()
         {
             if (Time.unscaledTime - _shownAt < 0.6f) return;
             App.Sound(Sfx.Close);
@@ -545,7 +666,8 @@ namespace Blackbox.UI.Screens
 
         public override void HandleInput()
         {
-            if (GameInput.Confirm || GameInput.Down(Key.Escape)) TryDismiss();
+            if (GameInput.Down(Key.Escape)) TryClose();
+            else if (GameInput.Confirm) TryDismiss();
         }
     }
 }

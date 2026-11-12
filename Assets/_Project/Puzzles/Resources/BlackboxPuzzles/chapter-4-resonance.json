@@ -70,6 +70,38 @@
     },
     {
       "id": "resonance-03",
+      "hint": "Both waves go into {g}, but the wrong way round. Run it, then swap its two wires: for some blocks, which input goes on top matters.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a6"
+        },
+        "B": {
+          "signal": "wave square f3 a4"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "GATE"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "start": [
+        "B -> g.0",
+        "A -> g.1",
+        "g -> X"
+      ],
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "resonance-04",
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
@@ -99,7 +131,7 @@
       ]
     },
     {
-      "id": "resonance-04",
+      "id": "resonance-05",
       "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {
@@ -134,7 +166,7 @@
       ]
     },
     {
-      "id": "resonance-05",
+      "id": "resonance-06",
       "hint": "Two outputs. Listen to each target on its own.",
       "inputs": {
         "A": {
@@ -172,7 +204,7 @@
       ]
     },
     {
-      "id": "resonance-06",
+      "id": "resonance-07",
       "hint": "Work out one output at a time.",
       "inputs": {
         "A": {

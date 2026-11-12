@@ -85,15 +85,15 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
-* The first time a player enters a chapter, its title card plays, then its **signal guide**: the chapter's kinds of signal drawn as the board draws them, with notes pointing at what to look for. Every signal on it plays when clicked, with a playhead running through the loop. **SIGNAL GUIDE** in the pause menu (or G) opens it again.
+* The first time a player enters a chapter, its title card plays, then its **signal guide**: the chapter's kinds of signal drawn as the board draws them, with notes pointing at what to look for. Every signal on it plays when clicked, with a playhead running through the loop. Most guides are one page; Resonance's has two, and a click or Enter turns the page (Escape closes it). **SIGNAL GUIDE** in the pause menu (or G) opens it again.
   * First Light, **reading a bit**: a steady 1 and 0, then a bit that switches, with notes on the line above or below the middle (a beep or a soft tap), the faint middle line, and the loop playing left to right.
   * Tally, **reading a digit**: a steady digit, large, shown as just its number, and 0, 3, 6 and 9 in a row, each a higher tone.
   * Ticker, **digits that change**: a steady digit for comparison, a busy one with only its highest and lowest written, and a stepped line with a 0-to-9 scale beside it and each step's digit written on it.
-  * Resonance, **reading a wave**: one cycle bracketed (F), the height from the middle to a peak bracketed (A), where F and A are written, the three forms, and a wave starting a quarter cycle late over the same wave on time.
+  * Resonance, **reading a wave**: one cycle bracketed (F), the height from the middle to a peak bracketed (A), where F and A are written, the three forms, and a wave starting a quarter cycle late over the same wave on time. Then a second page, **which way round**: the same two waves wired into a block's top and bottom inputs one way and then swapped, with a question mark for what comes out; some blocks treat both inputs alike, others give each its own job, so a run that is close but wrong may only need the wires swapped. It shows no block's rule and no result.
   * Patch, Junction and Blend, **how a block reads each kind**: a bit, a digit and a wave, each drawn as a bit block, a digit block and a wave block reads it, with the reading written under it.
   * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
 * Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
-* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
+* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
   1. **Pre-wired.** Two inputs and one block, every wire drawn, but the block's wire starts at the wrong input. The player moves it to the other one.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
   3. From here the player draws every wire: two blocks in a chain.
@@ -147,16 +147,17 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 
 ### Chapter IV: Resonance
 
-*Listen closely.* Analog waves: FLIP, FASTER, LATER, MIX.
+*Listen closely.* Analog waves: FLIP, FASTER, LATER, MIX, and GATE for one lesson. Its third circuit, TURNAROUND, comes wired with GATE's two inputs the wrong way round, to teach that which input goes on top can matter: MIX, met just before, treats its inputs alike, and so do the other Part One blocks with two inputs, so this is the only place in Part One a mixing block appears (a test allows just this one). GATE is a wave block; here both its inputs are waves, and it comes back in Blend with a bit pattern on its bottom input.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
 | 1 | Pre-wired: move one wire to the other wave, and FASTER | 2 | 1 |
 | 2 | Half wired, and MIX | 4 | 1 |
-| 3 | LATER, and order matters | 9 | 1 |
-| 4 | FLIP, feeding an output and a block at once | 27 | 1 |
-| 5 | Two outputs, by ear | 64 | 2 |
-| 6 | Four blocks, two outputs | 7,776 | 1 |
+| 3 | Pre-wired the wrong way round: swap GATE's two inputs, because which input goes on top matters | 4 | 1 |
+| 4 | LATER, and the order the blocks come in matters | 9 | 1 |
+| 5 | FLIP, feeding an output and a block at once | 27 | 1 |
+| 6 | Two outputs, by ear | 64 | 2 |
+| 7 | Four blocks, two outputs | 7,776 | 1 |
 
 Every circuit is checked by trying every way to wire it, in the tests and from **BLACKBOX → Validate Puzzles**. Each one's solution must work, it must not be solved as it starts, and no input wired straight to an output may already meet that output's target.
 
@@ -187,7 +188,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter VII: Blend
 
-*Signals of different kinds, mixed together.* Wave blocks meet other kinds, then the three mixing blocks: GATE, COUNT and COMPARE, each met beside a block the player already knows.
+*Signals of different kinds, mixed together.* Wave blocks meet other kinds, then the three mixing blocks: GATE, first met in Resonance with two waves, now with a bit pattern; then COUNT and COMPARE, each met beside a block the player already knows.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
