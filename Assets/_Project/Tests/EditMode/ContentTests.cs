@@ -113,15 +113,19 @@ namespace Blackbox.Tests
         }
 
         [Test]
-        public void CombineGetsHarderAsItGoes()
+        public void PuzzlesGetHarderAfterLearn()
         {
-            // Patch, Junction and Blend each climb: inside a chapter no circuit has
-            // fewer blocks, or fewer ways to wire them, than the one before it, and
-            // each chapter opens and closes on a bigger circuit than the one before.
-            var combine = TestContent.Library.Parts[1];
+            // Patch, Junction, Blend and Unmarked each climb: inside a chapter no
+            // circuit has fewer blocks, or fewer ways to wire them, than the one
+            // before it, and each chapter opens and closes on a bigger circuit than
+            // the one before. Blackbox brings in the three-input blocks halfway, so
+            // only its first half has to climb, from an opener bigger than Unmarked's.
+            var library = TestContent.Library;
+            var climbing = library.Parts[1].Chapters.Concat(library.Chapters.Where(c => c.Id == "unmarked")).ToList();
+            Assert.That(climbing.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend", "unmarked" }));
             long Space(PuzzleDef p) => WiringSolver.Analyse(p, maxSpace: 0).Space;
             PuzzleDef openerBefore = null, finaleBefore = null;
-            foreach (var chapter in combine.Chapters)
+            foreach (var chapter in climbing)
             {
                 for (int i = 1; i < chapter.Puzzles.Count; i++)
                 {
@@ -140,8 +144,26 @@ namespace Blackbox.Tests
                 openerBefore = opener;
                 finaleBefore = finale;
             }
-            foreach (var p in TestContent.Library.Chapters.Single(c => c.Id == "blend").Puzzles)
+            foreach (var p in library.Chapters.Single(c => c.Id == "blend").Puzzles)
                 Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(3), $"{p.Id}: every Blend circuit has three blocks or more");
+
+            var blackbox = library.Chapters.Single(c => c.Id == "blackbox").Puzzles;
+            var firstHalf = blackbox.TakeWhile(p => p.Blocks.All(b => b.Kind.InputCount < 3)).ToList();
+            Assert.That(Space(blackbox[0]), Is.GreaterThan(Space(openerBefore)), "Blackbox opens bigger than Unmarked");
+            for (int i = 1; i < firstHalf.Count; i++)
+                Assert.That(Space(firstHalf[i]), Is.GreaterThanOrEqualTo(Space(firstHalf[i - 1])), $"{firstHalf[i].Id} has fewer ways to wire it than {firstHalf[i - 1].Id}");
+            foreach (var p in blackbox)
+                Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(3), $"{p.Id}: every Blackbox circuit has three blocks or more");
+        }
+
+        [Test]
+        public void EveryPuzzleAfterLearnHasItsOwnPicture()
+        {
+            // Each circuit after Learn is meant to be remembered by what its target
+            // looks or sounds like, which its hint names, so no two share a hint.
+            var later = TestContent.Library.Parts.Skip(1).SelectMany(part => part.Chapters).SelectMany(c => c.Puzzles).ToList();
+            var dupes = later.GroupBy(p => p.Hint).Where(g => g.Count() > 1).Select(g => string.Join(", ", g.Select(p => p.Id))).ToList();
+            Assert.That(dupes, Is.Empty, "circuits sharing a hint");
         }
 
         [Test]

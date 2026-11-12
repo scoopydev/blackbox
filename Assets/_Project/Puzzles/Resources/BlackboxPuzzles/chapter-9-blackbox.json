@@ -8,7 +8,7 @@
   "circuits": [
     {
       "id": "blackbox-01",
-      "hint": "Count the pulses the target makes in one loop.",
+      "hint": "A metronome: it ticks, and Y counts the ticks through the loop.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -54,70 +54,154 @@
     },
     {
       "id": "blackbox-02",
-      "hint": "Listen to the target. Then listen to each input on its own.",
+      "hint": "A short burst of sound, then its echo a moment later. Listen to it.",
       "inputs": {
         "A": {
-          "signal": "wave sine f2 a4"
+          "signal": "wave sine f6 a7"
         },
         "B": {
-          "signal": "wave square f2 a3"
+          "signal": "binary 1000"
         },
         "C": {
-          "signal": "binary 0011"
+          "signal": "binary 0110"
+        },
+        "D": {
+          "signal": "decimal 5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MIX"
+          "kind": "GATE",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "GATE"
+          "kind": "LATER",
+          "at": [
+            1,
+            1.5
+          ]
         },
         "k": {
-          "kind": "FLIP"
+          "kind": "MIX",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
         "X": {
-          "device": "display"
-        },
-        "Y": {
           "device": "display"
         }
       },
       "solution": [
         "A -> g.0",
         "B -> g.1",
-        "g -> h.0",
-        "C -> h.1",
-        "h -> X",
-        "C -> k",
-        "k -> Y"
+        "g -> h",
+        "g -> k.0",
+        "h -> k.1",
+        "k -> X"
       ]
     },
     {
       "id": "blackbox-03",
-      "hint": "Count how many times the target's wave repeats in one loop, and which way it slopes.",
+      "hint": "Two pulses cut from a saw, the same pulses upside down, and a count of them. The pulses light while the saw is above a line, but no input is that line.",
       "inputs": {
         "A": {
-          "signal": "wave saw f1 a7"
+          "signal": "wave saw f2 a7"
         },
         "B": {
-          "signal": "binary 1"
+          "signal": "decimal 6"
         },
         "C": {
-          "signal": "decimal 5"
+          "signal": "decimal 2"
         }
       },
       "blocks": {
         "g": {
-          "kind": "FASTER"
+          "kind": "COMPARE"
         },
         "h": {
-          "kind": "FLIP"
+          "kind": "DIFF"
         },
         "k": {
-          "kind": "MIRROR"
+          "kind": "COUNT"
+        },
+        "m": {
+          "kind": "NOT"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        },
+        "Z": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "h -> g.1",
+        "B -> h.0",
+        "C -> h.1",
+        "g -> X",
+        "g -> m",
+        "m -> Y",
+        "g -> k",
+        "k -> Z"
+      ]
+    },
+    {
+      "id": "blackbox-04",
+      "hint": "A slow tide with quick ripples on it. Y is on while the tide is high.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave sine f1 a3"
+        },
+        "C": {
+          "signal": "decimal 6"
+        },
+        "D": {
+          "signal": "binary 0101"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "FASTER",
+          "at": [
+            1,
+            0.5
+          ]
+        },
+        "h": {
+          "kind": "FASTER",
+          "at": [
+            1,
+            2.5
+          ]
+        },
+        "k": {
+          "kind": "MIX",
+          "at": [
+            2,
+            0.5
+          ]
+        },
+        "m": {
+          "kind": "COMPARE",
+          "at": [
+            2,
+            2.5
+          ]
         }
       },
       "outputs": {
@@ -129,16 +213,19 @@
         }
       },
       "solution": [
-        "A -> h",
-        "h -> g",
-        "g -> X",
-        "C -> k",
-        "k -> Y"
+        "B -> g",
+        "g -> h",
+        "A -> k.0",
+        "h -> k.1",
+        "k -> X",
+        "k -> m.0",
+        "C -> m.1",
+        "m -> Y"
       ]
     },
     {
-      "id": "blackbox-04",
-      "hint": "One wave, read three ways: as a bit by two blocks and as a digit by another.",
+      "id": "blackbox-05",
+      "hint": "One saw read three ways: a staircase from 9 down to 0, one blip, and two blips. Two blocks read it as a bit and one as a digit.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -189,59 +276,8 @@
       ]
     },
     {
-      "id": "blackbox-05",
-      "hint": "A pulse that stays on longer comes from a lower threshold.",
-      "inputs": {
-        "A": {
-          "signal": "wave saw f2 a7"
-        },
-        "B": {
-          "signal": "decimal 6"
-        },
-        "C": {
-          "signal": "decimal 2"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "COMPARE"
-        },
-        "h": {
-          "kind": "DIFF"
-        },
-        "k": {
-          "kind": "COUNT"
-        },
-        "m": {
-          "kind": "NOT"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        },
-        "Y": {
-          "device": "display"
-        },
-        "Z": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g.0",
-        "h -> g.1",
-        "B -> h.0",
-        "C -> h.1",
-        "g -> X",
-        "g -> m",
-        "m -> Y",
-        "g -> k",
-        "k -> Z"
-      ]
-    },
-    {
       "id": "blackbox-06",
-      "hint": "{g} is a new kind of block, with three inputs. Wire all three, then watch what it sends at each step.",
+      "hint": "{g} is a new kind of block, with three inputs: a vote. Wire all three, then watch what it sends at each step.",
       "inputs": {
         "A": {
           "signal": "binary 0011"
@@ -250,18 +286,33 @@
           "signal": "binary 0101"
         },
         "C": {
-          "signal": "binary 0110"
+          "signal": "wave sine f1 a7"
         },
         "D": {
-          "signal": "decimal 0"
+          "signal": "decimal 6"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MAJORITY"
+          "kind": "MAJORITY",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "NOT"
+          "kind": "NOT",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "COMPARE",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -273,9 +324,11 @@
         }
       },
       "solution": [
+        "C -> k.0",
+        "D -> k.1",
         "A -> g.0",
         "B -> g.1",
-        "C -> g.2",
+        "k -> g.2",
         "g -> X",
         "g -> h",
         "h -> Y"
@@ -283,7 +336,7 @@
     },
     {
       "id": "blackbox-07",
-      "hint": "{g} is a new kind of block, with three inputs. Where does the target stop rising, and where does it start?",
+      "hint": "{g} is a new kind of block, with three inputs. Remember slicing a wave flat in Unmarked? Where does the target stop rising, and where does it start?",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -292,15 +345,33 @@
           "signal": "decimal 2"
         },
         "C": {
-          "signal": "decimal 7"
+          "signal": "decimal 5"
+        },
+        "D": {
+          "signal": "binary 0110"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MIDDLE"
+          "kind": "MIDDLE",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "MIRROR"
+          "kind": "MIRROR",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "FLIP",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -312,12 +383,13 @@
         }
       },
       "solution": [
+        "B -> h",
         "A -> g.0",
         "B -> g.1",
-        "C -> g.2",
+        "h -> g.2",
         "g -> X",
-        "g -> h",
-        "h -> Y"
+        "g -> k",
+        "k -> Y"
       ]
     },
     {
@@ -331,15 +403,33 @@
           "signal": "decimal 3"
         },
         "C": {
-          "signal": "decimal 6"
+          "signal": "decimal 5"
+        },
+        "D": {
+          "signal": "binary 0110"
         }
       },
       "blocks": {
         "g": {
-          "kind": "BETWEEN"
+          "kind": "BETWEEN",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "COUNT"
+          "kind": "MIRROR",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "COUNT",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -351,29 +441,30 @@
         }
       },
       "solution": [
+        "B -> h",
         "A -> g.0",
         "B -> g.1",
-        "C -> g.2",
+        "h -> g.2",
         "g -> X",
-        "g -> h",
-        "h -> Y"
+        "g -> k",
+        "k -> Y"
       ]
     },
     {
       "id": "blackbox-09",
-      "hint": "{g} is a new kind of block, with three inputs. One of them decides what it sends.",
+      "hint": "{g} is a new kind of block, with three inputs. One of them decides what it sends. Listen: the target wails up and down like a siren.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a7"
         },
         "B": {
-          "signal": "wave saw f1 a7"
+          "signal": "binary 1001"
         },
         "C": {
-          "signal": "binary 0011"
+          "signal": "wave saw f1 a7"
         },
         "D": {
-          "signal": "binary 0101"
+          "signal": "decimal 6"
         }
       },
       "blocks": {
@@ -385,10 +476,17 @@
           ]
         },
         "h": {
-          "kind": "FLIP",
+          "kind": "FASTER",
           "at": [
             1,
-            1
+            0.5
+          ]
+        },
+        "k": {
+          "kind": "NOT",
+          "at": [
+            1,
+            2.5
           ]
         }
       },
@@ -402,16 +500,17 @@
         }
       },
       "solution": [
-        "A -> g.0",
-        "h -> g.1",
-        "C -> g.2",
-        "B -> h",
+        "A -> h",
+        "h -> g.0",
+        "A -> g.1",
+        "B -> k",
+        "k -> g.2",
         "g -> X"
       ]
     },
     {
       "id": "blackbox-10",
-      "hint": "Solve one output at a time. X follows whichever wave is higher.",
+      "hint": "The higher of two waves at every moment, a count of the times the sine climbs over the saw, and the saw let through only in the middle of the loop. Solve one output at a time.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"

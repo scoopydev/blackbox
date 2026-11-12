@@ -80,7 +80,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.CombineGetsHarderAsItGoes`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal; late in Blackbox come the four blocks with three inputs. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the four blocks with three inputs, on smaller boards so the new block is the puzzle. Every circuit after Learn has its own picture, something the player can name and remember (a valley, a heartbeat, an echo, a siren), and its hint leads with that picture; no two share a hint (`ContentTests.EveryPuzzleAfterLearnHasItsOwnPicture`). Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -203,34 +203,38 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter VIII: Unmarked
 
-*Every block you've met, all mixed up.* Two blocks each, any kind of signal and any block met so far, then one bigger circuit to close.
+*Every block you've met, all mixed up.* Each circuit draws one picture the player can name, and the chapter climbs on from where Blend ends, from three blocks to five (12 Nov 2026, after play-testing found the old two-block Unmarked easier than late Blend).
 
-| # | Teaches | Wirings | Solutions |
-|---|---|---|---|
-| 1 | Order matters: MAX then MIRROR | 27 | 3 |
-| 2 | Which block goes with which input | 9 | 1 |
-| 3 | A wave sped up, then delayed | 9 | 1 |
-| 4 | Two outputs from one chain | 64 | 4 |
-| 5 | A count, mirrored | 9 | 1 |
-| 6 | XOR, then MIRROR: one block feeding an output and another block | 27 | 1 |
-| 7 | Three separate machines in one circuit, five blocks (Blackbox's old finale) | 2,097,152 | 2 |
+| # | Picture | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 1 | Valley | DIFF folds a saw into a V around a digit, MIRROR turns the V into a hill, and MIN flattens its top | 3,125 | 1 |
+| 2 | Squared | COMPARE turns a sine into bits, FLIP reads them as a square wave, and MIX blends the square with the sine | 3,125 | 1 |
+| 3 | Heartbeat | A sine sped up by FASTER beats through COMPARE, and AND with a pattern leaves the beats in pairs | 7,776 | 2 |
+| 4 | Clipped | MIN and MAX slice a sine flat top and bottom, and COMPARE lights while the top is sliced | 15,625 | 2 |
+| 5 | Countdown | Two FASTERs make a wave fast enough for COUNT to reach 9 in one loop, and DIFF from 9 turns it into a countdown | 16,807 | 2 |
+| 6 | Full Wave | GATE with one signal in both inputs keeps only the wave's top half; done again on the flipped wave and MIXed, every dip becomes a bump | 279,936 | 2 |
+| 7 | Interference | Three machines, five blocks: a wave and its shifted twin half cancel in MIX, a wave twice as fast, and a level gated on halfway | 2,097,152 | 2 |
+
+The circuits with two solutions have two alike blocks that can swap, or one block whose inputs can swap without changing what it sends.
 
 ### Chapter IX: Blackbox
 
-*Everything at once.* Two to four blocks, one to three outputs. From 06 on, each circuit brings in a block with three inputs, and the finale uses one.
+*Everything at once.* Each circuit is a small machine with a name. 01 to 05 climb in size from bigger than Unmarked's opener. From 06 on, each circuit brings in a block with three inputs, on a smaller board so the new block is the puzzle, and the finale uses one.
 
-| # | Teaches | Wirings | Solutions |
-|---|---|---|---|
-| 1 | Speed up twice, compare, count the blinks | 7,776 | 2 |
-| 2 | Mix two waves, gate the mix, flip the gate | 3,125 | 1 |
-| 3 | A flipped saw, sped up, beside a digit | 125 | 2 |
-| 4 | One wave read as bits by two blocks and as a digit by a third, three outputs | 279,936 | 2 |
-| 5 | A threshold from a difference, three readers of one pulse | 46,656 | 2 |
-| 6 | MAJORITY: two of three bit patterns, and NOT | 625 | 1 |
-| 7 | MIDDLE: a saw held between two digits, and MIRROR | 256 | 1 |
-| 8 | BETWEEN: when a sine is between two levels, and COUNT | 256 | 1 |
-| 9 | SWITCH: a pattern chooses between a sine and a flipped saw | 625 | 3 |
-| 10 | The higher of two waves (COMPARE choosing for SWITCH), its count, and a gated saw | 1,679,616 | 2 |
+| # | Picture | Teaches | Wirings | Solutions |
+|---|---|---|---|---|
+| 1 | Metronome | A sine sped up twice ticks through COMPARE, and COUNT counts the ticks | 7,776 | 2 |
+| 2 | Echo | GATE lets a short burst through, LATER makes its echo, and MIX plays both | 7,776 | 1 |
+| 3 | Pulse Width | COMPARE cuts pulses from a saw against a line DIFF makes from two digits; NOT and COUNT read the pulses | 46,656 | 2 |
+| 4 | Tide | A quiet sine sped up twice rides on a slow one in MIX, and COMPARE lights while the tide is high | 117,649 | 2 |
+| 5 | Signal Box | One saw read three ways: NOT then AND, XOR, and DIFF from 9 | 279,936 | 2 |
+| 6 | Vote | MAJORITY of two bit patterns and COMPARE's pulse, then NOT | 46,656 | 1 |
+| 7 | Clamp | MIDDLE holds a saw between a digit and its MIRROR (Unmarked's Clipped in one block), then FLIP | 7,776 | 1 |
+| 8 | Window | BETWEEN lights while a sine is between a digit and its MIRROR, and COUNT counts the times | 7,776 | 1 |
+| 9 | Siren | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 7,776 | 1 |
+| 10 | Black Box | The higher of two waves (COMPARE choosing for SWITCH), how many times they cross, and a gated saw | 1,679,616 | 2 |
+
+The picture names live only in these notes; in the game every circuit is named by its chapter and number, and its hint describes the picture.
 
 ## Look and sound
 

@@ -7,7 +7,7 @@
   "circuits": [
     {
       "id": "junction-01",
-      "hint": "Two kinds of signal can meet in one block. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
+      "hint": "A rhythm: beep, rest, beep beep. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
           "signal": "decimal 0505"
@@ -42,7 +42,7 @@
     },
     {
       "id": "junction-02",
-      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0. Three blocks in a row, and the order they come in matters.",
+      "hint": "A wave riding up and down on a square, twice as fast as the inputs. A wave block reads a bit as the top for 1 and the bottom for 0.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a4"
@@ -95,7 +95,7 @@
     },
     {
       "id": "junction-03",
-      "hint": "A digit block reads a bit as the digit 0 or 1, and a wave by its height: 0 at the bottom up to 9 at the top.",
+      "hint": "A ramp that climbs until it hits a ceiling. A digit block reads a bit as the digit 0 or 1, and a wave by its height: 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
           "signal": "decimal 7"
@@ -134,7 +134,7 @@
     },
     {
       "id": "junction-04",
-      "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle. Work back from the target, one block at a time.",
+      "hint": "One long blip up, in the second quarter. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
           "signal": "decimal 5"
@@ -173,7 +173,7 @@
     },
     {
       "id": "junction-05",
-      "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top. One input can feed two blocks.",
+      "hint": "A staircase down from 9 to 3. A digit block reads a wave by its height, and one input can feed two blocks.",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -227,7 +227,7 @@
     },
     {
       "id": "junction-06",
-      "hint": "Three kinds of signal, three blocks. Work out one output at a time.",
+      "hint": "Three pictures: a 6 that dips to 5 in the middle, a wave knocked down, up and down again by bits, and a wave in digits that can't climb past the first picture.",
       "inputs": {
         "A": {
           "signal": "decimal 6"
