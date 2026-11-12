@@ -95,7 +95,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
   * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
   * Lights Out, **by ear alone**: nothing is drawn, so three steps to try (listen to the targets, listen to the inputs, wire and run), what can't be heard, and the promise that an output that sounds like its target is its target.
 * Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
-* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first two use steady bits, and the third brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
+* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first two use steady bits, and the third brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has six circuits, the last as big as FIRST LIGHT 7, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
   1. **Pre-wired.** Two inputs and one block, every wire drawn, but the block's wire starts at the wrong input. The player moves it to the other one.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
   3. From here the player draws every wire: two blocks in a chain, with a spare input or the order of the blocks to work out.
@@ -135,6 +135,7 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 | 3 | MAX, then DIFF with the third digit; the order matters | 256 | 5 |
 | 4 | MIN, and one input feeding two blocks | 1,024 | 14 |
 | 5 | Three blocks in a row, two outputs | 3,125 | 10 |
+| 6 | The finale, as big as FIRST LIGHT 7: four blocks, two outputs, each target two steps from the inputs (a DIFF of a DIFF, and MIRROR of a DIFF). It uses three DIFFs and a MIRROR, because on steady digits MAX and MIN only ever pass one digit on, so they could be tucked in anywhere and leave nothing to work out | 279,936 | 60 |
 
 ### Chapter III: Ticker
 

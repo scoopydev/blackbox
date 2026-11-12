@@ -48,7 +48,7 @@ namespace Blackbox.Tests
             foreach (var chapter in LearnChapters)
             {
                 Assert.That(chapter.Mixed, Is.False, $"{chapter.Title} is about one kind of signal");
-                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" || chapter.Id == "resonance" ? 7 : chapter.Id == "tally" ? 5 : 6), chapter.Title);
+                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" || chapter.Id == "resonance" ? 7 : 6), chapter.Title);
             }
             foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
                 Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");

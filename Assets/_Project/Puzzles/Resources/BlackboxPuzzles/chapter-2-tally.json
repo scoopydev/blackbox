@@ -185,6 +185,54 @@
         "B -> k.1",
         "k -> Y"
       ]
+    },
+    {
+      "id": "tally-06",
+      "hint": "Each target is two steps from the inputs. Work back from each one, a step at a time.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 6"
+        },
+        "B": {
+          "signal": "decimal 7"
+        },
+        "C": {
+          "signal": "decimal 9"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "DIFF"
+        },
+        "h": {
+          "kind": "MIRROR"
+        },
+        "k": {
+          "kind": "DIFF"
+        },
+        "m": {
+          "kind": "DIFF"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k.0",
+        "C -> k.1",
+        "B -> g.0",
+        "k -> g.1",
+        "g -> X",
+        "A -> m.0",
+        "B -> m.1",
+        "m -> h",
+        "h -> Y"
+      ]
     }
   ]
 }
