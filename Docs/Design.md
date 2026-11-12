@@ -310,7 +310,7 @@ Each kind of signal has four blocks, and each set starts with one that flips the
 | FLIP | wave | 1 | the wave upside down | turns the wave upside down |
 | FASTER | wave | 1 | twice as fast, so it repeats twice as often | plays the wave twice as fast |
 | LATER | wave | 1 | a quarter of the loop later | delays the wave by a quarter loop |
-| MIX | wave | 2 | halfway between the two waves at every moment | halfway between the two waves |
+| MIX | wave | 2 | the two waves added together at half height (their average at every moment) | adds the two waves, at half height |
 | GATE | wave | 2 | the top signal, read as a wave, while the bottom is on; otherwise a flat line | lets the top through while the bottom is on |
 | COUNT | digit | 1 | how many times its input has switched on so far this loop, stopping at 9 | counts each switch-on, up to 9 |
 | COMPARE | bit | 2 | 1 while the top is higher than the bottom, both read as waves; otherwise 0 | 1 while the top is higher than the bottom |

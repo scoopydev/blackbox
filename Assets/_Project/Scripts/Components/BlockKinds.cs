@@ -211,7 +211,7 @@ namespace Blackbox.Components
                 x => x[0].As(Medium.Wave).Faster(2));
             Whole("LATER", Medium.Wave, 1, false, "plays the wave a quarter of the loop later", "delays the wave by a quarter loop",
                 x => x[0].As(Medium.Wave).Later(Trace.Steps / 4));
-            Whole("MIX", Medium.Wave, 2, false, "halfway between the two waves at every moment, so a wave and its upside-down twin mix to a flat line", "halfway between the two waves",
+            Whole("MIX", Medium.Wave, 2, false, "adds the two waves together at half height, so two waves that rise and fall together stay a wave, and a wave and its upside-down twin cancel to a flat line", "adds the two waves, at half height",
                 x => Trace.Zip(Medium.Wave, x[0].As(Medium.Wave), x[1].As(Medium.Wave), (a, b) => (a + b) * 0.5f));
 
             // ---- Mixing: whole signals of any kind ------------------------------------
