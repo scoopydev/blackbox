@@ -435,7 +435,7 @@ namespace Blackbox.Tests
             s.Connect(h, x, 0);
             Assert.That(GoalText.BrokenRules(p, s.Check()), Is.Null, "every rule kept");
             Assert.That(WiringSession.AllBlocksUsed(p, s.Drivers), Is.True);
-            Assert.That(GoalText.WiringRules, Is.EqualTo("MATCH ALL OUTPUTS. USE EVERYTHING WITH A SOLID OUTLINE."));
+            Assert.That(GoalText.WiringRules, Is.EqualTo("Match all outputs. Use everything with a solid outline."));
         }
 
         const string WithSpares = @"{

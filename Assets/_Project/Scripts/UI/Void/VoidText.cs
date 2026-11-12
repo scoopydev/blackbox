@@ -32,13 +32,18 @@ namespace Blackbox.UI
         static readonly StringBuilder s_Builder = new StringBuilder();
 
         /// <summary>
-        /// Every text in the game is shown in capitals, whatever case it was
-        /// written in: menus, goals, hints, rules and the player's own notes.
-        /// Turn this off to go back to each style's own case (see <see cref="Uppercase"/>).
+        /// Labels, headings, menus and buttons are shown in capitals, whatever case
+        /// they were written in. Sentences (see <see cref="KeepCase"/>) and the
+        /// player's own notes are shown as written. Turn this off to go back to
+        /// each style's own case (see <see cref="Uppercase"/>).
         /// </summary>
         public static bool AllCaps = true;
 
-        string Display => string.IsNullOrEmpty(text) ? string.Empty : AllCaps || m_Uppercase ? text.ToUpperInvariant() : text;
+        /// <summary>Shown as written even with <see cref="AllCaps"/> on: longer sentences and the player's typing.</summary>
+        public bool KeepCase { get => m_KeepCase; set { if (m_KeepCase != value) { m_KeepCase = value; SetVerticesDirty(); SetLayoutDirty(); } } }
+        bool m_KeepCase;
+
+        string Display => string.IsNullOrEmpty(text) ? string.Empty : m_Uppercase || (AllCaps && !m_KeepCase) ? text.ToUpperInvariant() : text;
 
         float Scale => Mathf.Max(0.05f, pixelsPerUnit);
 

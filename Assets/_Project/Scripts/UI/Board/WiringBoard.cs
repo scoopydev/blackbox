@@ -1171,7 +1171,7 @@ namespace Blackbox.UI.Board
         {
             if (_tag != null) return _tag;
             float s = _scale;
-            _tag = UIKit.Text(transform, "", new TextStyle(300, Mathf.Max(12, Mathf.RoundToInt(15 * s)), 0.04f, true, Palette.Text), TextAnchor.MiddleCenter, "Player label");
+            _tag = UIKit.Text(transform, "", new TextStyle(300, Mathf.Max(12, Mathf.RoundToInt(15 * s)), 0.04f, false, Palette.Text).AsSentence(), TextAnchor.MiddleCenter, "Player label");
             _tag.raycastTarget = false;
             _tag.rectTransform.Centered(0f, -Size.y * 0.5f + 17f * s, Size.x - 26f * s, 20f * s);
             _tag.enabled = false;

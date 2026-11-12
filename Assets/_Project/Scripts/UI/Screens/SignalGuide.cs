@@ -135,7 +135,7 @@ namespace Blackbox.UI.Screens
             _nextNote = 0.35f;
             _pages[_page]();
 
-            var hint = UIKit.Text(_content, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
+            var hint = UIKit.Text(_content, "Click any signal to hear it", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
             hint.raycastTarget = false;
             hint.rectTransform.At(Cx, 968f, 600f, 16f);
             _shownAt = Time.unscaledTime;
@@ -151,7 +151,7 @@ namespace Blackbox.UI.Screens
                 }
                 return;
             }
-            string prompt = !LastPage ? "CLICK OR PRESS ENTER FOR THE NEXT PAGE" : FromMenu ? "CLICK OR PRESS ENTER TO GO BACK" : "CLICK OR PRESS ENTER TO BEGIN";
+            string prompt = !LastPage ? "Click or press Enter for the next page" : FromMenu ? "Click or press Enter to go back" : "Click or press Enter to begin";
             _prompt = UIKit.Text(_content, prompt, TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
             _prompt.raycastTarget = false;
             _prompt.rectTransform.At(Cx, 1006f, 700f, 18f);
@@ -173,51 +173,51 @@ namespace Blackbox.UI.Screens
         /// <summary>First Light: a bit's line above or below the middle, steady, then switching through the loop.</summary>
         void BuildBits()
         {
-            Header("READING A BIT", "A BIT IS 0 OR 1. IT'S DRAWN AS A LINE ACROSS THE LOOP.");
+            Header("READING A BIT", "A bit is 0 or 1. It's drawn as a line across the loop.");
 
             Example("binary 1", 720f, 318f, 240f, 60f);
-            Caption(720f, 362f, "A STEADY 1", "ABOVE THE MIDDLE ALL LOOP LONG");
+            Caption(720f, 362f, "A STEADY 1", "Above the middle all loop long");
             Example("binary 0", 1200f, 318f, 240f, 60f);
-            Caption(1200f, 362f, "A STEADY 0", "BELOW THE MIDDLE ALL LOOP LONG");
+            Caption(1200f, 362f, "A STEADY 0", "Below the middle all loop long");
 
             var big = _lead = Example("binary 0011", Cx, 640f, 760f, 140f, loop: true);
             var one = At(big, 0.75f, 1f);
-            Note(one, new Vector2(one.x, 524f), Side.Above, "1: ABOVE THE MIDDLE", "A 1 SOUNDS AS A BEEP");
+            Note(one, new Vector2(one.x, 524f), Side.Above, "1: ABOVE THE MIDDLE", "A 1 sounds as a beep");
             var zero = At(big, 0.25f, 0f);
-            Note(zero, new Vector2(zero.x, 766f), Side.Below, "0: BELOW THE MIDDLE", "A 0 IS ONLY A SOFT TAP");
+            Note(zero, new Vector2(zero.x, 766f), Side.Below, "0: BELOW THE MIDDLE", "A 0 is only a soft tap");
             var mid = At(big, 1f, 0.5f);
-            Note(mid, new Vector2(mid.x + 70f, mid.y), Side.Right, "THE MIDDLE", "THE FAINT LINE", 220f);
+            Note(mid, new Vector2(mid.x + 70f, mid.y), Side.Right, "THE MIDDLE", "the faint line", 220f);
             LoopArrow(big, 862f);
         }
 
         /// <summary>Tally: a steady digit is a whole number, shown as just its number; a bigger one sounds higher.</summary>
         void BuildDigits()
         {
-            Header("READING A DIGIT", "A DIGIT IS A WHOLE NUMBER FROM 0 TO 9. HERE EACH ONE STAYS THE SAME ALL LOOP LONG.");
+            Header("READING A DIGIT", "A digit is a whole number from 0 to 9. Here each one stays the same all loop long.");
 
             _lead = Example("decimal 7", Cx, 420f, 240f, 120f);
-            Caption(Cx, 492f, "A STEADY DIGIT", "SHOWN AS JUST ITS NUMBER, AND HEARD AS ONE SHORT TONE", 520f);
+            Caption(Cx, 492f, "A STEADY DIGIT", "Shown as just its number, and heard as one short tone", 520f);
 
-            Section(Cx, 632f, "A BIGGER DIGIT SOUNDS HIGHER");
+            Section(Cx, 632f, "A bigger digit sounds higher");
             int[] digits = { 0, 3, 6, 9 };
             for (int i = 0; i < digits.Length; i++)
             {
                 float x = Cx + (i - 1.5f) * 260f;
                 Example($"decimal {digits[i]}", x, 716f, 150f, 72f);
-                if (i == 0) Caption(x, 768f, null, "THE LOWEST TONE", 240f);
-                if (i == digits.Length - 1) Caption(x, 768f, null, "THE HIGHEST TONE", 240f);
+                if (i == 0) Caption(x, 768f, null, "The lowest tone", 240f);
+                if (i == digits.Length - 1) Caption(x, 768f, null, "The highest tone", 240f);
             }
         }
 
         /// <summary>Ticker: a digit that changes is a line, its height the digit, 0 at the bottom and 9 at the top.</summary>
         void BuildChangingDigits()
         {
-            Header("DIGITS THAT CHANGE", "A DIGIT CAN CHANGE AS THE LOOP PLAYS. THEN IT'S DRAWN AS A LINE, ONE STEP FOR EACH DIGIT.");
+            Header("DIGITS THAT CHANGE", "A digit can change as the loop plays. Then it's drawn as a line, one step for each digit.");
 
             Example("decimal 7", 600f, 318f, 150f, 72f);
-            Caption(600f, 370f, "A STEADY DIGIT", "SHOWN AS JUST ITS NUMBER");
+            Caption(600f, 370f, "A STEADY DIGIT", "Shown as just its number");
             Example("decimal 012345678", 1320f, 318f, 280f, 64f);
-            Caption(1320f, 370f, "A DIGIT WITH MANY STEPS", "ONLY THE HIGHEST AND LOWEST ARE WRITTEN, AT THE LEFT", 380f);
+            Caption(1320f, 370f, "A digit with many steps", "Only the highest and lowest are written, at the left", 380f);
 
             var big = _lead = Example("decimal 2709", Cx, 640f, 760f, 170f, loop: true);
             // A scale beside the line, from 0 at the bottom to 9 at the top.
@@ -228,7 +228,7 @@ namespace Blackbox.UI.Screens
             Line(g, new Vector2(x + 9f, top.y), new Vector2(x, top.y), new Vector2(x, bottom.y), new Vector2(x + 9f, bottom.y));
             Small(g, "9", x - 12f, top.y);
             Small(g, "0", x - 12f, bottom.y);
-            Words(g, new Vector2(x - 22f, (top.y + bottom.y) * 0.5f), Side.Left, "HEIGHT IS THE DIGIT", "0 AT THE BOTTOM, 9 AT THE TOP. A BIGGER DIGIT SOUNDS HIGHER.", 300f);
+            Words(g, new Vector2(x - 22f, (top.y + bottom.y) * 0.5f), Side.Left, "HEIGHT IS THE DIGIT", "0 at the bottom, 9 at the top. A bigger digit sounds higher.", 300f);
             Reveal(g);
 
             // The number written on a step: point at the last one, 9, from the right.
@@ -237,7 +237,7 @@ namespace Blackbox.UI.Screens
                 var nine = big.StepNumbers[big.StepNumbers.Count - 1];
                 var at = FromView(big, nine.rectTransform.anchoredPosition + new Vector2(nine.fontSize * 0.5f, 0f));
                 var (_, right) = big.LineSpan;
-                Note(at, new Vector2(FromView(big, new Vector2(right, 0f)).x + 40f, at.y), Side.Right, "EACH STEP'S DIGIT", "IS WRITTEN ON IT", 240f);
+                Note(at, new Vector2(FromView(big, new Vector2(right, 0f)).x + 40f, at.y), Side.Right, "EACH STEP'S DIGIT", "is written on it", 240f);
             }
             LoopArrow(big, 790f);
         }
@@ -245,7 +245,7 @@ namespace Blackbox.UI.Screens
         /// <summary>Resonance: one cycle and F, the height and A, the three forms, and a wave that starts late.</summary>
         void BuildWaves()
         {
-            Header("READING A WAVE", "A WAVE RISES AND FALLS ABOUT THE MIDDLE.");
+            Header("READING A WAVE", "A wave rises and falls about the middle.");
 
             var big = _lead = Example("wave sine f2 a5", Cx, 470f, 760f, 170f, loop: true);
             var (left, right) = big.LineSpan;
@@ -257,7 +257,7 @@ namespace Blackbox.UI.Screens
             var g = NoteGroup();
             Line(g, new Vector2(start.x, y + 8f), new Vector2(start.x, y), new Vector2(half.x, y), new Vector2(half.x, y + 8f));
             Words(g, new Vector2((start.x + half.x) * 0.5f, y), Side.Above, "ONE CYCLE",
-                "F2: IT REPEATS TWICE A LOOP. THE HIGHER F IS, FROM 1 TO 7, THE FASTER IT REPEATS AND THE HIGHER IT SOUNDS.", 480f);
+                "F2: it repeats twice a loop. The higher F is, from 1 to 7, the faster it repeats and the higher it sounds.", 480f);
             Reveal(g);
 
             // The height, measured from the middle to a peak, beside the line.
@@ -267,8 +267,8 @@ namespace Blackbox.UI.Screens
             g = NoteGroup();
             Line(g, LeaderColour.WithAlpha(0.35f), new Vector2(peak.x + 6f, peak.y), new Vector2(x - 12f, peak.y));
             Line(g, new Vector2(x - 9f, peak.y), new Vector2(x, peak.y), new Vector2(x, middle.y), new Vector2(x - 9f, middle.y));
-            Words(g, new Vector2(x + 4f, (peak.y + middle.y) * 0.5f), Side.Right, "A5: 5 UP FROM THE MIDDLE",
-                "AND 5 DOWN. THE HIGHER A IS, FROM 1 TO 7, THE TALLER IT IS AND THE LOUDER IT SOUNDS.", 300f);
+            Words(g, new Vector2(x + 4f, (peak.y + middle.y) * 0.5f), Side.Right, "A5: 5 up from the middle",
+                "And 5 down. The higher A is, from 1 to 7, the taller it is and the louder it sounds.", 300f);
             Reveal(g);
 
             // F and A are written under every wave, as here.
@@ -276,10 +276,10 @@ namespace Blackbox.UI.Screens
             settings.raycastTarget = false;
             settings.rectTransform.At(Cx, 576f, 200f, 20f);
             float w = settings.MeasureWidth();
-            Note(new Vector2(Cx - w * 0.5f - 10f, 576f), new Vector2(Cx - w * 0.5f - 60f, 576f), Side.Left, "WRITTEN UNDER EVERY WAVE", null, 360f, dot: false);
+            Note(new Vector2(Cx - w * 0.5f - 10f, 576f), new Vector2(Cx - w * 0.5f - 60f, 576f), Side.Left, "Written under every wave", null, 360f, dot: false);
 
             // The three forms, each its own sound.
-            Section(760f, 676f, "THREE FORMS, EACH WITH ITS OWN SOUND");
+            Section(760f, 676f, "Three forms, each with its own sound");
             string[] forms = { "sine", "square", "saw" };
             for (int i = 0; i < forms.Length; i++)
             {
@@ -294,7 +294,7 @@ namespace Blackbox.UI.Screens
             onTime.Look = ValueLook.Target;
             onTime.Group().alpha = 0.55f;
             Example("wave sine f1 a6 p1", 1440f, 752f, 220f, 64f);
-            Caption(1440f, 800f, "+1/4: A QUARTER CYCLE LATE", "+1/2 AND +3/4 ARE HALF AND THREE QUARTERS LATE. THE FAINT LINE STARTS ON TIME.", 340f);
+            Caption(1440f, 800f, "+1/4: a quarter cycle late", "+1/2 and +3/4 are half and three quarters late. The faint line starts on time.", 340f);
         }
 
         /// <summary>
@@ -303,10 +303,10 @@ namespace Blackbox.UI.Screens
         /// </summary>
         void BuildWaveSettings()
         {
-            Header("FREQUENCY AND AMPLITUDE", "F AND A ARE WRITTEN UNDER EVERY WAVE. CLICK ANY WAVE HERE TO HEAR IT.");
+            Header("Frequency and amplitude", "F and A are written under every wave. Click any wave here to hear it.");
 
-            Section(Cx, 330f, "FREQUENCY: F CHANGES HOW OFTEN IT REPEATS");
-            (int f, string sub)[] freqs = { (1, "ONCE A LOOP. THE LOWEST PITCH"), (3, "3 TIMES A LOOP"), (5, "6 TIMES A LOOP"), (7, "12 TIMES A LOOP. THE HIGHEST PITCH") };
+            Section(Cx, 330f, "Frequency: F changes how often it repeats");
+            (int f, string sub)[] freqs = { (1, "Once a loop. The lowest pitch"), (3, "3 times a loop"), (5, "6 times a loop"), (7, "12 times a loop. The highest pitch") };
             for (int i = 0; i < freqs.Length; i++)
             {
                 float x = Cx + (i - 1.5f) * 380f;
@@ -315,8 +315,8 @@ namespace Blackbox.UI.Screens
                 Caption(x, 482f, $"F{freqs[i].f}", freqs[i].sub, 320f);
             }
 
-            Section(Cx, 640f, "AMPLITUDE: A CHANGES HOW TALL IT IS");
-            (int a, string sub)[] amps = { (1, "1 UP AND DOWN. THE QUIETEST"), (3, "3 UP AND DOWN"), (5, "5 UP AND DOWN"), (7, "7 UP AND DOWN. THE LOUDEST") };
+            Section(Cx, 640f, "Amplitude: A changes how tall it is");
+            (int a, string sub)[] amps = { (1, "1 up and down. The quietest"), (3, "3 up and down"), (5, "5 up and down"), (7, "7 up and down. The loudest") };
             for (int i = 0; i < amps.Length; i++)
             {
                 float x = Cx + (i - 1.5f) * 380f;
@@ -333,7 +333,7 @@ namespace Blackbox.UI.Screens
         /// </summary>
         void BuildInputOrder()
         {
-            Header("WHICH WAY ROUND", "A BLOCK WITH TWO INPUTS HAS TWO DOTS ON ITS LEFT, A TOP ONE AND A BOTTOM ONE. THE SAME TWO WIRES CAN GO IN EITHER WAY ROUND.");
+            Header("WHICH WAY ROUND", "A block with two inputs has two dots on its left, a top one and a bottom one. The same two wires can go in either way round.");
 
             float[] centres = { 613f, 1433f };
             const float topY = 380f, bottomY = 520f, waveW = 180f, waveH = 56f;
@@ -385,9 +385,9 @@ namespace Blackbox.UI.Screens
             or.raycastTarget = false;
             or.rectTransform.At(Cx, (topY + bottomY) * 0.5f, 60f, 20f);
 
-            Caption(centres[0], 690f, "SOME BLOCKS DON'T MIND", "THEY TREAT BOTH INPUTS ALIKE, SO EITHER WAY ROUND SENDS THE SAME.", 420f);
-            Caption(centres[1], 690f, "OTHERS DO", "EACH INPUT HAS ITS OWN JOB, SO SWAPPING THE WIRES CHANGES WHAT COMES OUT.", 420f);
-            Caption(Cx, 830f, "CLOSE, BUT NOT RIGHT?", "TRY THE SAME WIRES THE OTHER WAY ROUND. CLICK A WIRE TO TAKE IT OFF, THEN DRAG A NEW ONE TO THE OTHER DOT.", 760f);
+            Caption(centres[0], 690f, "Some blocks don't mind", "They treat both inputs alike, so either way round sends the same.", 420f);
+            Caption(centres[1], 690f, "OTHERS DO", "Each input has its own job, so swapping the wires changes what comes out.", 420f);
+            Caption(Cx, 830f, "Close, but not right?", "Try the same wires the other way round. Click a wire to take it off, then drag a new one to the other dot.", 760f);
         }
 
         /// <summary>An input's letter, beside its signal.</summary>
@@ -401,11 +401,11 @@ namespace Blackbox.UI.Screens
         /// <summary>The mixed chapters: one signal of each kind, as a block of each kind reads it.</summary>
         void BuildReadings()
         {
-            Header("HOW A BLOCK READS EACH KIND", "A BLOCK'S LETTER SAYS WHAT IT SENDS: B A BIT, D A DIGIT, W A WAVE. IT READS EVERY SIGNAL AS THAT KIND.");
+            Header("How a block reads each kind", "A block's letter says what it sends: B a bit, D a digit, W a wave. It reads every signal as that kind.");
 
             var kinds = new[] { Medium.Binary, Medium.Decimal, Medium.Wave };
             string[] names = { "A BIT", "A DIGIT", "A WAVE" };
-            string[] blocks = { "A BIT BLOCK (B) SEES", "A DIGIT BLOCK (D) SEES", "A WAVE BLOCK (W) SEES" };
+            string[] blocks = { "A bit block (B) sees", "A digit block (D) sees", "A wave block (W) sees" };
             string[] examples = { "binary 0110", "decimal 0396", "wave sine f1 a7" };
             float[] columns = { 830f, 1190f, 1550f };
             const float source = 450f, w = 250f, h = 66f;
@@ -429,7 +429,7 @@ namespace Blackbox.UI.Screens
                     var read = Example(signal.As(kinds[c]), columns[c], y, w, h);
                     if (same) read.Group().alpha = 0.45f;
                     string how = Media.HowRead(kinds[r], kinds[c]);
-                    Caption(columns[c], y + h * 0.5f + 8f, null, same ? "THE SAME: IT'S ALREADY THIS KIND" : how, 330f);
+                    Caption(columns[c], y + h * 0.5f + 8f, null, same ? "The same: it's already this kind" : how, 330f);
                 }
             }
         }
@@ -437,27 +437,27 @@ namespace Blackbox.UI.Screens
         /// <summary>The last chapters: all three kinds side by side, with what to look for in each.</summary>
         void BuildRecap()
         {
-            Header("EVERY KIND OF SIGNAL", Chapter.Signals);
+            Header("Every kind of signal", Chapter.Signals);
 
             var columns = new (string title, string example, string[] lines)[]
             {
                 ("BITS", "binary 0110", new[]
                 {
-                    "ABOVE THE MIDDLE IS 1, BELOW IS 0.",
-                    "A 1 BEEPS; A 0 IS A SOFT TAP.",
-                    "A BIT BLOCK (B1, B2...) ONLY EVER SENDS 0 OR 1. IT READS A DIGIT AS 1 UNLESS IT'S 0, AND A WAVE AS 1 WHILE IT'S ABOVE THE MIDDLE.",
+                    "Above the middle is 1, below is 0.",
+                    "A 1 beeps; a 0 is a soft tap.",
+                    "A bit block (B1, B2...) only ever sends 0 or 1. It reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
                 }),
                 ("DIGITS", "decimal 1357", new[]
                 {
-                    "HEIGHT IS THE DIGIT: 0 AT THE BOTTOM, 9 AT THE TOP. A STEADY DIGIT IS JUST ITS NUMBER.",
-                    "A BIGGER DIGIT SOUNDS HIGHER.",
-                    "A DIGIT BLOCK (D1, D2...) ONLY EVER SENDS 0 TO 9. IT READS A BIT AS 0 OR 1, AND A WAVE BY ITS HEIGHT.",
+                    "Height is the digit: 0 at the bottom, 9 at the top. A steady digit is just its number.",
+                    "A bigger digit sounds higher.",
+                    "A digit block (D1, D2...) only ever sends 0 to 9. It reads a bit as 0 or 1, and a wave by its height.",
                 }),
                 ("WAVES", "wave sine f2 a5", new[]
                 {
-                    "F IS HOW OFTEN IT REPEATS, AND HOW HIGH IT SOUNDS. A IS HOW TALL IT IS, AND HOW LOUD.",
-                    "+1/4, +1/2 OR +3/4 STARTS IT THAT MUCH OF A CYCLE LATE.",
-                    "A WAVE BLOCK (W1, W2...) ALWAYS SENDS A WAVE, WITH ITS OWN F AND A. IT READS A BIT AS THE TOP OR THE BOTTOM, AND A DIGIT AS A LEVEL.",
+                    "F is how often it repeats, and how high it sounds. A is how tall it is, and how loud.",
+                    "+1/4, +1/2 or +3/4 starts it that much of a cycle late.",
+                    "A wave block (W1, W2...) always sends a wave, with its own F and A. It reads a bit as the top or the bottom, and a digit as a level.",
                 }),
             };
             for (int i = 0; i < columns.Length; i++)
@@ -484,7 +484,7 @@ namespace Blackbox.UI.Screens
         /// </summary>
         void BuildListening()
         {
-            Header("LISTEN-ONLY BLOCKS", "SOME BLOCKS NEVER SHOW WHAT THEY SEND. YOU CAN ONLY HEAR IT.");
+            Header("LISTEN-ONLY BLOCKS", "Some blocks never show what they send. You can only hear it.");
 
             // The block, as on the board.
             const float bx = 560f, by = 560f, bw = 150f, bh = 88f;
@@ -508,18 +508,18 @@ namespace Blackbox.UI.Screens
             Reveal(g);
             // What it sent on the run: a speaker that plays it.
             _lead = Heard("wave saw f2 a5", bx, by - bh * 0.5f - 30f, 118f, 34f);
-            Note(new Vector2(bx - 44f, by + 3f), new Vector2(bx - 150f, by + 3f), Side.Left, "THE MARK", "A SPEAKER BESIDE THE LABEL", 240f, dot: false);
-            Note(new Vector2(bx + 30f, by - bh * 0.5f - 30f), new Vector2(bx + 140f, by - bh * 0.5f - 30f), Side.Right, "WHAT IT SENDS", "AFTER A RUN, ONLY A SPEAKER. CLICK IT TO HEAR THE SIGNAL.", 300f, dot: false);
-            Caption(bx, by + bh * 0.5f + 40f, "WIRED STRAIGHT TO AN OUTPUT", "IT'S ONLY HEARD THERE TOO. CLICK THE OUTPUT, THEN ITS TARGET, AND LISTEN.", 420f);
+            Note(new Vector2(bx - 44f, by + 3f), new Vector2(bx - 150f, by + 3f), Side.Left, "THE MARK", "A speaker beside the label", 240f, dot: false);
+            Note(new Vector2(bx + 30f, by - bh * 0.5f - 30f), new Vector2(bx + 140f, by - bh * 0.5f - 30f), Side.Right, "WHAT IT SENDS", "After a run, only a speaker. Click it to hear the signal.", 300f, dot: false);
+            Caption(bx, by + bh * 0.5f + 40f, "Wired straight to an output", "It's only heard there too. Click the output, then its target, and listen.", 420f);
 
             // How each kind sounds.
             const float cx = 1340f;
             Section(cx, 300f, "WHAT YOU CAN HEAR");
             var rows = new (string spec, string title, string detail)[]
             {
-                ("binary 0110", "BITS", "A 1 BEEPS AND A 0 TAPS, IN TURN"),
-                ("decimal 2709", "DIGITS", "A BIGGER DIGIT SOUNDS HIGHER"),
-                ("wave sine f3 a7", "WAVES", "HIGHER THE BIGGER F IS, LOUDER THE BIGGER A IS. EACH FORM HAS ITS OWN SOUND."),
+                ("binary 0110", "BITS", "A 1 beeps and a 0 taps, in turn"),
+                ("decimal 2709", "DIGITS", "A bigger digit sounds higher"),
+                ("wave sine f3 a7", "WAVES", "Higher the bigger F is, louder the bigger A is. Each form has its own sound."),
             };
             for (int i = 0; i < rows.Length; i++)
             {
@@ -533,7 +533,7 @@ namespace Blackbox.UI.Screens
             Example("wave sine f1 a6", cx - 190f, 800f, 210f, 56f);
             Example("wave sine f1 a6 p1", cx - 190f, 880f, 210f, 56f);
             var u = NoteGroup();
-            Words(u, new Vector2(cx - 60f, 812f), Side.Right, "WHEN A WAVE STARTS", "OR WHICH WAY UP IT IS. THESE TWO SOUND THE SAME, SO LISTEN TO WHAT A BLOCK DOES FURTHER ON.", 360f);
+            Words(u, new Vector2(cx - 60f, 812f), Side.Right, "WHEN A WAVE STARTS", "Or which way up it is. These two sound the same, so listen to what a block does further on.", 360f);
             Reveal(u);
         }
 
@@ -543,13 +543,13 @@ namespace Blackbox.UI.Screens
         /// </summary>
         void BuildDark()
         {
-            Header("BY EAR ALONE", "IN THIS CHAPTER NO SIGNAL IS DRAWN: NOT THE INPUTS, THE BLOCKS, THE OUTPUTS OR THE TARGETS. EACH ONE IS A SPEAKER. CLICK IT TO HEAR IT.");
+            Header("BY EAR ALONE", "In this chapter no signal is drawn: not the inputs, the blocks, the outputs or the targets. Each one is a speaker. Click it to hear it.");
 
             var steps = new (string spec, string title, string detail)[]
             {
-                ("decimal 8655", "1  LISTEN TO THE TARGETS", "EACH OUTPUT'S TARGET PLAYS WHAT IT WANTS."),
-                ("binary 0110", "2  LISTEN TO THE INPUTS", "A BEAT OF BITS, A TUNE OF DIGITS, OR A WAVE'S TONE. WORK OUT WHICH IS WHICH."),
-                ("decimal 1357", "3  WIRE, THEN RUN", "EACH OUTPUT PLAYS WHAT CAME OUT. THE SIGN BESIDE IT SAYS WHETHER IT MATCHES ITS TARGET."),
+                ("decimal 8655", "1  Listen to the targets", "Each output's target plays what it wants."),
+                ("binary 0110", "2  Listen to the inputs", "A beat of bits, a tune of digits, or a wave's tone. Work out which is which."),
+                ("decimal 1357", "3  WIRE, THEN RUN", "Each output plays what came out. The sign beside it says whether it matches its target."),
             };
             for (int i = 0; i < steps.Length; i++)
             {
@@ -560,8 +560,8 @@ namespace Blackbox.UI.Screens
             }
 
             Section(Cx, 690f, "WHAT YOU CAN'T HEAR");
-            Caption(Cx, 726f, null, "WHEN A WAVE STARTS, OR WHICH WAY UP IT IS. EVERY CIRCUIT HERE IS BUILT SO THAT WHEN AN OUTPUT SOUNDS LIKE ITS TARGET, IT IS ITS TARGET.", 820f);
-            Caption(Cx, 830f, "LISTEN AS OFTEN AS YOU LIKE", "A SIGNAL PLAYS EACH TIME YOU CLICK IT, AND THE PEN STILL WORKS FOR NOTES.", 820f);
+            Caption(Cx, 726f, null, "When a wave starts, or which way up it is. Every circuit here is built so that when an output sounds like its target, it is its target.", 820f);
+            Caption(Cx, 830f, "Listen as often as you like", "A signal plays each time you click it, and the pen still works for notes.", 820f);
         }
 
         /// <summary>A signal shown only as a speaker, as a listen-only block or a dark circuit shows it, that plays when clicked.</summary>
@@ -786,7 +786,7 @@ namespace Blackbox.UI.Screens
             Line(g, new Vector2(x0, y - 5f), new Vector2(x0, y + 5f));
             Line(g, new Vector2(x0, y), new Vector2(x1, y));
             Line(g, new Vector2(x1 - 9f, y - 5f), new Vector2(x1, y), new Vector2(x1 - 9f, y + 5f));
-            Words(g, new Vector2((x0 + x1) * 0.5f, y), Side.Below, "ONE LOOP", "IT PLAYS LEFT TO RIGHT, THEN STARTS AGAIN, OVER AND OVER", 640f);
+            Words(g, new Vector2((x0 + x1) * 0.5f, y), Side.Below, "ONE LOOP", "It plays left to right, then starts again, over and over", 640f);
             Reveal(g);
         }
 

@@ -84,6 +84,13 @@ namespace Blackbox.UI.Board
         float _backspaceHeld;
         readonly float[] _held = new float[4];
         int _at; // caret position in the note being typed
+        /// <summary>The other end of the selection, or -1 when nothing is selected.</summary>
+        int _anchor = -1;
+        readonly List<(string text, int at)> _undo = new List<(string, int)>();
+        readonly List<(string text, int at)> _redo = new List<(string, int)>();
+        /// <summary>Typing runs together into one undo step until something else happens.</summary>
+        bool _typingRun;
+        readonly List<ShapeGraphic> _highlights = new List<ShapeGraphic>();
         NoteView _pressed;
         Vector2 _pressAt, _pressOffset;
         bool _dragged;
@@ -152,7 +159,8 @@ namespace Blackbox.UI.Board
             return layer;
         }
 
-        static TextStyle NoteStyle(Color c) => new TextStyle(300, NoteSize, 0.01f, false, c);
+        // The player's notes keep the case they type in.
+        static TextStyle NoteStyle(Color c) => new TextStyle(300, NoteSize, 0.01f, false, c).AsSentence();
 
         public void SetTool(InkTool tool)
         {
@@ -431,6 +439,10 @@ namespace Blackbox.UI.Board
             _blink = 0f;
             _backspaceHeld = 0f;
             _at = v.Note.Text.Length;
+            _anchor = -1;
+            _undo.Clear();
+            _redo.Clear();
+            _typingRun = false;
             _caret.FillColor = Inks[Mathf.Clamp(v.Note.Color, 0, Inks.Length - 1)];
             PlaceCaret();
             TypingChanged?.Invoke(true);
@@ -441,6 +453,8 @@ namespace Blackbox.UI.Board
             if (_editing == null) return;
             _editing = null;
             _caret.enabled = false;
+            _anchor = -1;
+            ShowSelection();
             TypingChanged?.Invoke(false);
         }
 
@@ -482,8 +496,10 @@ namespace Blackbox.UI.Board
 
         /// <summary>
         /// Reads the keyboard into the note being typed. Enter or Esc finishes it,
-        /// Shift+Enter starts a new line, the arrow keys move the caret, Backspace and
-        /// Delete remove the character before or after it (both repeat when held).
+        /// Shift+Enter starts a new line, the arrow keys, Home and End move the caret
+        /// (with Shift they select), Backspace and Delete remove the character before
+        /// or after it, or the selection. Ctrl (or Cmd) with A selects all, C copies,
+        /// X cuts, V pastes, Z undoes and Y or Shift+Z redoes.
         /// </summary>
         public void HandleTyping()
         {
@@ -495,34 +511,141 @@ namespace Blackbox.UI.Board
             }
             var note = _editing.Note;
             string before = note.Text;
-            int was = _at;
+            int wasAt = _at, wasAnchor = _anchor;
             _at = Mathf.Clamp(_at, 0, note.Text.Length);
+            bool shift = GameInput.Held(Key.Shift), ctrl = GameInput.Held(Key.Ctrl);
 
-            if (Repeat(Key.Left, 0)) _at = Mathf.Max(0, _at - 1);
-            if (Repeat(Key.Right, 1)) _at = Mathf.Min(note.Text.Length, _at + 1);
-            if (Repeat(Key.Up, 2)) _at = LineMove(note.Text, _at, -1);
-            if (Repeat(Key.Down, 3)) _at = LineMove(note.Text, _at, +1);
-
-            if (GameInput.Down(Key.Enter) && LineCount(note.Text) < LinesAllowed(note)) Insert(note, '\n');
-            foreach (char ch in GameInput.Typed)
+            if (ctrl)
             {
-                if (char.IsControl(ch) || note.Text.Length >= MaxNoteLength) continue;
-                Type(note, ch);
+                if (GameInput.Down(Key.A)) { _anchor = 0; _at = note.Text.Length; }
+                if (GameInput.Down(Key.C) && HasSelection) GUIUtility.systemCopyBuffer = Selected(note);
+                if (GameInput.Down(Key.X) && HasSelection)
+                {
+                    GUIUtility.systemCopyBuffer = Selected(note);
+                    Remember(false);
+                    DeleteSelection(note);
+                }
+                if (GameInput.Down(Key.V)) Paste(note, GUIUtility.systemCopyBuffer);
+                if (GameInput.Down(Key.Z) && !shift) Undo(note, _undo, _redo);
+                if (GameInput.Down(Key.Y) || (GameInput.Down(Key.Z) && shift)) Undo(note, _redo, _undo);
             }
 
-            if (Repeat(Key.Backspace, -1) && _at > 0)
+            int moveTo = -1;
+            if (Repeat(Key.Left, 0)) moveTo = HasSelection && !shift ? SelStart : Mathf.Max(0, _at - 1);
+            if (Repeat(Key.Right, 1)) moveTo = HasSelection && !shift ? SelEnd : Mathf.Min(note.Text.Length, _at + 1);
+            if (Repeat(Key.Up, 2)) moveTo = LineMove(note.Text, _at, -1);
+            if (Repeat(Key.Down, 3)) moveTo = LineMove(note.Text, _at, +1);
+            if (GameInput.Down(Key.Home)) moveTo = _at > 0 ? note.Text.LastIndexOf('\n', _at - 1) + 1 : 0;
+            if (GameInput.Down(Key.End)) { int e = note.Text.IndexOf('\n', _at); moveTo = e < 0 ? note.Text.Length : e; }
+            if (moveTo >= 0)
             {
-                note.Text = note.Text.Remove(_at - 1, 1);
-                _at--;
+                if (shift) { if (_anchor < 0) _anchor = _at; }
+                else _anchor = -1;
+                _at = moveTo;
+                if (_anchor == _at) _anchor = -1;
+                _typingRun = false;
             }
-            if (GameInput.Down(Key.Delete) && _at < note.Text.Length) note.Text = note.Text.Remove(_at, 1);
 
+            if (GameInput.Down(Key.Enter) && (LineCount(note.Text) < LinesAllowed(note) || HasSelection))
+            {
+                Remember(false);
+                DeleteSelection(note);
+                if (LineCount(note.Text) < LinesAllowed(note)) Insert(note, '\n');
+            }
+            // With Ctrl held, keys are shortcuts, not letters.
+            if (!ctrl)
+                foreach (char ch in GameInput.Typed)
+                {
+                    if (char.IsControl(ch)) continue;
+                    if (HasSelection) { Remember(false); DeleteSelection(note); }
+                    if (note.Text.Length >= MaxNoteLength) continue;
+                    Remember(true);
+                    Type(note, ch);
+                }
+
+            if (Repeat(Key.Backspace, -1))
+            {
+                Remember(false);
+                if (HasSelection) DeleteSelection(note);
+                else if (_at > 0)
+                {
+                    note.Text = note.Text.Remove(_at - 1, 1);
+                    _at--;
+                }
+            }
+            if (GameInput.Down(Key.Delete))
+            {
+                Remember(false);
+                if (HasSelection) DeleteSelection(note);
+                else if (_at < note.Text.Length) note.Text = note.Text.Remove(_at, 1);
+            }
+
+            // A step that changed nothing leaves nothing to undo.
+            if (note.Text == before && _undo.Count > 0 && _undo[_undo.Count - 1].text == before && _undo[_undo.Count - 1].at == wasAt && !_typingRun)
+                _undo.RemoveAt(_undo.Count - 1);
             if (note.Text != before) _editing.Text.text = note.Text;
-            if (note.Text != before || _at != was)
+            if (note.Text != before || _at != wasAt || _anchor != wasAnchor)
             {
                 _blink = 0f;
                 PlaceCaret();
             }
+        }
+
+        bool HasSelection => _anchor >= 0 && _anchor != _at;
+        int SelStart => Mathf.Min(_anchor, _at);
+        int SelEnd => Mathf.Max(_anchor, _at);
+        string Selected(TextNote note) => note.Text.Substring(SelStart, SelEnd - SelStart);
+
+        void DeleteSelection(TextNote note)
+        {
+            if (!HasSelection) { _anchor = -1; return; }
+            int from = SelStart;
+            note.Text = note.Text.Remove(from, SelEnd - from);
+            _at = from;
+            _anchor = -1;
+        }
+
+        /// <summary>Saves the note as it is for Ctrl+Z, unless this is more of the same typing.</summary>
+        void Remember(bool typing)
+        {
+            if (typing && _typingRun) return;
+            _typingRun = typing;
+            _undo.Add((_editing.Note.Text, _at));
+            if (_undo.Count > 100) _undo.RemoveAt(0);
+            _redo.Clear();
+        }
+
+        void Undo(TextNote note, List<(string text, int at)> from, List<(string text, int at)> to)
+        {
+            _typingRun = false;
+            if (from.Count == 0) return;
+            to.Add((note.Text, _at));
+            var (text, at) = from[from.Count - 1];
+            from.RemoveAt(from.Count - 1);
+            note.Text = text;
+            _at = Mathf.Clamp(at, 0, text.Length);
+            _anchor = -1;
+        }
+
+        void Paste(TextNote note, string clip)
+        {
+            if (string.IsNullOrEmpty(clip)) return;
+            Remember(false);
+            DeleteSelection(note);
+            foreach (char raw in clip.Replace("\r\n", "\n").Replace('\r', '\n'))
+            {
+                if (note.Text.Length >= MaxNoteLength) break;
+                char ch = raw == '\t' ? ' ' : raw;
+                if (ch == '\n')
+                {
+                    if (LineCount(note.Text) < LinesAllowed(note)) Insert(note, '\n');
+                    else Type(note, ' ');
+                    continue;
+                }
+                if (char.IsControl(ch)) continue;
+                Type(note, ch);
+            }
+            _typingRun = false;
         }
 
         /// <summary>True on the press, then again at a steady rate while the key is held.</summary>
@@ -611,28 +734,73 @@ namespace Blackbox.UI.Board
             return Mathf.Clamp(1 + Mathf.FloorToInt(room / (NoteSize * NoteLineHeight)), 1, MaxNoteLines);
         }
 
-        void PlaceCaret()
+        /// <summary>Where the caret goes before character <paramref name="index"/>, centred on its line, in local coordinates.</summary>
+        Vector2 CaretAt(int index)
         {
-            if (_editing == null) return;
-            string text = _editing.Note.Text.Substring(0, Mathf.Clamp(_at, 0, _editing.Note.Text.Length));
+            string text = _editing.Note.Text.Substring(0, Mathf.Clamp(index, 0, _editing.Note.Text.Length));
             if (_editing.OnBlock)
             {
                 // The label is centred in the block, so the caret sits after the typed part of the centred line.
                 Vector2 c = TagCentre(_editing);
                 float full = NoteWidth(_editing, _editing.Note.Text);
-                float cx = c.x - full * 0.5f + NoteWidth(_editing, text) + (text.Length > 0 ? 2f : 0f);
-                _caret.rectTransform.anchoredPosition = new Vector2(cx, c.y);
-                _caret.rectTransform.sizeDelta = new Vector2(2f, _editing.Text.fontSize * 1.15f);
-                return;
+                return new Vector2(c.x - full * 0.5f + NoteWidth(_editing, text) + (text.Length > 0 ? 2f : 0f), c.y);
             }
             int lines = LineCount(text);
             int lastBreak = text.LastIndexOf('\n');
             string last = lastBreak >= 0 ? text.Substring(lastBreak + 1) : text;
             Vector2 topLeft = ToLocal(_editing.Note.X, _editing.Note.Y);
-            float x = topLeft.x + LineWidth(last) + 3f;
-            float y = topLeft.y - NoteSize * 0.4f - (lines - 1) * NoteSize * NoteLineHeight;
-            _caret.rectTransform.anchoredPosition = new Vector2(x, y);
-            _caret.rectTransform.sizeDelta = new Vector2(2f, NoteSize * 1.1f);
+            return new Vector2(topLeft.x + LineWidth(last) + 3f, topLeft.y - NoteSize * 0.4f - (lines - 1) * NoteSize * NoteLineHeight);
+        }
+
+        float CaretHeight => _editing.OnBlock ? _editing.Text.fontSize * 1.15f : NoteSize * 1.1f;
+
+        void PlaceCaret()
+        {
+            if (_editing == null) return;
+            _caret.rectTransform.anchoredPosition = CaretAt(_at);
+            _caret.rectTransform.sizeDelta = new Vector2(2f, CaretHeight);
+            ShowSelection();
+        }
+
+        /// <summary>Shades the selected text, one band per line it covers.</summary>
+        void ShowSelection()
+        {
+            int used = 0;
+            if (_editing != null && HasSelection)
+            {
+                string text = _editing.Note.Text;
+                int from = SelStart, to = SelEnd;
+                var tint = Inks[Mathf.Clamp(_editing.Note.Color, 0, Inks.Length - 1)].WithAlpha(0.28f);
+                int lineStart = 0;
+                while (lineStart <= text.Length)
+                {
+                    int lineEnd = text.IndexOf('\n', lineStart);
+                    if (lineEnd < 0) lineEnd = text.Length;
+                    int a = Mathf.Max(from, lineStart), b = Mathf.Min(to, lineEnd);
+                    if (a < b || (a == b && from < lineEnd + 1 && to > lineEnd && lineEnd < text.Length))
+                    {
+                        Vector2 p = CaretAt(a), q = CaretAt(b);
+                        if (used == _highlights.Count)
+                        {
+                            var h = UIKit.Shape(_rt, "Selection");
+                            h.raycastTarget = false;
+                            h.Radius = 2f;
+                            // Behind the notes' text.
+                            h.transform.SetSiblingIndex(_noteLayer.GetSiblingIndex());
+                            _highlights.Add(h);
+                        }
+                        var band = _highlights[used++];
+                        band.enabled = true;
+                        band.Style(Paint.Solid, tint, Paint.None, Color.clear);
+                        float w = Mathf.Max(6f, q.x - p.x);
+                        band.rectTransform.anchoredPosition = new Vector2(p.x + w * 0.5f, p.y);
+                        band.rectTransform.sizeDelta = new Vector2(w, CaretHeight);
+                    }
+                    if (lineEnd >= text.Length) break;
+                    lineStart = lineEnd + 1;
+                }
+            }
+            for (int i = used; i < _highlights.Count; i++) _highlights[i].enabled = false;
         }
 
         void MoveNote(NoteView v, Vector2 topLeftLocal)

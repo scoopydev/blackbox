@@ -62,6 +62,7 @@ namespace Blackbox.UI
             t.fontSize = style.Size;
             t.Tracking = style.Tracking;
             t.Uppercase = style.Upper;
+            t.KeepCase = style.Sentence;
             t.color = style.Color;
             t.alignment = align;
             t.raycastTarget = false;
@@ -78,6 +79,7 @@ namespace Blackbox.UI
             t.fontSize = style.Size;
             t.Tracking = style.Tracking;
             t.Uppercase = style.Upper;
+            t.KeepCase = style.Sentence;
             t.color = style.Color;
         }
 

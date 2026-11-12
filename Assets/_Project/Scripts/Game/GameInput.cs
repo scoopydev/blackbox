@@ -9,6 +9,7 @@ namespace Blackbox.Game
     {
         Space, Enter, Escape, Up, Down, Left, Right, Tab, Backspace, Delete,
         P, R, N, Z, H, D, E, G, T,
+        A, C, V, X, Y, Home, End,
         Shift, Ctrl,
     }
 
@@ -47,6 +48,13 @@ namespace Blackbox.Game
                 case Key.E: return UnityEngine.InputSystem.Key.E;
                 case Key.G: return UnityEngine.InputSystem.Key.G;
                 case Key.T: return UnityEngine.InputSystem.Key.T;
+                case Key.A: return UnityEngine.InputSystem.Key.A;
+                case Key.C: return UnityEngine.InputSystem.Key.C;
+                case Key.V: return UnityEngine.InputSystem.Key.V;
+                case Key.X: return UnityEngine.InputSystem.Key.X;
+                case Key.Y: return UnityEngine.InputSystem.Key.Y;
+                case Key.Home: return UnityEngine.InputSystem.Key.Home;
+                case Key.End: return UnityEngine.InputSystem.Key.End;
                 case Key.Shift: return UnityEngine.InputSystem.Key.LeftShift;
                 default: return UnityEngine.InputSystem.Key.LeftCtrl;
             }
@@ -128,6 +136,13 @@ namespace Blackbox.Game
                 case Key.E: return KeyCode.E;
                 case Key.G: return KeyCode.G;
                 case Key.T: return KeyCode.T;
+                case Key.A: return KeyCode.A;
+                case Key.C: return KeyCode.C;
+                case Key.V: return KeyCode.V;
+                case Key.X: return KeyCode.X;
+                case Key.Y: return KeyCode.Y;
+                case Key.Home: return KeyCode.Home;
+                case Key.End: return KeyCode.End;
                 case Key.Shift: return KeyCode.LeftShift;
                 default: return KeyCode.LeftControl;
             }

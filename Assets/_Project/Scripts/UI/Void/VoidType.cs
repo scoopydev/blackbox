@@ -52,6 +52,8 @@ namespace Blackbox.UI
         public int Size;
         public float Tracking;
         public bool Upper;
+        /// <summary>Sentences keep the case they're written in, even with <see cref="VoidText.AllCaps"/> on.</summary>
+        public bool Sentence;
         public Color Color;
 
         public TextStyle(int weight, int size, float tracking, bool upper, Color color)
@@ -60,6 +62,7 @@ namespace Blackbox.UI
             Size = size;
             Tracking = tracking;
             Upper = upper;
+            Sentence = false;
             Color = color;
         }
 
@@ -67,6 +70,8 @@ namespace Blackbox.UI
         public TextStyle WithColor(Color c) { var s = this; s.Color = c; return s; }
         public TextStyle WithWeight(int w) { var s = this; s.Weight = w; return s; }
         public TextStyle WithTracking(float t) { var s = this; s.Tracking = t; return s; }
+        /// <summary>Shown as written: for sentences and the player's own words.</summary>
+        public TextStyle AsSentence() { var s = this; s.Upper = false; s.Sentence = true; return s; }
 
         /// <summary>BLACKBOX on the title screen.</summary>
         public static TextStyle Display => new TextStyle(200, 80, 0.5f, true, Palette.Text);
@@ -81,7 +86,7 @@ namespace Blackbox.UI
         /// <summary>Menu entries and button text.</summary>
         public static TextStyle Menu => new TextStyle(400, 21, 0.3f, true, Palette.Dim);
         /// <summary>Sentences, used sparingly.</summary>
-        public static TextStyle Body => new TextStyle(300, 22, 0.02f, false, Palette.Dim);
+        public static TextStyle Body => new TextStyle(300, 22, 0.02f, false, Palette.Dim).AsSentence();
         /// <summary>Digits in tables.</summary>
         public static TextStyle Digit => new TextStyle(400, 20, 0.05f, false, Palette.Dim);
     }
