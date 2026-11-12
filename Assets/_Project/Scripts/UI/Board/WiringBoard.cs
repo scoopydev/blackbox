@@ -678,8 +678,8 @@ namespace Blackbox.UI.Board
 
         /// <summary>
         /// For a wire into a block of another kind of signal, how that block reads
-        /// what the wire carries ("D1 reads this wave as a digit: 0 at the bottom up
-        /// to 9 at the top."), or null. Only once the player has seen the block
+        /// what the wire carries ("D1 reads this wave as a digit: its height above
+        /// the middle, and 0 below it."), or null. Only once the player has seen the block
         /// send something, so it never gives away what kind of block it is.
         /// </summary>
         internal string ReadingNote(int from, int to, int port)

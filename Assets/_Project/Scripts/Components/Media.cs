@@ -266,7 +266,7 @@ namespace Blackbox.Components
                 case Medium.Binary:
                     return from == Medium.Decimal ? "1 unless it's 0" : from == Medium.Shape ? "1 when solid, 0 when hollow" : "1 while it's above the middle, 0 below";
                 case Medium.Decimal:
-                    return from == Medium.Binary ? "0 or 1" : from == Medium.Shape ? "its corners: circle 0, triangle 3, square 4, hexagon 6" : "0 at the bottom up to 9 at the top";
+                    return from == Medium.Binary ? "0 or 1" : from == Medium.Shape ? "its corners: circle 0, triangle 3, square 4, hexagon 6" : "its height above the middle, and 0 below it";
                 case Medium.Shape:
                     return from == Medium.Binary ? "a circle, solid for 1 and hollow for 0" : from == Medium.Decimal ? "a circle, solid unless it's 0" : "a circle, solid while it's above the middle";
                 default:

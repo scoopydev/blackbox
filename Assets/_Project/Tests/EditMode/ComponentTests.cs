@@ -193,7 +193,7 @@ namespace Blackbox.Tests
                     if (from == to) Assert.That(how, Is.Null);
                     else Assert.That(how, Is.Not.Empty, $"{from} as {to}");
                 }
-            Assert.That(Media.HowRead(Medium.Wave, Medium.Decimal), Does.Contain("9 at the top"));
+            Assert.That(Media.HowRead(Medium.Wave, Medium.Decimal), Does.Contain("height above the middle"));
             Assert.That(Media.HowRead(Medium.Shape, Medium.Decimal), Does.Contain("triangle 3"));
             Assert.That(Trace.Of(Medium.Shape, Shapes.Make(Shapes.Triangle, false)).As(Medium.Decimal)[0], Is.EqualTo(3f), "as the note says");
         }
@@ -471,8 +471,13 @@ namespace Blackbox.Tests
 
             var sine = Trace.Of(Medium.Wave, Waves.Make(Waves.Sine, 0, 6));
             var digits = sine.As(Medium.Decimal);
-            Assert.That(digits[Step(0.25)], Is.EqualTo(9f), "the top reads 9");
+            // A wave reads as its height above the middle, so its peak is its amplitude.
+            Assert.That(digits[Step(0.25)], Is.EqualTo(7f), "an A7 wave's peak reads 7");
             Assert.That(digits[Step(0.75)], Is.EqualTo(0f), "the bottom reads 0");
+            Assert.That(digits[0], Is.EqualTo(0f), "the middle reads 0");
+            var quiet = Trace.Of(Medium.Wave, Waves.Make(Waves.Sine, 0, 2)).As(Medium.Decimal);
+            Assert.That(quiet[Step(0.25)], Is.EqualTo(3f), "an A3 wave's peak reads 3");
+            Assert.That(quiet[Step(0.75)], Is.EqualTo(0f));
             var rounded = sine.As(Medium.Sampled);
             for (int k = 0; k < Trace.Steps; k++)
             {

@@ -451,7 +451,7 @@ namespace Blackbox.UI.Screens
                 {
                     "Height is the digit: 0 at the bottom, 9 at the top. A steady digit is just its number.",
                     "A bigger digit sounds higher.",
-                    "A digit block (D1, D2...) only ever sends 0 to 9. It reads a bit as 0 or 1, and a wave by its height.",
+                    "A digit block (D1, D2...) only ever sends 0 to 9. It reads a bit as 0 or 1, and a wave by its height above the middle: A7 peaks at 7.",
                 }),
                 ("WAVES", "wave sine f2 a5", new[]
                 {

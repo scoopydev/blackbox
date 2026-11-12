@@ -373,7 +373,7 @@
           "signal": "wave saw f1 a7"
         },
         "B": {
-          "signal": "decimal 2"
+          "signal": "decimal 3"
         },
         "C": {
           "signal": "decimal 5"

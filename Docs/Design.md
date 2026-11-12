@@ -57,12 +57,12 @@ Bit and digit blocks work step by step through the loop, and read any signal as 
 | Read as | From a bit | From a digit | From a wave |
 |---|---|---|---|
 | bit | itself | 1 unless 0 | 1 while above the middle |
-| digit | 0 or 1 | itself | its height, 0 (bottom) to 9 (top) |
+| digit | 0 or 1 | itself | its height above the middle, rounded, and 0 below it: its peak is its amplitude (A7 peaks at 7) |
 | analog wave | top when 1, bottom when 0 | a flat level, 0 at the bottom and 9 at the top | itself |
 
-Wave blocks read any signal as a wave (the last row) and send a wave, so they chain in any order and never refuse a signal. Because every signal is drawn as a line, these readings can be seen: a digit read as a wave is the same line, and a wave read as a digit is the wave in steps.
+Wave blocks read any signal as a wave (the last row) and send a wave, so they chain in any order and never refuse a signal. Because every signal is drawn as a line, these readings can be seen: a digit read as a wave is the same line, and a wave read as a digit is its top half in steps, flat at 0 below the middle. A wave's amplitude is the digit its peak reads as (12 Nov 2026, from fella: "a wave's amplitude determines its digital amplitude"; it used to read 0 at the bottom up to 9 at the top).
 
-Once the player has seen a block send something, pointing at a wire into it says how that block reads the wire when the kinds differ, such as "D1 reads this wave as a digit: 0 at the bottom up to 9 at the top." (`Media.HowRead`, `BlockKind.Reads`). It waits for a run so it never gives away more than the label already says.
+Once the player has seen a block send something, pointing at a wire into it says how that block reads the wire when the kinds differ, such as "D1 reads this wave as a digit: its height above the middle, and 0 below it." (`Media.HowRead`, `BlockKind.Reads`). It waits for a run so it never gives away more than the label already says.
 
 A steady bit is a flat line above or below the midline; a steady digit is just its number, as big as the box allows. A signal that changes is drawn across the loop: bits as a square line about the midline, with 1 and 0 written at its left; digits as a stepped line, each step with its number written on it (above the line in its lower half, below it in its upper half; the step playing now is white), or, when it changes more than eight times, with only its highest and lowest digits written at its left; waves as themselves, with their frequency and amplitude written under them ("F2 A7") wherever they appear: inputs, what blocks send, outputs and targets. A wave a block makes reads as the settings of the wave it is, if it is one (a flipped sine is the same sine half a cycle on, "+1/2"); otherwise as what can be measured, F for how many times it repeats a loop and A for how far it swings each way from its middle, to the nearest half (`Waves.Describe`). Numbers written on a line are in plain light grey at regular weight, as large as the line's box has room for, so they stay readable.
 
@@ -267,10 +267,10 @@ The circuits with two solutions have two alike blocks that can swap, or one bloc
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
 | 1 | Hear a rising tune turned upside down and held at a floor; a rhythm cut by a wave's top half | 16,807 | 1 |
-| 2 | A loud square wave heard as a digit is 9 then 0: DIFF with a tune, and a rhythm XORed then clipped by it | 117,649 | 1 |
+| 2 | A loud square wave heard as a digit is 7 then 0: DIFF with a tune, and a rhythm XORed then clipped by it | 117,649 | 1 |
 | 3 | Two inputs each go two places: MIN of a tune and a square, and a mirrored tune turned to a beat | 117,649 | 1 |
 | 4 | Both targets follow one input's rhythm: COMPARE then MIRROR, and NOT then DIFF | 262,144 | 1 |
-| 5 | One target climbs step by step: start there | 823,543 | 1 |
+| 5 | One target climbs step by step: start there. The other is a falling tune turned over by MIRROR, heard as beats by AND | 823,543 | 1 |
 
 ## Look and sound
 

@@ -244,7 +244,7 @@ namespace Blackbox.Components
         /// the mixing tutorial is built:
         /// <list type="bullet">
         /// <item>As a bit: a digit is 1 unless it's 0; a shape is 1 when solid; a wave is 1 while it's above the middle.</item>
-        /// <item>As a digit: a bit is 0 or 1; a shape is its number of corners; a wave is its height on a scale of 0 (bottom) to 9 (top).</item>
+        /// <item>As a digit: a bit is 0 or 1; a shape is its number of corners; a wave is its height above the middle, rounded, and 0 at or below it, so its peak is its amplitude (an A7 wave peaks at 7).</item>
         /// <item>As a shape: a circle, solid while the signal reads as 1.</item>
         /// <item>As an analog wave: a bit, or a shape's fill, is a full-height square (1 at the top, 0 at the bottom); a digit is a flat level from the bottom (0) to the top (9).</item>
         /// <item>As a sampled wave: the wave reading, rounded to a whole level at every step.</item>
@@ -268,7 +268,8 @@ namespace Blackbox.Components
                     {
                         case Medium.Binary: return level;
                         case Medium.Shape: return Shapes.Corners[Shapes.Form((int)level)];
-                        default: return (float)Math.Round((level + Peak) / (2.0 * Peak) * 9.0, MidpointRounding.AwayFromZero);
+                        // A wave's height above the middle: its amplitude at its peak, 0 below the middle.
+                        default: return level <= 0f ? 0f : (float)Math.Round(level, MidpointRounding.AwayFromZero);
                     }
                 case Medium.Shape: return Shapes.Make(Shapes.Circle, AsBit(from, level) == 1f);
                 case Medium.Wave: return AsWave(from, level);

@@ -70,7 +70,7 @@
     },
     {
       "id": "lights-out-02",
-      "hint": "One input is a wave. A digit block hears it by its height: the top of the loud square is 9, the bottom 0.",
+      "hint": "One input is a wave. A digit block hears it by its height: the top of the loud square is 7, the bottom 0.",
       "inputs": {
         "A": {
           "signal": "binary 1000"
@@ -263,7 +263,7 @@
           "signal": "decimal 2709"
         },
         "D": {
-          "signal": "wave sine f2 a7"
+          "signal": "decimal 9531"
         }
       },
       "blocks": {
