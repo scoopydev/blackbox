@@ -628,7 +628,7 @@ namespace Blackbox.UI.Screens
                 int from = depth[link.From], to = depth[link.To];
                 float length = Mathf.Max(1, to - from) * step;
                 var l = link;
-                Plan(from * step, () => { if (!App.ReduceMotion) l.Pulse(0f, length); });
+                Plan(from * step, () => { if (!App.ReduceMotion) l.Pulse(0f, length / App.RunSpeed); });
             }
             var levels = new HashSet<int>();
             for (int b = 0; b < _board.Blocks.Count; b++)
@@ -662,10 +662,11 @@ namespace Blackbox.UI.Screens
                 Plan(t, () =>
                 {
                     _board.ShowOutput(index, report);
-                    if (audible) { _board.RestartLoop(); App.Audio?.PlayTrace(got); }
+                    if (audible) { _board.RestartLoop(); App.Audio?.PlayTrace(got, App.LoopSpeed); }
                     else App.Sound(got == null ? Sfx.Miss : Sfx.Arrive, got == null ? 1.4f : 1f, 0.45f);
                 });
-                t += audible ? SignalSound.Duration(got) + 0.16f : 0.45f;
+                // The run's clock goes RunSpeed times as fast, but each sound still plays out in full.
+                t += audible ? (SignalSound.Duration(got, App.LoopSpeed) + 0.16f / App.RunSpeed) * App.RunSpeed : 0.45f;
             }
             Plan(t + 0.1f, FinishRun);
         }
@@ -680,7 +681,7 @@ namespace Blackbox.UI.Screens
         void Update()
         {
             if (!_running) return;
-            _runClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
+            _runClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f) * App.RunSpeed;
             while (_running && _runPlan.Count > 0 && _runPlan[0].at <= _runClock)
             {
                 var next = _runPlan[0];
@@ -735,7 +736,7 @@ namespace Blackbox.UI.Screens
         {
             if (trace == null) return;
             _board.RestartLoop();
-            App.Audio?.PlayTrace(trace);
+            App.Audio?.PlayTrace(trace, App.LoopSpeed);
         }
 
         // ------------------------------------------------------------------ keys

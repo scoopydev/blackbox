@@ -616,7 +616,7 @@ namespace Blackbox.UI.Screens
         void Play(SignalView view)
         {
             if (view == null || view.Trace == null) return;
-            App.Audio?.PlayTrace(view.Trace);
+            App.Audio?.PlayTrace(view.Trace, App.LoopSpeed);
             view.Ping();
             var run = _loops.Find(l => l.View == view);
             if (run == null) _loops.Add(run = new Loop { View = view, Seconds = SecondsFor(view.Trace), Once = true });
@@ -630,7 +630,7 @@ namespace Blackbox.UI.Screens
         /// sounds as a tone, so its playhead keeps the board's time.
         /// </summary>
         static float SecondsFor(Trace trace) =>
-            trace != null && !Media.IsWave(trace.Medium) && !trace.IsFlat ? SignalSound.PatternLength : WiringBoard.LoopSeconds;
+            (trace != null && !Media.IsWave(trace.Medium) && !trace.IsFlat ? SignalSound.PatternLength : WiringBoard.LoopSeconds) / App.LoopSpeed;
 
         void Update()
         {

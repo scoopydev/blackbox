@@ -98,6 +98,10 @@ namespace Blackbox.UI.Screens
             public VoidSlider Slider;
             public VoidText Amount;
             public VoidToggle Toggle;
+            /// <summary>A row of options, such as 1X to 4X; one is chosen.</summary>
+            public List<VoidText> Options;
+            public int Chosen;
+            public Action<int> Choose;
             public Action Activate;
             public bool Danger;
             public string About;
@@ -123,9 +127,9 @@ namespace Blackbox.UI.Screens
             UIKit.Rule(Root, SectionRight - 160f, ControlRight + 80f, 190f, Palette.Rule);
 
             var prefs = Game.Save.Prefs;
-            const float step = 56f;
-            const float gap = 30f;
-            float y = 236f;
+            const float step = 48f;
+            const float gap = 22f;
+            float y = 228f;
             Chrome.Section(Root, "SOUND", SectionRight, y);
             AddSlider("MASTER VOLUME", y, prefs.MasterVolume, v => { prefs.MasterVolume = v; Game.ApplyPrefs(); }, "Everything the game plays.");
             AddSlider("MUSIC", y += step, prefs.MusicVolume, v => { prefs.MusicVolume = v; Game.ApplyPrefs(); }, "The hum under every screen.");
@@ -135,6 +139,10 @@ namespace Blackbox.UI.Screens
             Chrome.Section(Root, "DISPLAY", SectionRight, y += step + gap);
             AddToggle("FULLSCREEN", y, prefs.Fullscreen, v => { prefs.Fullscreen = v; Game.ApplyPrefs(); }, "Fill the screen, or play in a window.");
             AddToggle("REDUCE MOTION", y += step, prefs.ReduceMotion, v => { prefs.ReduceMotion = v; Game.ApplyPrefs(); }, "Stills the flowing light and the pulsing marks.");
+
+            Chrome.Section(Root, "SPEED", SectionRight, y += step + gap);
+            AddChoice("RUN SPEED", y, prefs.RunSpeed - 1, Speeds, i => { prefs.RunSpeed = i + 1; Game.ApplyPrefs(); }, "How fast a run sends the signals through. Each output's sound still plays in full.");
+            AddChoice("LOOP SPEED", y += step, prefs.LoopSpeed - 1, Speeds, i => { prefs.LoopSpeed = i + 1; Game.ApplyPrefs(); }, "How fast every signal's cursor sweeps, and how fast a changing signal plays.");
 
             Chrome.Section(Root, "DEBUG", SectionRight, y += step + gap);
             AddToggle("SHOW BLOCK RULES", y, prefs.DebugRules, v => { prefs.DebugRules = v; Game.MarkDirty(); }, "Writes what every block does under it. Spoils the puzzles.");
@@ -161,7 +169,7 @@ namespace Blackbox.UI.Screens
         {
             var row = new Row { About = about };
             int index = _rows.Count;
-            var hitRt = UIKit.Rect(Root, "Row " + text).At((LabelLeft - 40f + ControlRight + 80f) * 0.5f, y, ControlRight + 120f - LabelLeft, 52f);
+            var hitRt = UIKit.Rect(Root, "Row " + text).At((LabelLeft - 40f + ControlRight + 80f) * 0.5f, y, ControlRight + 120f - LabelLeft, 46f);
             UIKit.Hit(hitRt).rectTransform.Stretch();
             var click = hitRt.gameObject.AddComponent<Clickable>();
             click.HoverSound = false;
@@ -208,6 +216,47 @@ namespace Blackbox.UI.Screens
             row.Toggle.Changed = changed;
             var r = row;
             row.Activate = () => { App.Sound(Sfx.Dial); r.Toggle.Flip(); };
+        }
+
+        static readonly string[] Speeds = { "1X", "2X", "3X", "4X" };
+
+        void AddChoice(string text, float y, int chosen, string[] options, Action<int> changed, string about)
+        {
+            var row = AddRow(text, y, about);
+            row.Options = new List<VoidText>();
+            const float each = 62f;
+            for (int i = 0; i < options.Length; i++)
+            {
+                float x = ControlRight - (options.Length - 1 - i) * each - 20f;
+                var t = UIKit.Text(Root, options[i], TextStyle.Digit.WithSize(17), TextAnchor.MiddleCenter, "Option " + options[i]);
+                t.rectTransform.At(x, y, each, 30f);
+                var hit = UIKit.Hit(t.rectTransform);
+                hit.rectTransform.Stretch();
+                var click = t.gameObject.AddComponent<Clickable>();
+                click.HoverSound = false;
+                click.ClickSound = Sfx.Dial;
+                int index = i, rowIndex = _rows.Count - 1;
+                click.HoverChanged = on => { if (on) Focus(rowIndex, true); };
+                click.Clicked = () => _rows[rowIndex].Choose(index);
+                row.Options.Add(t);
+            }
+            var r = row;
+            row.Chosen = Mathf.Clamp(chosen, 0, options.Length - 1);
+            row.Choose = i =>
+            {
+                r.Chosen = Mathf.Clamp(i, 0, r.Options.Count - 1);
+                StyleChoice(r);
+                changed(r.Chosen);
+            };
+            // Enter or a click on the row steps to the next option, round to the first.
+            row.Activate = () => { App.Sound(Sfx.Dial); r.Choose((r.Chosen + 1) % r.Options.Count); };
+            StyleChoice(row);
+        }
+
+        static void StyleChoice(Row row)
+        {
+            for (int i = 0; i < row.Options.Count; i++)
+                row.Options[i].color = i == row.Chosen ? Palette.Cyan : Palette.Faint;
         }
 
         void AddAction(string text, float y, bool danger, Action action, string about)
@@ -258,6 +307,11 @@ namespace Blackbox.UI.Screens
             {
                 if (row.Slider != null) row.Slider.Nudge(dir * 0.1f);
                 else if (row.Toggle != null && row.Toggle.On != dir > 0) { App.Sound(Sfx.Dial); row.Toggle.Flip(); }
+                else if (row.Options != null)
+                {
+                    int next = Mathf.Clamp(row.Chosen + dir, 0, row.Options.Count - 1);
+                    if (next != row.Chosen) { App.Sound(Sfx.Dial); row.Choose(next); }
+                }
             }
             if (GameInput.Confirm) row.Activate?.Invoke();
         }

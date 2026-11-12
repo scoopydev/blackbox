@@ -194,21 +194,23 @@ namespace Blackbox.Game
         /// Plays a signal over a whole loop (see <see cref="SignalSound.Render(Trace, int)"/>),
         /// cutting off whatever signal was playing. Returns how long it lasts.
         /// </summary>
-        public float PlayTrace(Trace trace)
+        /// <param name="speed">The signal loop speed, so a changing signal plays over one loop as drawn.</param>
+        public float PlayTrace(Trace trace, float speed = 1f)
         {
             StopSignals();
             if (trace == null || _tone == null) return 0f;
-            if (!_traces.TryGetValue(trace.Key, out var clip))
+            string key = trace.Key + "@" + speed;
+            if (!_traces.TryGetValue(key, out var clip))
             {
                 if (_traces.Count >= 48)
                 {
                     foreach (var old in _traces.Values) if (old != null && old != _tone.clip) Destroy(old);
                     _traces.Clear();
                 }
-                var data = SignalSound.Render(trace, Rate);
+                var data = SignalSound.Render(trace, Rate, speed);
                 clip = AudioClip.Create("bb_trace", Math.Max(1, data.Length), 1, Rate, false);
                 clip.SetData(data, 0);
-                _traces[trace.Key] = clip;
+                _traces[key] = clip;
             }
             _tone.clip = clip;
             _tone.volume = _master * _effects;

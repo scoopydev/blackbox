@@ -88,6 +88,10 @@ namespace Blackbox.UI
     {
         public static AudioSystem Audio;
         public static bool ReduceMotion;
+        /// <summary>How many times faster than normal the signals on screen loop (1 to 4).</summary>
+        public static float LoopSpeed = 1f;
+        /// <summary>How many times faster than normal a run plays out (1 to 4).</summary>
+        public static float RunSpeed = 1f;
 
         public static void Sound(Sfx sfx, float pitch = 1f, float volume = 1f)
         {

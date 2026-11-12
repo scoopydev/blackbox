@@ -167,6 +167,8 @@ namespace Blackbox.Game
         {
             var p = Save.Prefs;
             App.ReduceMotion = p.ReduceMotion;
+            App.LoopSpeed = p.LoopSpeed;
+            App.RunSpeed = p.RunSpeed;
             Audio.SetVolumes(p.MasterVolume, p.MusicVolume, p.EffectsVolume);
 #if !UNITY_EDITOR && (UNITY_STANDALONE || UNITY_WSA)
             var mode = p.Fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;

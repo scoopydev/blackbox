@@ -19,6 +19,10 @@ namespace Blackbox.Core
         public bool DebugRules;
         /// <summary>Debug: open every part, chapter and circuit, whatever has been solved.</summary>
         public bool DebugOpenAll;
+        /// <summary>How fast the signals on screen loop: 1x to 4x.</summary>
+        public int LoopSpeed = 1;
+        /// <summary>How fast a run plays out: 1x to 4x.</summary>
+        public int RunSpeed = 1;
     }
 
     /// <summary>Where the player left one circuit: input values, block states and probes, or the wires they drew.</summary>
@@ -238,6 +242,8 @@ namespace Blackbox.Core
             prefs.Set("signalSounds", Prefs.SignalSounds);
             prefs.Set("debugRules", Prefs.DebugRules);
             prefs.Set("debugOpenAll", Prefs.DebugOpenAll);
+            prefs.Set("loopSpeed", Prefs.LoopSpeed);
+            prefs.Set("runSpeed", Prefs.RunSpeed);
             root.Set("preferences", prefs);
 
             return JsonWriter.Write(root);
@@ -311,6 +317,8 @@ namespace Blackbox.Core
                 SignalSounds = p["signalSounds"].AsBool(d.SignalSounds),
                 DebugRules = p["debugRules"].AsBool(d.DebugRules),
                 DebugOpenAll = p["debugOpenAll"].AsBool(d.DebugOpenAll),
+                LoopSpeed = Math.Max(1, Math.Min(4, p["loopSpeed"].AsInt(d.LoopSpeed))),
+                RunSpeed = Math.Max(1, Math.Min(4, p["runSpeed"].AsInt(d.RunSpeed))),
             };
             return data;
         }

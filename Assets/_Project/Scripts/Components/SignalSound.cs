@@ -81,11 +81,12 @@ namespace Blackbox.Components
         public const float PatternLength = 2.4f;
 
         /// <summary>How long a signal over a loop sounds, in seconds.</summary>
-        public static float Duration(Trace t)
+        /// <param name="speed">How many times faster than normal the signals loop: a changing signal plays over one loop at that speed.</param>
+        public static float Duration(Trace t, float speed = 1f)
         {
             if (Media.IsWave(t.Medium)) return WaveLength;
             if (t.IsFlat) return Duration(t.Medium, (int)Math.Round(t.First));
-            return PatternLength;
+            return PatternLength / Math.Max(1f, speed);
         }
 
         /// <summary>
@@ -96,10 +97,10 @@ namespace Blackbox.Components
         /// repeats at <see cref="WaveBaseHz"/>, so it has the same pitch as the
         /// waves of chapter IV, and two waves that cancel out are silent.
         /// </summary>
-        public static float[] Render(Trace trace, int rate = SampleRate)
+        public static float[] Render(Trace trace, int rate = SampleRate, float speed = 1f)
         {
             if (!Media.IsWave(trace.Medium) && trace.IsFlat) return Render(trace.Medium, (int)Math.Round(trace.First), rate);
-            int n = (int)Math.Ceiling(Duration(trace) * rate);
+            int n = (int)Math.Ceiling(Duration(trace, speed) * rate);
             var data = new float[n];
             if (Media.IsWave(trace.Medium))
             {

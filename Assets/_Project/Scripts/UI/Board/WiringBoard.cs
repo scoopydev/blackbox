@@ -424,7 +424,7 @@ namespace Blackbox.UI.Board
                 else UpdateGhost();
             }
 
-            _clock += Time.unscaledDeltaTime;
+            _clock += Time.unscaledDeltaTime * App.LoopSpeed;
             float loop = App.ReduceMotion ? -1f : Mathf.Repeat(_clock / LoopSeconds, 1f);
             float dt = Time.unscaledDeltaTime;
             foreach (var v in Inputs) v.Tick(loop);
