@@ -59,10 +59,11 @@ namespace Blackbox.UI.Screens
 
         void OpenGuide()
         {
-            var guide = Game.Screens.Create<SignalGuideOverlay>();
-            guide.Chapter = Puzzle.Chapter;
-            guide.FromMenu = true;
-            Game.Screens.Push(guide);
+            var help = Game.Screens.Create<HelpOverlay>();
+            help.Chapter = Puzzle.Chapter;
+            help.Wiring = Puzzle.Wiring;
+            help.StartOnGuide = true;
+            Game.Screens.Push(help);
         }
 
         void OpenHelp()
@@ -337,23 +338,182 @@ namespace Blackbox.UI.Screens
         }
     }
 
-    /// <summary>How to play, and every control.</summary>
+    /// <summary>
+    /// How to play, every control, and the signal guides, one tab each. A guide's
+    /// tab opens once the player has reached a chapter that uses it; the rest
+    /// show a padlock. Left and right, or Tab, move between tabs.
+    /// </summary>
     public sealed class HelpOverlay : Overlay
     {
-        /// <summary>The chapter being played, for a line about its signals. Optional.</summary>
+        /// <summary>The chapter being played, if any: its guide counts as reached.</summary>
         public ChapterDef Chapter;
         /// <summary>Help for a circuit the player wires, rather than one they set.</summary>
-        public bool Wiring;
+        public bool Wiring = true;
+        /// <summary>Open on this chapter's signal guide instead of How to Play.</summary>
+        public bool StartOnGuide;
+
+        sealed class Tab
+        {
+            public string Title;
+            /// <summary>The first chapter with this guide, whose page is shown; null for How to Play.</summary>
+            public ChapterDef Chapter;
+            public bool Open;
+            public VoidText Label;
+            public PathGraphic Underline;
+            public Clickable Click;
+        }
+
+        readonly List<Tab> _tabs = new List<Tab>();
+        int _current = -1;
+        RectTransform _page;
+
+        static string GuideTitle(SignalGuide g)
+        {
+            switch (g)
+            {
+                case SignalGuide.Bits: return "BITS";
+                case SignalGuide.Digits: return "DIGITS";
+                case SignalGuide.ChangingDigits: return "CHANGING DIGITS";
+                case SignalGuide.Waves: return "WAVES";
+                case SignalGuide.Readings: return "MIXING KINDS";
+                default: return "EVERY SIGNAL";
+            }
+        }
+
+        /// <summary>
+        /// A chapter counts as reached once its title card has been seen, a circuit
+        /// in it solved, or it's the one being played. Every chapter can be played
+        /// from the start, so "unlocked" alone would open every guide.
+        /// </summary>
+        bool Reached(ChapterDef c) =>
+            c == Chapter || Game.Save.Prefs.DebugOpenAll || Game.Save.SeenIntros.Contains(c.Id) || Game.Progress.SolvedIn(c) > 0;
 
         protected internal override void Build()
         {
             BuildVeil();
-            var title = UIKit.Text(Root, "HOW IT WORKS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
+
+            _tabs.Add(new Tab { Title = "HOW TO PLAY", Open = true });
+            var seen = new List<SignalGuide>();
+            int start = 0;
+            foreach (var c in Game.Library.Chapters)
+            {
+                if (!SignalGuideOverlay.Has(c)) continue;
+                int i = seen.IndexOf(c.Guide);
+                if (i < 0)
+                {
+                    seen.Add(c.Guide);
+                    _tabs.Add(new Tab { Title = GuideTitle(c.Guide), Chapter = c });
+                    i = seen.Count - 1;
+                }
+                var tab = _tabs[i + 1];
+                if (Reached(c)) tab.Open = true;
+                if (StartOnGuide && c == Chapter) start = i + 1;
+            }
+            BuildTabs();
+
+            Chrome.KeyButton(Root, "ESC", "CLOSE", 1830f, 44f, true, Close);
+            Chrome.KeyHintsCentred(Root, VoidFrame.Width * 0.5f, 1040f, "LEFT RIGHT", "TAB", "ESC", "CLOSE");
+            Show(start, false);
+            App.Sound(Sfx.Open, 1.2f, 0.6f);
+        }
+
+        void BuildTabs()
+        {
+            var style = TextStyle.Label.WithSize(13).WithTracking(0.3f);
+            var widths = new List<float>();
+            float total = 0f;
+            const float gap = 48f;
+            foreach (var t in _tabs)
+            {
+                t.Label = UIKit.Text(Root, t.Title, style, TextAnchor.MiddleCenter, "Tab " + t.Title);
+                float w = t.Label.MeasureWidth() + (t.Open ? 0f : 22f);
+                widths.Add(w);
+                total += w;
+            }
+            total += gap * (_tabs.Count - 1);
+            float x = VoidFrame.Width * 0.5f - total * 0.5f;
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                var t = _tabs[i];
+                float w = widths[i];
+                var rt = UIKit.Rect(Root, "Tab button " + t.Title).At(x + w * 0.5f, 44f, w + 24f, 44f);
+                t.Label.rectTransform.SetParent(rt, false);
+                t.Label.rectTransform.Centered(t.Open ? 0f : 11f, 0f, w, 24f);
+                if (!t.Open)
+                {
+                    var lockGlyph = UIKit.Glyph(rt, "lock", Palette.Faint, 1.2f);
+                    lockGlyph.rectTransform.Centered(-w * 0.5f + 6f, 1f, 12f, 12f);
+                }
+                t.Underline = UIKit.Add<PathGraphic>(rt, "Underline");
+                t.Underline.raycastTarget = false;
+                t.Underline.rectTransform.Centered(0f, -20f, w, 6f);
+                t.Underline.BaseColor = Color.clear;
+                t.Underline.LitWidth = 1.6f;
+                t.Underline.Glow = 0.4f;
+                t.Underline.GlowRadius = 8f;
+                t.Underline.SetPoints(new List<Vector2> { new Vector2(-w * 0.5f, 0f), new Vector2(w * 0.5f, 0f) });
+                UIKit.Hit(rt).rectTransform.Stretch();
+                t.Click = rt.gameObject.AddComponent<Clickable>();
+                t.Click.ClickSound = Sfx.Hover;
+                int index = i;
+                t.Click.Clicked = () => Show(index, true);
+                t.Click.HoverChanged = _ => StyleTabs();
+                x += w + gap;
+            }
+            UIKit.Rule(Root, 90f, 1830f, 72f, Palette.Rule);
+        }
+
+        void StyleTabs()
+        {
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                var t = _tabs[i];
+                bool active = i == _current;
+                t.Label.color = active ? Palette.Text : !t.Open ? Palette.Faint : t.Click.Hovered ? Palette.Text : Palette.Dim;
+                t.Underline.SetLit(0f, active ? 1f : 0f);
+                t.Underline.LitAlpha = active ? 1f : 0f;
+            }
+        }
+
+        void Show(int index, bool sound)
+        {
+            if (index == _current) return;
+            var tab = _tabs[index];
+            if (!tab.Open)
+            {
+                App.Sound(Sfx.Miss, 1.4f, 0.4f);
+                return;
+            }
+            if (sound) App.Sound(Sfx.Click);
+            App.Audio?.StopSignals();
+            _current = index;
+            if (_page != null) Destroy(_page.gameObject);
+            _page = UIKit.Rect(Root, "Page").Stretch();
+            _page.SetSiblingIndex(1);
+            if (tab.Chapter == null) BuildHowTo(_page);
+            else SignalGuideOverlay.Embed(_page, tab.Chapter);
+            StyleTabs();
+        }
+
+        void Step(int direction)
+        {
+            for (int k = 1; k < _tabs.Count; k++)
+            {
+                int i = (_current + direction * k + _tabs.Count * 4) % _tabs.Count;
+                if (!_tabs[i].Open) continue;
+                Show(i, true);
+                return;
+            }
+        }
+
+        void BuildHowTo(RectTransform page)
+        {
+            var title = UIKit.Text(page, "HOW IT WORKS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
             title.rectTransform.At(VoidFrame.Width * 0.5f, 150f, 400f, 22f);
-            UIKit.Rule(Root, 200f, 1720f, 190f, Palette.Rule);
-            var ideaHead = UIKit.Text(Root, "THE IDEA", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            UIKit.Rule(page, 200f, 1720f, 190f, Palette.Rule);
+            var ideaHead = UIKit.Text(page, "THE IDEA", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
             ideaHead.rectTransform.At(220f + 200f, 226f, 400f, 18f);
-            var keysHead = UIKit.Text(Root, "CONTROLS", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleRight);
+            var keysHead = UIKit.Text(page, "CONTROLS", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleRight);
             keysHead.rectTransform.At(1230f - 200f, 226f, 400f, 18f);
 
             var ideas = Wiring ? new List<string>
@@ -373,7 +533,6 @@ namespace Blackbox.UI.Screens
                 "Every signal has a sound. A run plays each output as it arrives, and clicking any value you can see plays it again.",
                 "Draw with the pen, or type with the text tool, to label blocks and note down what you learn. Notes stay with the circuit.",
             };
-            if (Chapter != null && !string.IsNullOrEmpty(Chapter.Signals)) ideas.Add(Chapter.Signals);
             // Each idea is as tall as its wrapped lines, so long ones never run into the next.
             const float ideaWidth = 680f;
             const int ideaSize = 21;
@@ -381,12 +540,12 @@ namespace Blackbox.UI.Screens
             float y = 252f;
             foreach (var idea in ideas)
             {
-                var t = UIKit.Text(Root, idea, TextStyle.Body.WithSize(ideaSize), TextAnchor.UpperLeft);
+                var t = UIKit.Text(page, idea, TextStyle.Body.WithSize(ideaSize), TextAnchor.UpperLeft);
                 int lines = Mathf.Max(1, Mathf.CeilToInt(t.MeasureWidth() / (ideaWidth * 0.92f)));
                 float h = lines * lineHeight;
                 t.horizontalOverflow = HorizontalWrapMode.Wrap;
                 t.rectTransform.At(250f + ideaWidth * 0.5f, y + h * 0.5f, ideaWidth, h + 8f);
-                var dot = UIKit.Shape(Root, "Dot", ShapeKind.Circle);
+                var dot = UIKit.Shape(page, "Dot", ShapeKind.Circle);
                 dot.rectTransform.At(226f, y + 15f, 6f, 6f);
                 dot.Style(Paint.Signal, Color.white, Paint.None, Color.clear);
                 y += h + 26f;
@@ -421,32 +580,31 @@ namespace Blackbox.UI.Screens
             float ky = 272f;
             for (int i = 0; i + 1 < keys.Length; i += 2)
             {
-                var k = UIKit.Text(Root, keys[i], TextStyle.Label.WithSize(13).WithTracking(0.16f).WithColor(Palette.Dim), TextAnchor.MiddleRight);
+                var k = UIKit.Text(page, keys[i], TextStyle.Label.WithSize(13).WithTracking(0.16f).WithColor(Palette.Dim), TextAnchor.MiddleRight);
                 k.rectTransform.At(1230f - 120f, ky, 240f, 22f);
-                var a = UIKit.Text(Root, keys[i + 1], TextStyle.Body.WithSize(19), TextAnchor.MiddleLeft);
+                var a = UIKit.Text(page, keys[i + 1], TextStyle.Body.WithSize(19), TextAnchor.MiddleLeft);
                 a.rectTransform.At(1260f + 160f, ky, 320f, 26f);
                 ky += 52f;
             }
 
-            var close = UIKit.Hit(Root, "Close");
-            close.rectTransform.Stretch();
-            close.transform.SetSiblingIndex(1);
-            var c = close.gameObject.AddComponent<Clickable>();
-            c.HoverSound = false;
-            c.ClickSound = Sfx.Close;
-            c.Clicked = Close;
-            Chrome.KeyButton(Root, "ESC", "CLOSE", 1830f, 62f, true, Close);
-            Chrome.KeyHintsCentred(Root, VoidFrame.Width * 0.5f, 1032f, "ESC", "CLOSE", "CLICK", "ANYWHERE TO CLOSE");
-            App.Sound(Sfx.Open, 1.2f, 0.6f);
+        }
+
+        public override void OnClosing()
+        {
+            App.Audio?.StopSignals();
+            base.OnClosing();
         }
 
         public override void HandleInput()
         {
-            if (GameInput.Down(Key.Escape) || GameInput.Down(Key.H) || GameInput.Confirm)
+            if (GameInput.Down(Key.Escape) || GameInput.Down(Key.H))
             {
                 App.Sound(Sfx.Close);
                 Close();
+                return;
             }
+            if (GameInput.Down(Key.Right) || (GameInput.Down(Key.Tab) && !GameInput.Held(Key.Shift))) Step(1);
+            else if (GameInput.Down(Key.Left) || (GameInput.Down(Key.Tab) && GameInput.Held(Key.Shift))) Step(-1);
         }
     }
 

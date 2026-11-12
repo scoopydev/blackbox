@@ -55,6 +55,38 @@ namespace Blackbox.UI.Screens
         /// <summary>True when the chapter has a guide to show.</summary>
         public static bool Has(ChapterDef chapter) => chapter != null && chapter.Guide != SignalGuide.None;
 
+        /// <summary>Drawn as a tab of How to Play rather than as its own screen: no veil, nothing plays by itself, and pages turn with buttons.</summary>
+        bool _embedded;
+
+        /// <summary>Draws a chapter's guide inside <paramref name="parent"/>, as a tab of How to Play.</summary>
+        public static SignalGuideOverlay Embed(RectTransform parent, ChapterDef chapter)
+        {
+            var rt = UIKit.Rect(parent, "Signal guide").Stretch();
+            var guide = rt.gameObject.AddComponent<SignalGuideOverlay>();
+            guide.Chapter = chapter;
+            guide._embedded = true;
+            guide.FromMenu = true;
+            guide._pages = guide.PagesOf(chapter.Guide);
+            guide._page = 0;
+            guide.BuildPage();
+            return guide;
+        }
+
+        void OnDestroy()
+        {
+            if (_embedded) Tweener.Kill(this);
+        }
+
+        /// <summary>Turns to the next or previous page, if there is one.</summary>
+        public void TurnPage(int direction)
+        {
+            int next = Mathf.Clamp(_page + direction, 0, _pages.Count - 1);
+            if (next == _page) return;
+            App.Sound(Sfx.Click);
+            _page = next;
+            BuildPage();
+        }
+
         protected internal override void Build()
         {
             BuildVeil();
@@ -104,6 +136,19 @@ namespace Blackbox.UI.Screens
             var hint = UIKit.Text(_content, "CLICK ANY SIGNAL TO HEAR IT", TextStyle.Label.WithSize(11).WithTracking(0.34f).WithColor(Palette.Faint));
             hint.raycastTarget = false;
             hint.rectTransform.At(Cx, 968f, 600f, 16f);
+            _shownAt = Time.unscaledTime;
+            if (_embedded)
+            {
+                // Inside How to Play: page buttons in place of the prompt.
+                if (_pages.Count > 1)
+                {
+                    var count = UIKit.Text(_content, $"PAGE {_page + 1} OF {_pages.Count}", TextStyle.Label.WithSize(12).WithTracking(0.3f).WithColor(Palette.Faint));
+                    count.rectTransform.At(Cx, 1000f, 300f, 18f);
+                    if (_page > 0) Chrome.TextButton(_content, "PREVIOUS PAGE", Cx - 130f, 1000f, true, () => TurnPage(-1), "back");
+                    if (!LastPage) Chrome.TextButton(_content, "NEXT PAGE", Cx + 130f, 1000f, false, () => TurnPage(1), "arrow");
+                }
+                return;
+            }
             string prompt = !LastPage ? "CLICK OR PRESS ENTER FOR THE NEXT PAGE" : FromMenu ? "CLICK OR PRESS ENTER TO GO BACK" : "CLICK OR PRESS ENTER TO BEGIN";
             _prompt = UIKit.Text(_content, prompt, TextStyle.Label.WithSize(12).WithTracking(0.4f).WithColor(Palette.Faint));
             _prompt.raycastTarget = false;
