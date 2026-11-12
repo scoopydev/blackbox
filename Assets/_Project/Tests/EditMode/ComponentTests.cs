@@ -286,7 +286,7 @@ namespace Blackbox.Tests
             Assert.That(v, Is.EqualTo(Sampled.Make(Waves.SquareWave, 6, 0, 1)));
             Assert.That(Media.Describe(Medium.Wave, Waves.Make(Waves.Saw, 1, 3, 3)), Is.EqualTo("saw f2 a4 p3"));
             Assert.That(Media.Describe(Medium.Sampled, Sampled.Make(Waves.Sine, 1, 3, 2)), Is.EqualTo("sine f2 a4 s12"));
-            Assert.That(Waves.Settings(Waves.Make(Waves.Sine, 0, 6, 1)), Is.EqualTo("F1 A7"));
+            Assert.That(Waves.Settings(Waves.Make(Waves.Sine, 0, 6, 1)), Is.EqualTo("A7"));
             Assert.That(Sampled.Settings(Sampled.Make(Waves.Sine, 0, 6, 0)), Is.EqualTo("F1 A7 S3"));
 
             foreach (var bad in new[] { "sine low", "sine f8 a1", "sine f1 a0", "sine f1", "sine f1 a1 p4", "sine f1 a1 s4", "sine f1 f2 a1", "hum f1 a1" })

@@ -102,7 +102,7 @@ namespace Blackbox.UI.Board
         float CaptionRoom => Mathf.Max(10, Mathf.RoundToInt(_h * 0.3f)) + 2f;
 
         /// <summary>
-        /// Writes a wave's frequency and amplitude under it ("F2 A7"), whatever made
+        /// Writes a wave's amplitude under it ("A7"), whatever made
         /// the wave (<see cref="Waves.Describe"/>), as on the inputs. Inside the box
         /// squeezes the line up to make room, for a box with nothing free below it.
         /// Call before the first <see cref="Set"/>.

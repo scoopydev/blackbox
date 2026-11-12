@@ -112,8 +112,11 @@ namespace Blackbox.Components
         public static double AtStep(int v, int step, int steps) =>
             (Height(v) + 1) * Shape(Form(v), (double)(Cycles[Frequency(v)] * step) / steps - Phase(v) * 0.25);
 
-        /// <summary>"F3 A5": frequency and amplitude as the player reads them. A late start isn't written; it shows in the line.</summary>
-        public static string Settings(int v) => $"F{Frequency(v) + 1} A{Height(v) + 1}";
+        /// <summary>
+        /// "A5": the amplitude, as the player reads it. Only A is written: the
+        /// frequency is counted from the peaks, and a late start shows in the line.
+        /// </summary>
+        public static string Settings(int v) => $"A{Height(v) + 1}";
 
         static Trace[] s_All;
 
@@ -179,8 +182,7 @@ namespace Blackbox.Components
             t.Range(out float low, out float high);
             double swing = Math.Round((high - low) * 0.5 * 2.0, MidpointRounding.AwayFromZero) / 2.0;
             string a = "A" + swing.ToString(swing % 1.0 == 0.0 ? "0" : "0.0", System.Globalization.CultureInfo.InvariantCulture);
-            int f = Array.IndexOf(Cycles, Repeats(t));
-            return f >= 0 && swing > 0.0 ? $"F{f + 1} {a}" : a;
+            return a;
         }
 
         internal static int Wrap(int v, int n) => ((v % n) + n) % n;

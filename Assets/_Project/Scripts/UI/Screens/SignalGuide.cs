@@ -257,7 +257,7 @@ namespace Blackbox.UI.Screens
             var g = NoteGroup();
             Line(g, new Vector2(start.x, y + 8f), new Vector2(start.x, y), new Vector2(half.x, y), new Vector2(half.x, y + 8f));
             Words(g, new Vector2((start.x + half.x) * 0.5f, y), Side.Above, "ONE CYCLE",
-                "F2: it repeats twice a loop. The higher F is, from 1 to 7, the faster it repeats and the higher it sounds.", 480f);
+                "Here it repeats twice a loop: count the peaks. The more often a wave repeats, the higher it sounds.", 480f);
             Reveal(g);
 
             // The height, measured from the middle to a peak, beside the line.
@@ -271,7 +271,7 @@ namespace Blackbox.UI.Screens
                 "And 5 down. The higher A is, from 1 to 9, the taller it is and the louder it sounds.", 300f);
             Reveal(g);
 
-            // F and A are written under every wave, as here.
+            // A is written under every wave, as here.
             var settings = UIKit.Text(_content, Waves.Describe(big.Trace), TextStyle.Label.WithSize(15).WithTracking(0.16f).WithColor(NumberColour));
             settings.raycastTarget = false;
             settings.rectTransform.At(Cx, 576f, 200f, 20f);
@@ -303,16 +303,16 @@ namespace Blackbox.UI.Screens
         /// </summary>
         void BuildWaveSettings()
         {
-            Header("Frequency and amplitude", "F and A are written under every wave. Click any wave here to hear it.");
+            Header("Frequency and amplitude", "Count the peaks to see how often a wave repeats. A is written under every wave. Click any wave here to hear it.");
 
-            Section(Cx, 330f, "Frequency: F changes how often it repeats");
-            (int f, string sub)[] freqs = { (1, "Once a loop. The lowest pitch"), (3, "3 times a loop"), (5, "6 times a loop"), (7, "12 times a loop. The highest pitch") };
+            Section(Cx, 330f, "Frequency: how often it repeats");
+            (int f, string title, string sub)[] freqs = { (1, "1 PEAK", "Once a loop. The lowest pitch"), (3, "3 PEAKS", "3 times a loop"), (5, "6 PEAKS", "6 times a loop"), (7, "12 PEAKS", "12 times a loop. The highest pitch") };
             for (int i = 0; i < freqs.Length; i++)
             {
                 float x = Cx + (i - 1.5f) * 380f;
                 var view = Example($"wave sine f{freqs[i].f} a6", x, 420f, 300f, 96f, loop: true);
                 if (i == 0) _lead = view;
-                Caption(x, 482f, $"F{freqs[i].f}", freqs[i].sub, 320f);
+                Caption(x, 482f, freqs[i].title, freqs[i].sub, 320f);
             }
 
             Section(Cx, 640f, "Amplitude: A changes how tall it is");
@@ -455,9 +455,9 @@ namespace Blackbox.UI.Screens
                 }),
                 ("WAVES", "wave sine f2 a5", new[]
                 {
-                    "F is how often it repeats, and how high it sounds. A is how tall it is, and how loud.",
+                    "Count the peaks to see how often it repeats: more often sounds higher. A is how tall it is, and how loud.",
                     "A wave can start a quarter, half or three quarters of a cycle late.",
-                    "A wave block (W1, W2...) always sends a wave, with its own F and A. It reads a bit as the top or the bottom, and a digit as a level.",
+                    "A wave block (W1, W2...) always sends a wave, with its own frequency and A. It reads a bit as the top or the bottom, and a digit as a level.",
                 }),
             };
             for (int i = 0; i < columns.Length; i++)
@@ -527,7 +527,7 @@ namespace Blackbox.UI.Screens
             {
                 ("binary 0110", "BITS", "A 1 beeps and a 0 taps, in turn"),
                 ("decimal 2709", "DIGITS", "A bigger digit sounds higher"),
-                ("wave sine f3 a7", "WAVES", "Higher the bigger F is, louder the bigger A is. Each form has its own sound."),
+                ("wave sine f3 a7", "WAVES", "Higher the more often it repeats, louder the bigger A is. Each form has its own sound."),
             };
             for (int i = 0; i < rows.Length; i++)
             {
