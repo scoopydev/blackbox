@@ -76,6 +76,12 @@ namespace Blackbox.UI.Screens
 
             _ink = InkLayer.Create(Root, Game.Save.InkFor(p.Id), Game.Save.NotesFor(p.Id), new Rect(0f, HeaderRule + 1f, VoidFrame.Width, FooterRule - HeaderRule - 2f), _board.TagOf);
             _ink.BlockAt = _board.BlockAt;
+            _board.BlockDoubleClicked = id =>
+            {
+                if (_running) return;
+                SetTool(InkTool.Text);
+                _ink.LabelBlock(id);
+            };
             _ink.Changed = () => { Game.MarkDirty(); RefreshTools(); };
             _ink.TypingChanged = typing =>
             {

@@ -409,7 +409,8 @@ namespace Blackbox.UI.Board
             StartEditing(AddNoteView(note));
         }
 
-        void LabelBlock(string block)
+        /// <summary>Starts typing the label of a block, making one if it has none.</summary>
+        public void LabelBlock(string block)
         {
             foreach (var v in _noteViews)
                 if (v.Note.Block == block) { StartEditing(v); return; }

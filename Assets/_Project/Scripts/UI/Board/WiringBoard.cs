@@ -434,6 +434,9 @@ namespace Blackbox.UI.Board
         WiredBlockView _moving;
         Vector2 _moveFrom, _grabOffset;
 
+        /// <summary>A block was double-clicked, by id.</summary>
+        public System.Action<string> BlockDoubleClicked;
+
         /// <summary>The id of the block whose card is under a screen point, or null.</summary>
         public string BlockAt(Vector2 screen, Camera cam)
         {
@@ -1272,8 +1275,15 @@ namespace Blackbox.UI.Board
     }
 
     /// <summary>A block's body: press and drag it to move the block.</summary>
-    public sealed class BlockGrip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public sealed class BlockGrip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
+        public void OnPointerClick(PointerEventData e)
+        {
+            // A double-click starts typing the block's label.
+            if (e.button == PointerEventData.InputButton.Left && e.clickCount == 2 && !_moving)
+                Board.BlockDoubleClicked?.Invoke(Block.Def.Id);
+        }
+
         public WiredBlockView Block;
         public WiringBoard Board;
         bool _moving;
