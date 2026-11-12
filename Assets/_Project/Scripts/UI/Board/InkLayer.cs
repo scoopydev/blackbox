@@ -75,6 +75,8 @@ namespace Blackbox.UI.Board
         NoteView _lastTyped;
         float _blink;
         float _backspaceHeld;
+        readonly float[] _held = new float[4];
+        int _at; // caret position in the note being typed
         NoteView _pressed;
         Vector2 _pressAt, _pressOffset;
         bool _dragged;
@@ -362,6 +364,7 @@ namespace Blackbox.UI.Board
             _editing = v;
             _blink = 0f;
             _backspaceHeld = 0f;
+            _at = v.Note.Text.Length;
             _caret.FillColor = Inks[Mathf.Clamp(v.Note.Color, 0, Inks.Length - 1)];
             PlaceCaret();
             TypingChanged?.Invoke(true);
@@ -405,14 +408,16 @@ namespace Blackbox.UI.Board
             {
                 v.Note.Text = v.Note.Text.Substring(0, v.Note.Text.Length - 1);
                 v.Text.text = v.Note.Text;
-                PlaceCaret();
             }
+            _at = v.Note.Text.Length;
+            PlaceCaret();
             return true;
         }
 
         /// <summary>
         /// Reads the keyboard into the note being typed. Enter or Esc finishes it,
-        /// Shift+Enter starts a new line, Backspace deletes (and repeats when held).
+        /// Shift+Enter starts a new line, the arrow keys move the caret, Backspace and
+        /// Delete remove the character before or after it (both repeat when held).
         /// </summary>
         public void HandleTyping()
         {
@@ -424,38 +429,96 @@ namespace Blackbox.UI.Board
             }
             var note = _editing.Note;
             string before = note.Text;
-            if (GameInput.Down(Key.Enter) && LineCount(note.Text) < LinesAllowed(note)) note.Text += "\n";
+            int was = _at;
+            _at = Mathf.Clamp(_at, 0, note.Text.Length);
+
+            if (Repeat(Key.Left, 0)) _at = Mathf.Max(0, _at - 1);
+            if (Repeat(Key.Right, 1)) _at = Mathf.Min(note.Text.Length, _at + 1);
+            if (Repeat(Key.Up, 2)) _at = LineMove(note.Text, _at, -1);
+            if (Repeat(Key.Down, 3)) _at = LineMove(note.Text, _at, +1);
+
+            if (GameInput.Down(Key.Enter) && LineCount(note.Text) < LinesAllowed(note)) Insert(note, '\n');
             foreach (char ch in GameInput.Typed)
             {
                 if (char.IsControl(ch) || note.Text.Length >= MaxNoteLength) continue;
                 Type(note, ch);
             }
 
-            bool delete = false;
-            if (GameInput.Down(Key.Backspace))
+            if (Repeat(Key.Backspace, -1) && _at > 0)
             {
-                delete = true;
-                _backspaceHeld = 0f;
+                note.Text = note.Text.Remove(_at - 1, 1);
+                _at--;
             }
-            else if (GameInput.Held(Key.Backspace))
-            {
-                // Hold to keep deleting: a pause, then a steady repeat.
-                float was = _backspaceHeld;
-                _backspaceHeld += Time.unscaledDeltaTime;
-                if (_backspaceHeld > 0.45f && Mathf.FloorToInt((_backspaceHeld - 0.45f) / 0.04f) != Mathf.FloorToInt((was - 0.45f) / 0.04f)) delete = true;
-            }
-            if (delete && note.Text.Length > 0) note.Text = note.Text.Substring(0, note.Text.Length - 1);
+            if (GameInput.Down(Key.Delete) && _at < note.Text.Length) note.Text = note.Text.Remove(_at, 1);
 
-            if (note.Text != before)
+            if (note.Text != before) _editing.Text.text = note.Text;
+            if (note.Text != before || _at != was)
             {
-                _editing.Text.text = note.Text;
                 _blink = 0f;
                 PlaceCaret();
             }
         }
 
+        /// <summary>True on the press, then again at a steady rate while the key is held.</summary>
+        bool Repeat(Key key, int slot)
+        {
+            if (GameInput.Down(key))
+            {
+                if (slot < 0) _backspaceHeld = 0f; else _held[slot] = 0f;
+                return true;
+            }
+            if (!GameInput.Held(key)) return false;
+            float held = slot < 0 ? _backspaceHeld : _held[slot];
+            float now = held + Time.unscaledDeltaTime;
+            if (slot < 0) _backspaceHeld = now; else _held[slot] = now;
+            const float Pause = 0.45f, Every = 0.04f;
+            return now > Pause && Mathf.FloorToInt((now - Pause) / Every) != Mathf.FloorToInt((held - Pause) / Every);
+        }
+
+        /// <summary>The caret moved to the line above or below, keeping its column where it can.</summary>
+        static int LineMove(string text, int at, int dir)
+        {
+            int lineStart = at > 0 ? text.LastIndexOf('\n', at - 1) + 1 : 0;
+            int column = at - lineStart;
+            if (dir < 0)
+            {
+                if (lineStart == 0) return 0;
+                int prevStart = lineStart > 1 ? text.LastIndexOf('\n', lineStart - 2) + 1 : 0;
+                return Mathf.Min(prevStart + column, lineStart - 1);
+            }
+            int lineEnd = text.IndexOf('\n', at);
+            if (lineEnd < 0) return text.Length;
+            int nextEnd = text.IndexOf('\n', lineEnd + 1);
+            if (nextEnd < 0) nextEnd = text.Length;
+            return Mathf.Min(lineEnd + 1 + column, nextEnd);
+        }
+
+        void Insert(TextNote note, char ch)
+        {
+            note.Text = note.Text.Insert(_at, ch.ToString());
+            _at++;
+        }
+
         /// <summary>Adds one character, wrapping the word onto a new line when the line gets too wide.</summary>
         void Type(TextNote note, char ch)
+        {
+            if (_at < note.Text.Length)
+            {
+                // In the middle of the text: insert only if the line still fits.
+                string inserted = note.Text.Insert(_at, ch.ToString());
+                int lineStart = inserted.LastIndexOf('\n', _at) + 1;
+                int lineEnd = inserted.IndexOf('\n', _at);
+                string line = inserted.Substring(lineStart, (lineEnd < 0 ? inserted.Length : lineEnd) - lineStart);
+                if (LineWidth(line) > LineLimit(note)) return;
+                note.Text = inserted;
+                _at++;
+                return;
+            }
+            TypeAtEnd(note, ch);
+            _at = note.Text.Length;
+        }
+
+        void TypeAtEnd(TextNote note, char ch)
         {
             string text = note.Text + ch;
             int lastBreak = text.LastIndexOf('\n');
@@ -481,7 +544,7 @@ namespace Blackbox.UI.Board
         void PlaceCaret()
         {
             if (_editing == null) return;
-            string text = _editing.Note.Text;
+            string text = _editing.Note.Text.Substring(0, Mathf.Clamp(_at, 0, _editing.Note.Text.Length));
             int lines = LineCount(text);
             int lastBreak = text.LastIndexOf('\n');
             string last = lastBreak >= 0 ? text.Substring(lastBreak + 1) : text;
