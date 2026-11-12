@@ -108,7 +108,7 @@ namespace Blackbox.UI.Screens
                 case SignalGuide.Bits: return new List<System.Action> { BuildBits };
                 case SignalGuide.Digits: return new List<System.Action> { BuildDigits };
                 case SignalGuide.ChangingDigits: return new List<System.Action> { BuildChangingDigits };
-                case SignalGuide.Waves: return new List<System.Action> { BuildWaves, BuildInputOrder };
+                case SignalGuide.Waves: return new List<System.Action> { BuildWaves, BuildWaveSettings, BuildInputOrder };
                 case SignalGuide.Readings: return new List<System.Action> { BuildReadings };
                 default: return new List<System.Action> { BuildRecap };
             }
@@ -296,7 +296,35 @@ namespace Blackbox.UI.Screens
         }
 
         /// <summary>
-        /// Resonance, second page: the same two waves wired into a block's two
+        /// Resonance, second page: the same wave at rising frequencies, then at rising
+        /// amplitudes, so the player can see and hear what F and A each change.
+        /// </summary>
+        void BuildWaveSettings()
+        {
+            Header("FREQUENCY AND AMPLITUDE", "F AND A ARE WRITTEN UNDER EVERY WAVE. CLICK ANY WAVE HERE TO HEAR IT.");
+
+            Section(Cx, 330f, "FREQUENCY: F CHANGES HOW OFTEN IT REPEATS");
+            (int f, string sub)[] freqs = { (1, "ONCE A LOOP. THE LOWEST PITCH"), (3, "3 TIMES A LOOP"), (5, "6 TIMES A LOOP"), (7, "12 TIMES A LOOP. THE HIGHEST PITCH") };
+            for (int i = 0; i < freqs.Length; i++)
+            {
+                float x = Cx + (i - 1.5f) * 380f;
+                var view = Example($"wave sine f{freqs[i].f} a6", x, 420f, 300f, 96f, loop: true);
+                if (i == 0) _lead = view;
+                Caption(x, 482f, $"F{freqs[i].f}", freqs[i].sub, 320f);
+            }
+
+            Section(Cx, 640f, "AMPLITUDE: A CHANGES HOW TALL IT IS");
+            (int a, string sub)[] amps = { (1, "1 UP AND DOWN. THE QUIETEST"), (3, "3 UP AND DOWN"), (5, "5 UP AND DOWN"), (7, "7 UP AND DOWN. THE LOUDEST") };
+            for (int i = 0; i < amps.Length; i++)
+            {
+                float x = Cx + (i - 1.5f) * 380f;
+                Example($"wave sine f2 a{amps[i].a}", x, 740f, 300f, 120f, loop: true);
+                Caption(x, 812f, $"A{amps[i].a}", amps[i].sub, 320f);
+            }
+        }
+
+        /// <summary>
+        /// Resonance, third page: the same two waves wired into a block's two
         /// inputs one way round and then the other. It shows no block's rule and
         /// no result, only that the two wirings are different and why that can
         /// matter.

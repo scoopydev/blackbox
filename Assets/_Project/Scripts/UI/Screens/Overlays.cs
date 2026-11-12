@@ -511,20 +511,21 @@ namespace Blackbox.UI.Screens
             var title = UIKit.Text(page, "HOW IT WORKS", TextStyle.Label.WithSize(15).WithTracking(0.42f).WithColor(Palette.Text));
             title.rectTransform.At(VoidFrame.Width * 0.5f, 150f, 400f, 22f);
             UIKit.Rule(page, 200f, 1720f, 190f, Palette.Rule);
-            var ideaHead = UIKit.Text(page, "THE IDEA", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
+            var ideaHead = UIKit.Text(page, "HOW TO PLAY", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleLeft);
             ideaHead.rectTransform.At(220f + 200f, 226f, 400f, 18f);
             var keysHead = UIKit.Text(page, "CONTROLS", TextStyle.Label.WithSize(11).WithTracking(0.42f).WithColor(Palette.Faint), TextAnchor.MiddleRight);
             keysHead.rectTransform.At(1230f - 200f, 226f, 400f, 18f);
 
             var ideas = Wiring ? new List<string>
             {
-                "Wire the inputs to the outputs so every output matches its target.",
-                "Match all outputs, and use all the blocks: each block has to lead to an output, and every block input needs a wire.",
-                "A dotted outline marks an input or block the answer doesn't need. It can stay unwired.",
-                "Each block has one simple rule it never tells you. Run the circuit and watch what comes out.",
-                "A block's letter says what it sends: B a bit, 0 or 1; D a digit, 0 to 9; W a wave. B1 is a different block in each circuit.",
-                "A block reads any signal as its own kind.",
-                "Solve a circuit to see each block's rule written under it.",
+                "Match the outputs on the right using the inputs on the left.",
+                "Blocks in the middle change signals using hidden rules.",
+                "Test blocks with different inputs to figure out each block's rule.",
+                "Record findings with the pen or text tool, or double-click a block to attach a note.",
+                "Block letters determine output type: B = Bit, D = Digit, W = Wave.",
+                "Solve a circuit to reveal its block rules.",
+                "Click and drag to move blocks around.",
+                "A dotted outline marks an input or block the answer doesn't need.",
             } : new List<string>
             {
                 "The goal is written above the circuit. Press RUN to send the signals through: only then do the outputs show, and each target gets a tick or a cross.",
@@ -560,6 +561,7 @@ namespace Blackbox.UI.Screens
                 "DRAG A BOX", "select wires, then delete",
                 "RIGHT-DRAG A BOX", "remove every wire in it",
                 "DRAG A BLOCK", "move it",
+                "DOUBLE-CLICK A BLOCK", "attach a note",
                 "CLICK A SIGNAL", "hear it",
                 "D  ·  E  ·  T", "pen  ·  eraser  ·  text",
                 "Z", "undo",
