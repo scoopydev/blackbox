@@ -10,7 +10,8 @@
       "chapters": [
         "chapter-1-first-light",
         "chapter-2-tally",
-        "chapter-3-resonance"
+        "chapter-3-ticker",
+        "chapter-4-resonance"
       ]
     },
     {
@@ -19,9 +20,9 @@
       "tagline": "PART TWO  ·  WIRING, AND HOW SIGNALS COMBINE",
       "afterPrevious": true,
       "chapters": [
-        "chapter-4-patch",
-        "chapter-5-junction",
-        "chapter-6-blend"
+        "chapter-5-patch",
+        "chapter-6-junction",
+        "chapter-7-blend"
       ]
     },
     {
@@ -30,8 +31,8 @@
       "tagline": "PART THREE  ·  EVERY SIGNAL, EVERY BLOCK",
       "afterPrevious": true,
       "chapters": [
-        "chapter-7-unmarked",
-        "chapter-8-blackbox"
+        "chapter-8-unmarked",
+        "chapter-9-blackbox"
       ]
     }
   ]

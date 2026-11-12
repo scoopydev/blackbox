@@ -1,6 +1,6 @@
 {
   "id": "resonance",
-  "numeral": "III",
+  "numeral": "IV",
   "title": "Resonance",
   "mode": "wiring",
   "medium": "wave",
@@ -9,7 +9,6 @@
   "circuits": [
     {
       "id": "resonance-01",
-      "name": "Hum",
       "hint": "These wires are drawn already. Listen to the target, run it, then move {g}'s input to the other wave.",
       "inputs": {
         "A": {
@@ -40,7 +39,6 @@
     },
     {
       "id": "resonance-02",
-      "name": "Splice",
       "hint": "One of {g}'s inputs is empty.",
       "inputs": {
         "A": {
@@ -72,7 +70,6 @@
     },
     {
       "id": "resonance-03",
-      "name": "Timbre",
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
@@ -103,7 +100,6 @@
     },
     {
       "id": "resonance-04",
-      "name": "Offset",
       "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {
@@ -139,7 +135,6 @@
     },
     {
       "id": "resonance-05",
-      "name": "Echo",
       "hint": "Two outputs. Listen to each target on its own.",
       "inputs": {
         "A": {
@@ -178,7 +173,6 @@
     },
     {
       "id": "resonance-06",
-      "name": "Chorus",
       "hint": "Work out one output at a time.",
       "inputs": {
         "A": {

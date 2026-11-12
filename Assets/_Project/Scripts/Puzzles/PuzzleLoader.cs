@@ -119,12 +119,16 @@ namespace Blackbox.Puzzles
                 if (!ids.Add(puzzle.Id)) throw new PuzzleFormatException($"{sourceName}: two circuits use the id '{puzzle.Id}'.");
                 puzzle.Chapter = chapter;
                 puzzle.Number = number++;
+                puzzle.Name = NameOf(chapter, puzzle.Number);
                 chapter.Puzzles.Add(puzzle);
             }
             return chapter;
         }
 
-        static readonly string[] GuideKeys = { "none", "bits", "digits", "waves", "readings", "recap" };
+        /// <summary>A circuit's name: its chapter's title and its number, "TALLY 1".</summary>
+        public static string NameOf(ChapterDef chapter, int number) => $"{chapter.Title.ToUpperInvariant()} {number + 1}";
+
+        static readonly string[] GuideKeys = { "none", "bits", "digits", "changing-digits", "waves", "readings", "recap" };
 
         /// <summary>
         /// The chapter's signal guide: "guide" names one, or else it follows the
@@ -159,7 +163,7 @@ namespace Blackbox.Puzzles
             var p = new PuzzleDef
             {
                 Id = Required(c, "id", where),
-                Name = c["name"].AsString("Untitled"),
+                Name = c["name"].AsString(c["id"].AsString("Untitled")),
                 Hint = c["hint"].AsString(),
                 Goal = c["goal"].AsString(),
                 Probes = c["probes"].AsInt(0),

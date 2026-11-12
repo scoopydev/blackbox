@@ -7,7 +7,6 @@
   "circuits": [
     {
       "id": "junction-01",
-      "name": "Both On",
       "hint": "Two kinds of signal can meet in one block. A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
@@ -43,7 +42,6 @@
     },
     {
       "id": "junction-02",
-      "name": "Step Down",
       "hint": "A digit block reads a bit as the digit 0 or 1.",
       "inputs": {
         "A": {
@@ -78,7 +76,6 @@
     },
     {
       "id": "junction-03",
-      "name": "Cut Off",
       "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
       "inputs": {
         "A": {
@@ -114,7 +111,6 @@
     },
     {
       "id": "junction-04",
-      "name": "Staircase",
       "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top. One input can feed two blocks.",
       "inputs": {
         "A": {
@@ -150,7 +146,6 @@
     },
     {
       "id": "junction-05",
-      "name": "Lift",
       "hint": "A wave block reads a bit as the top for 1 and the bottom for 0.",
       "inputs": {
         "A": {
@@ -185,7 +180,6 @@
     },
     {
       "id": "junction-06",
-      "name": "Junction",
       "hint": "Three kinds of signal, three blocks. Work out one output at a time.",
       "inputs": {
         "A": {

@@ -15,9 +15,9 @@ The game in parts, each a list of chapter files (names without `.json`) in play 
 {
   "parts": [
     { "id": "learn", "title": "Learn", "tagline": "PART ONE  ·  WHAT EACH SIGNAL AND BLOCK DOES",
-      "chapters": ["chapter-1-first-light", "chapter-2-tally", "chapter-3-resonance"] },
+      "chapters": ["chapter-1-first-light", "chapter-2-tally", "chapter-3-ticker", "chapter-4-resonance"] },
     { "id": "combine", "title": "Combine", "tagline": "PART TWO  ·  WIRING, AND HOW SIGNALS COMBINE",
-      "afterPrevious": true, "chapters": ["chapter-4-patch", "chapter-5-junction", "chapter-6-blend"] }
+      "afterPrevious": true, "chapters": ["chapter-5-patch", "chapter-6-junction", "chapter-7-blend"] }
   ]
 }
 ```
@@ -55,7 +55,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 | `numeral` | no | Defaults to the chapter's position in Roman numerals. |
 | `tagline` | no | One line under the title. |
 | `signals` | no | One line about the medium, shown in the help, and on the title card of a chapter without a signal guide. The `recap` guide shows it under its heading. |
-| `guide` | no | The signal guide shown after the title card, before the first circuit: `bits`, `digits`, `waves`, `readings` (how each kind of block reads each kind of signal), `recap` (all three kinds side by side) or `none`. By default it follows `medium`, and a chapter that mixes kinds gets `readings`. |
+| `guide` | no | The signal guide shown after the title card, before the first circuit: `bits`, `digits` (steady ones), `changing-digits`, `waves`, `readings` (how each kind of block reads each kind of signal), `recap` (all three kinds side by side) or `none`. By default it follows `medium`, and a chapter that mixes kinds gets `readings`. |
 | `unlock` | no | `{ "after": "first-light", "solved": 4 }` makes the chapter wait until `solved` circuits of chapter `after` are solved. Leave it out for a chapter that is open from the start, as all the shipped chapters are. |
 | `circuits` | yes | The circuits, easiest first. |
 
@@ -64,7 +64,6 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 ```json
 {
   "id": "first-light-03",
-  "name": "Under the Lid",
   "hint": "You can't see what a wire carries. Click a wire to put a probe on it.",
   "probes": 1,
   "inputs": {
@@ -85,7 +84,7 @@ A file with a plain `"chapters": [...]` list instead of `"parts"` is read as one
 | Key | Required | Meaning |
 |---|---|---|
 | `id` | yes | Unique across all chapters. Saves refer to it. |
-| `name` | no | Shown in the header and on the chapter map. |
+| `name` | no | Ignored in a chapter: every circuit is named by its chapter's title and its number, such as TALLY 1. |
 | `hint` | no | One line under the board. Use it to teach a control, not to give away a rule. In a wired circuit, write a block as `{g}` (its id in braces): the game shows it as the block's label, such as K1. Never name a kind (such as MIRROR) in a hint or chapter line; a test checks this. |
 | `goal` | no | The goal sentence. Leave it out and it is written from the targets, which is almost always what you want. |
 | `probes` | no | How many probes the player may place. Defaults to 0. |
@@ -179,7 +178,6 @@ Inputs may go unused, so a circuit can hold spare inputs for the player to rule 
 ```json
 {
   "id": "blend-01",
-  "name": "Pulse",
   "hint": "A wave into a bit block turns on and off as the wave rises and falls.",
   "inputs": {
     "A": { "signal": "binary 1" },

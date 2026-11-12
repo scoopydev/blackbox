@@ -1,0 +1,210 @@
+{
+  "id": "ticker",
+  "numeral": "III",
+  "title": "Ticker",
+  "mode": "wiring",
+  "medium": "decimal",
+  "tagline": "Count what changes.",
+  "signals": "Signals here are digits that change as the loop plays. Each one is drawn as a line whose height is the digit, 0 at the bottom up to 9 at the top, with each step's digit written on it, and each step sounds as its own tone.",
+  "guide": "changing-digits",
+  "circuits": [
+    {
+      "id": "ticker-01",
+      "hint": "Now a digit can change as the loop plays: each step of the line is the next digit. A block works on each step in turn.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 1234"
+        },
+        "B": {
+          "signal": "decimal 6"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "ticker-02",
+      "hint": "Compare the target with each input, one step at a time.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 1537"
+        },
+        "B": {
+          "signal": "decimal 4"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MAX"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "ticker-03",
+      "hint": "Two digits that both change, and two blocks.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 1357"
+        },
+        "B": {
+          "signal": "decimal 6420"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIN"
+        },
+        "h": {
+          "kind": "MIRROR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "ticker-04",
+      "hint": "One signal can feed two blocks.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 1357"
+        },
+        "B": {
+          "signal": "decimal 5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "DIFF"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "g -> X",
+        "A -> h.0",
+        "B -> h.1",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "ticker-05",
+      "hint": "A signal can have more steps. Here one signal is needed in two places.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 02468642"
+        },
+        "B": {
+          "signal": "decimal 5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "MIN"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "A -> h.0",
+        "g -> h.1",
+        "h -> X"
+      ]
+    },
+    {
+      "id": "ticker-06",
+      "hint": "Work out one output at a time.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 6"
+        },
+        "B": {
+          "signal": "decimal 3"
+        },
+        "C": {
+          "signal": "decimal 2468"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "DIFF"
+        },
+        "h": {
+          "kind": "MIRROR"
+        },
+        "k": {
+          "kind": "MAX"
+        },
+        "m": {
+          "kind": "MIN"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "C -> h",
+        "g -> m.0",
+        "h -> m.1",
+        "m -> X",
+        "h -> k.0",
+        "B -> k.1",
+        "k -> Y"
+      ]
+    }
+  ]
+}

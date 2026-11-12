@@ -8,7 +8,6 @@
   "circuits": [
     {
       "id": "blackbox-01",
-      "name": "Metronome",
       "hint": "Count the pulses the target makes in one loop.",
       "inputs": {
         "A": {
@@ -55,7 +54,6 @@
     },
     {
       "id": "blackbox-02",
-      "name": "Mixing Desk",
       "hint": "Listen to the target. Then listen to each input on its own.",
       "inputs": {
         "A": {
@@ -99,7 +97,6 @@
     },
     {
       "id": "blackbox-03",
-      "name": "Downhill",
       "hint": "Count how many times the target's wave repeats in one loop, and which way it slopes.",
       "inputs": {
         "A": {
@@ -141,7 +138,6 @@
     },
     {
       "id": "blackbox-04",
-      "name": "Signal Box",
       "hint": "One wave, read three ways: as a bit by two blocks and as a digit by another.",
       "inputs": {
         "A": {
@@ -194,7 +190,6 @@
     },
     {
       "id": "blackbox-05",
-      "name": "Pulse Width",
       "hint": "A pulse that stays on longer comes from a lower threshold.",
       "inputs": {
         "A": {
@@ -246,7 +241,6 @@
     },
     {
       "id": "blackbox-06",
-      "name": "Vote",
       "hint": "{g} is a new kind of block, with three inputs. Wire all three, then watch what it sends at each step.",
       "inputs": {
         "A": {
@@ -289,7 +283,6 @@
     },
     {
       "id": "blackbox-07",
-      "name": "Clamp",
       "hint": "{g} is a new kind of block, with three inputs. Where does the target stop rising, and where does it start?",
       "inputs": {
         "A": {
@@ -329,7 +322,6 @@
     },
     {
       "id": "blackbox-08",
-      "name": "Window",
       "hint": "{g} is a new kind of block, with three inputs. It sends a bit: watch where the wave is each time the target turns on.",
       "inputs": {
         "A": {
@@ -369,7 +361,6 @@
     },
     {
       "id": "blackbox-09",
-      "name": "Crossfade",
       "hint": "{g} is a new kind of block, with three inputs. One of them decides what it sends.",
       "inputs": {
         "A": {
@@ -420,7 +411,6 @@
     },
     {
       "id": "blackbox-10",
-      "name": "Black Box",
       "hint": "Solve one output at a time. X follows whichever wave is higher.",
       "inputs": {
         "A": {

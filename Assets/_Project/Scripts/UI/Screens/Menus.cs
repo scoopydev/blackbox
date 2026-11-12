@@ -58,7 +58,7 @@ namespace Blackbox.UI.Screens
             if (target != null && target.Chapter != null)
             {
                 // Where Continue goes, so the player knows before pressing it.
-                var where = UIKit.Text(Root, $"{target.Chapter.Numeral}  ·  {target.Chapter.Title}  ·  CIRCUIT {target.Label}  ·  {target.Name}",
+                var where = UIKit.Text(Root, $"CHAPTER {target.Chapter.Numeral}  ·  {target.Name}",
                     TextStyle.Label.WithSize(11).WithTracking(0.26f).WithColor(Palette.Faint));
                 where.rectTransform.At(cx, y + 28f, 900f, 16f);
                 y += 22f;

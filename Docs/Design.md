@@ -41,8 +41,8 @@ The game has three kinds of signal, and **every signal is drawn as a waveform**:
 | Chapter | Medium | Values | Drawn as |
 |---|---|---|---|
 | I First Light | binary | 0 and 1 | A line above a faint midline for 1 and below it for 0, square where it switches |
-| II Tally | decimal | 0 to 9 | A steady digit is its number, written large. A digit that changes is a stepped line whose height is the digit, 0 at the bottom up to 9 at the top, with each step's number written on it |
-| III Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
+| II Tally, III Ticker | decimal | 0 to 9 | A steady digit (Tally) is its number, written large. A digit that changes (Ticker) is a stepped line whose height is the digit, 0 at the bottom up to 9 at the top, with each step's number written on it |
+| IV Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
 
 ### Signals over time
 
@@ -80,18 +80,20 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has three chapters, one per medium (bits, digits, waves), and teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, with more blocks to a circuit: every Combine circuit chains two or three blocks, offers a spare input or two to rule out, and has one answer. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal; late in Blackbox come the four blocks with three inputs. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, with more blocks to a circuit: every Combine circuit chains two or three blocks, offers a spare input or two to rule out, and has one answer. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal; late in Blackbox come the four blocks with three inputs. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
 * **Continue** on the title screen goes on from the last circuit played, or to the earliest chapter with a circuit still to solve.
 * The first time a player enters a chapter, its title card plays, then its **signal guide**: the chapter's kinds of signal drawn as the board draws them, with notes pointing at what to look for. Every signal on it plays when clicked, with a playhead running through the loop. **SIGNAL GUIDE** in the pause menu (or G) opens it again.
   * First Light, **reading a bit**: a steady 1 and 0, then a bit that switches, with notes on the line above or below the middle (a beep or a soft tap), the faint middle line, and the loop playing left to right.
-  * Tally, **reading a digit**: a steady digit as just its number, a busy one with only its highest and lowest written, and a stepped line with a 0-to-9 scale beside it and each step's digit written on it.
+  * Tally, **reading a digit**: a steady digit, large, shown as just its number, and 0, 3, 6 and 9 in a row, each a higher tone.
+  * Ticker, **digits that change**: a steady digit for comparison, a busy one with only its highest and lowest written, and a stepped line with a 0-to-9 scale beside it and each step's digit written on it.
   * Resonance, **reading a wave**: one cycle bracketed (F), the height from the middle to a peak bracketed (A), where F and A are written, the three forms, and a wave starting a quarter cycle late over the same wave on time.
   * Patch, Junction and Blend, **how a block reads each kind**: a bit, a digit and a wave, each drawn as a bit block, a digit block and a wave block reads it, with the reading written under it.
   * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
-* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch.
+* Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
+* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
   1. **Pre-wired.** Two inputs and one block, every wire drawn, but the block's wire starts at the wrong input. The player moves it to the other one.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
   3. From here the player draws every wire: two blocks in a chain.
@@ -106,116 +108,128 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 
 *Every block keeps a rule. Wire it to find out.* Bits: NOT, AND, OR, XOR.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | First Light | A steady bit. Pre-wired: move one wire to the other input, and NOT | 2 | 1 |
-| 02 | Switch | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 2 |
-| 03 | Under the Lid | Steady bits. Wiring it all, a chain, and OR | 27 | 4 |
-| 04 | Sequence | Bits that switch through the loop; AND on every moment | 4 | 1 |
-| 05 | Fork | One input feeding two blocks, and XOR | 27 | 1 |
-| 06 | Relay | Three blocks in a row | 3,125 | 8 |
-| 07 | Tangle | Four blocks, two outputs | 279,936 | 37 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | A steady bit. Pre-wired: move one wire to the other input, and NOT | 2 | 1 |
+| 2 | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 2 |
+| 3 | Steady bits. Wiring it all, a chain, and OR | 27 | 4 |
+| 4 | Bits that switch through the loop; AND on every moment | 4 | 1 |
+| 5 | One input feeding two blocks, and XOR | 27 | 1 |
+| 6 | Three blocks in a row | 3,125 | 8 |
+| 7 | Four blocks, two outputs | 279,936 | 37 |
 
 The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves on to bit patterns (such as 0011, 0 for half the loop and then 1) from Sequence on, so a new player meets one bit at a time first. A steady bit target can only be 0 or 1, so an input may already match it; those circuits are excused from the straight-wire check below, and the every-block rule still stops a straight wire solving them. Bit circuits still have more solutions than the others: AND or OR of a signal with itself is that signal, and a steady 1 or 0 can stand in for many things.
 
 ### Chapter II: Tally
 
-*Count what changes.* Digits: MIRROR, MAX, MIN, DIFF.
+*Every digit holds steady.* Digits: MIRROR, MAX, MIN, DIFF, on whole digits that stay the same all loop, each shown as just its number. Steady digits leave few different answers, so the later circuits here have several ways through.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Reflection | Pre-wired: move one wire to the other digit, and MIRROR | 2 | 1 |
-| 02 | Balance | Half wired, and DIFF | 4 | 1 |
-| 03 | Peak | MAX, and order matters | 27 | 4 |
-| 04 | Fork | MIN, and one input feeding two blocks | 1,024 | 14 |
-| 05 | Retrace | A pattern of digits | 27 | 1 |
-| 06 | Ledger | Four blocks, two outputs | 279,936 | 3 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | Pre-wired: move one wire to the other digit, and MIRROR | 2 | 1 |
+| 2 | Half wired, and DIFF | 4 | 1 |
+| 3 | MAX, and order matters | 27 | 4 |
+| 4 | MIN, and one input feeding two blocks | 1,024 | 14 |
+| 5 | Three blocks in a row, two outputs | 3,125 | 10 |
 
-### Chapter III: Resonance
+### Chapter III: Ticker
+
+*Count what changes.* The same four digit blocks, on digits that change as the loop plays, drawn as a stepped line. No new blocks, so it skips the pre-wired and half-wired openers: the player draws every wire.
+
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | A pattern of digits, MIRRORed step by step; a steady digit is the spare | 2 | 1 |
+| 2 | MAX of a pattern and a steady digit: a floor | 4 | 1 |
+| 3 | MIN of two patterns, then MIRROR | 27 | 1 |
+| 4 | One pattern feeding two blocks, two outputs | 27 | 1 |
+| 5 | A longer pattern, MIN with its own MIRROR: one input in two places | 27 | 1 |
+| 6 | Four blocks, two outputs | 279,936 | 3 |
+
+### Chapter IV: Resonance
 
 *Listen closely.* Analog waves: FLIP, FASTER, LATER, MIX.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Hum | Pre-wired: move one wire to the other wave, and FASTER | 2 | 1 |
-| 02 | Splice | Half wired, and MIX | 4 | 1 |
-| 03 | Timbre | LATER, and order matters | 9 | 1 |
-| 04 | Offset | FLIP, feeding an output and a block at once | 27 | 1 |
-| 05 | Echo | Two outputs, by ear | 64 | 2 |
-| 06 | Chorus | Four blocks, two outputs | 7,776 | 1 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | Pre-wired: move one wire to the other wave, and FASTER | 2 | 1 |
+| 2 | Half wired, and MIX | 4 | 1 |
+| 3 | LATER, and order matters | 9 | 1 |
+| 4 | FLIP, feeding an output and a block at once | 27 | 1 |
+| 5 | Two outputs, by ear | 64 | 2 |
+| 6 | Four blocks, two outputs | 7,776 | 1 |
 
 Every circuit is checked by trying every way to wire it, in the tests and from **BLACKBOX → Validate Puzzles**. Each one's solution must work, it must not be solved as it starts, and no input wired straight to an output may already meet that output's target.
 
-### Chapter IV: Patch
+### Chapter V: Patch
 
 *Every block reads every signal.* Blocks of one kind, fed signals of another. Each circuit has three inputs of mixed kinds, one of them spare, and two blocks in a chain, so the player has to work out which signal each block reads and what it reads it as.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Cross Talk | AND reads a pattern of digits as bits, then NOT; a steady digit is the spare | 64 | 1 |
-| 02 | Reading | MIRROR reads a saw by its height, then MIN with a digit | 64 | 1 |
-| 03 | Level | FLIP reads digits as levels, then MIX with a steady 9 lifts them to the top half | 64 | 1 |
-| 04 | Top and Bottom | FLIP reads bits as top and bottom, then MIX with a saw | 64 | 1 |
-| 05 | Crossover | Three blocks, two outputs: a wave into MIRROR; bits into NOT, then AND with a pattern of digits | 625 | 1 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | AND reads a pattern of digits as bits, then NOT; a steady digit is the spare | 64 | 1 |
+| 2 | MIRROR reads a saw by its height, then MIN with a digit | 64 | 1 |
+| 3 | FLIP reads digits as levels, then MIX with a steady 9 lifts them to the top half | 64 | 1 |
+| 4 | FLIP reads bits as top and bottom, then MIX with a saw | 64 | 1 |
+| 5 | Three blocks, two outputs: a wave into MIRROR; bits into NOT, then AND with a pattern of digits | 625 | 1 |
 
-### Chapter V: Junction
+### Chapter VI: Junction
 
 *Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No mixing blocks yet; a test checks that every solution feeds some block two kinds at once. Every circuit chains two blocks or more, with a spare input.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Both On | AND of a pattern of digits and a pattern of bits, then XOR with a square wave | 256 | 1 |
-| 02 | Step Down | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR | 64 | 1 |
-| 03 | Cut Off | XOR of a digit and a saw, then OR with bits | 256 | 1 |
-| 04 | Staircase | MAX of a saw read as digits and a steady digit, then DIFF with that digit again: one input feeding two blocks | 256 | 1 |
-| 05 | Lift | MIX of a wave and bits, then LATER | 64 | 1 |
-| 06 | Junction | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 1 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | AND of a pattern of digits and a pattern of bits, then XOR with a square wave | 256 | 1 |
+| 2 | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR | 64 | 1 |
+| 3 | XOR of a digit and a saw, then OR with bits | 256 | 1 |
+| 4 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again: one input feeding two blocks | 256 | 1 |
+| 5 | MIX of a wave and bits, then LATER | 64 | 1 |
+| 6 | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 1 |
 
-### Chapter VI: Blend
+### Chapter VII: Blend
 
 *Signals of different kinds, mixed together.* Wave blocks meet other kinds, then the three mixing blocks: GATE, COUNT and COMPARE, each met beside a block the player already knows.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Pulse | A wave into AND blinks a bit, and FLIP turns the bits back into a wave | 64 | 1 |
-| 02 | Silence | MIX: a wave and its half-cycle twin cancel, then a square wave mixed with the silence (two MIX blocks, so either can do either job) | 256 | 2 |
-| 03 | Square Up | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 625 | 1 |
-| 04 | Late | LATER and MIX on one input: a wave mixed with its own late copy | 27 | 1 |
-| 05 | Burst | GATE lets a sped-up saw through a pattern | 64 | 1 |
-| 06 | Count | COUNT counts the switch-ons of a gated wave; the gate feeds an output too | 64 | 1 |
-| 07 | Threshold | COMPARE against a mirrored digit makes a pulse | 64 | 1 |
-| 08 | Counter | COMPARE, then COUNT the pulses | 64 | 1 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | A wave into AND blinks a bit, and FLIP turns the bits back into a wave | 64 | 1 |
+| 2 | MIX: a wave and its half-cycle twin cancel, then a square wave mixed with the silence (two MIX blocks, so either can do either job) | 256 | 2 |
+| 3 | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 625 | 1 |
+| 4 | LATER and MIX on one input: a wave mixed with its own late copy | 27 | 1 |
+| 5 | GATE lets a sped-up saw through a pattern | 64 | 1 |
+| 6 | COUNT counts the switch-ons of a gated wave; the gate feeds an output too | 64 | 1 |
+| 7 | COMPARE against a mirrored digit makes a pulse | 64 | 1 |
+| 8 | COMPARE, then COUNT the pulses | 64 | 1 |
 
-### Chapter VII: Unmarked
+### Chapter VIII: Unmarked
 
 *Every block you've met, all mixed up.* Two blocks each, any kind of signal and any block met so far, then one bigger circuit to close.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Nameless | Order matters: MAX then MIRROR | 27 | 3 |
-| 02 | Matchmaker | Which block goes with which input | 9 | 1 |
-| 03 | Sweep | A wave sped up, then delayed | 9 | 1 |
-| 04 | Strobe | Two outputs from one chain | 64 | 4 |
-| 05 | Countdown | A count, mirrored | 9 | 1 |
-| 06 | Reflections | XOR, then MIRROR: one block feeding an output and another block | 27 | 1 |
-| 07 | Interference | Three separate machines in one circuit, five blocks (Blackbox's old finale) | 2,097,152 | 1 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | Order matters: MAX then MIRROR | 27 | 3 |
+| 2 | Which block goes with which input | 9 | 1 |
+| 3 | A wave sped up, then delayed | 9 | 1 |
+| 4 | Two outputs from one chain | 64 | 4 |
+| 5 | A count, mirrored | 9 | 1 |
+| 6 | XOR, then MIRROR: one block feeding an output and another block | 27 | 1 |
+| 7 | Three separate machines in one circuit, five blocks (Blackbox's old finale) | 2,097,152 | 1 |
 
-### Chapter VIII: Blackbox
+### Chapter IX: Blackbox
 
 *Everything at once.* Two to four blocks, one to three outputs. From 06 on, each circuit brings in a block with three inputs, and the finale uses one.
 
-| # | Circuit | Teaches | Wirings | Solutions |
-|---|---|---|---|---|
-| 01 | Metronome | Speed up twice, compare, count the blinks | 7,776 | 2 |
-| 02 | Mixing Desk | Mix two waves, gate the mix, flip the gate | 3,125 | 1 |
-| 03 | Downhill | A flipped saw, sped up, beside a digit | 125 | 2 |
-| 04 | Signal Box | One wave read as bits by two blocks and as a digit by a third, three outputs | 279,936 | 2 |
-| 05 | Pulse Width | A threshold from a difference, three readers of one pulse | 46,656 | 1 |
-| 06 | Vote | MAJORITY: two of three bit patterns, and NOT | 625 | 1 |
-| 07 | Clamp | MIDDLE: a saw held between two digits, and MIRROR | 256 | 1 |
-| 08 | Window | BETWEEN: when a sine is between two levels, and COUNT | 256 | 1 |
-| 09 | Crossfade | SWITCH: a pattern chooses between a sine and a flipped saw | 625 | 1 |
-| 10 | Black Box | The higher of two waves (COMPARE choosing for SWITCH), its count, and a gated saw | 1,679,616 | 1 |
+| # | Teaches | Wirings | Solutions |
+|---|---|---|---|
+| 1 | Speed up twice, compare, count the blinks | 7,776 | 2 |
+| 2 | Mix two waves, gate the mix, flip the gate | 3,125 | 1 |
+| 3 | A flipped saw, sped up, beside a digit | 125 | 2 |
+| 4 | One wave read as bits by two blocks and as a digit by a third, three outputs | 279,936 | 2 |
+| 5 | A threshold from a difference, three readers of one pulse | 46,656 | 1 |
+| 6 | MAJORITY: two of three bit patterns, and NOT | 625 | 1 |
+| 7 | MIDDLE: a saw held between two digits, and MIRROR | 256 | 1 |
+| 8 | BETWEEN: when a sine is between two levels, and COUNT | 256 | 1 |
+| 9 | SWITCH: a pattern chooses between a sine and a flipped saw | 625 | 1 |
+| 10 | The higher of two waves (COMPARE choosing for SWITCH), its count, and a gated saw | 1,679,616 | 1 |
 
 ## Look and sound
 
@@ -265,7 +279,7 @@ Values are small whole numbers, one range per medium: 2 for bits, 10 for digits,
 
 ### Adding a chapter
 
-1. Write `chapter-9-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
+1. Write `chapter-10-<name>.json` next to the others (see [PuzzleFormat.md](PuzzleFormat.md)).
 2. Add its file name to a part in `chapters.json`.
 3. To make it wait for an earlier chapter, give it `"unlock": { "after": "<chapter id>", "solved": N }`. Leave that out and it is open from the start, like the shipped chapters.
 4. Run **BLACKBOX → Validate Puzzles**, then the EditMode tests.

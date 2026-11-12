@@ -9,7 +9,6 @@
   "circuits": [
     {
       "id": "forms-01",
-      "name": "Fill",
       "hint": "These wires are drawn already. Run it, then move {g}'s input to the other shape.",
       "inputs": {
         "A": {
@@ -40,7 +39,6 @@
     },
     {
       "id": "forms-02",
-      "name": "Graft",
       "hint": "One of {g}'s inputs is empty.",
       "inputs": {
         "A": {
@@ -72,7 +70,6 @@
     },
     {
       "id": "forms-03",
-      "name": "Repaint",
       "hint": "A signal can change as the loop plays: A is a triangle, then a hexagon.",
       "inputs": {
         "A": {
@@ -100,7 +97,6 @@
     },
     {
       "id": "forms-04",
-      "name": "Turn",
       "hint": "Watch how the shape changes.",
       "inputs": {
         "A": {
@@ -135,7 +131,6 @@
     },
     {
       "id": "forms-05",
-      "name": "Homecoming",
       "hint": "Watch the colour: it stays with the shape.",
       "inputs": {
         "A": {
@@ -178,7 +173,6 @@
     },
     {
       "id": "forms-06",
-      "name": "Lattice",
       "hint": "Work out one output at a time.",
       "inputs": {
         "A": {

@@ -51,7 +51,7 @@ Open the project in Unity and press **Play** in any scene. If the scene has no `
 | H | How it works |
 | Esc | Finish typing, put the pen down, drop a wire, or open the menu |
 
-Part One has three chapters: *First Light* (bits, 7 circuits, starting with steady 0s and 1s before bits that switch), *Tally* (digits, 6) and *Resonance* (waves, 6). Shapes and their chapter, *Forms*, and stepped waves and theirs, *Grain*, are set aside for now (see the end of Design.md). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (6) and *Blackbox* (6): 50 circuits in all. Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
+Part One has four chapters: *First Light* (bits, 7 circuits, starting with steady 0s and 1s before bits that switch), *Tally* (steady whole digits, 5), *Ticker* (digits that change as the loop plays, 6) and *Resonance* (waves, 6). Shapes and their chapter, *Forms*, and stepped waves and theirs, *Grain*, are set aside for now (see the end of Design.md). Part Two has *Patch* (5 circuits), *Junction* (6), where two kinds of signal meet in one block, and *Blend* (8), and Part Three *Unmarked* (7) and *Blackbox* (10), where the blocks with three inputs turn up late: 60 circuits in all. Circuits are named by their chapter and number, such as TALLY 1. Each part opens when the one before it is finished; **DEBUG: OPEN EVERYTHING** in Settings opens them all for testing. See [Docs/Design.md](Docs/Design.md) for how the game works and what each circuit teaches.
 
 ## Project layout
 

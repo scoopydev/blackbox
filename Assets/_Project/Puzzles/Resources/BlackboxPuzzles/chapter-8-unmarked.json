@@ -8,7 +8,6 @@
   "circuits": [
     {
       "id": "unmarked-01",
-      "name": "Nameless",
       "hint": "The only way to learn a block is to wire it up and press RUN.",
       "inputs": {
         "A": {
@@ -40,7 +39,6 @@
     },
     {
       "id": "unmarked-02",
-      "name": "Matchmaker",
       "hint": "Two inputs, two blocks, two outputs. Try each block with each input.",
       "inputs": {
         "A": {
@@ -75,7 +73,6 @@
     },
     {
       "id": "unmarked-03",
-      "name": "Sweep",
       "hint": "Look at how often the target's wave repeats, and where it starts.",
       "inputs": {
         "A": {
@@ -106,7 +103,6 @@
     },
     {
       "id": "unmarked-04",
-      "name": "Strobe",
       "hint": "Two outputs, two blocks. Each block has to lead to an output, through other blocks or straight there.",
       "inputs": {
         "A": {
@@ -145,7 +141,6 @@
     },
     {
       "id": "unmarked-05",
-      "name": "Countdown",
       "hint": "Watch the target's digits change through the loop.",
       "inputs": {
         "A": {
@@ -176,7 +171,6 @@
     },
     {
       "id": "unmarked-06",
-      "name": "Reflections",
       "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {
@@ -212,7 +206,6 @@
     },
     {
       "id": "unmarked-07",
-      "name": "Interference",
       "hint": "Solve one output at a time. Every block still has to be used.",
       "inputs": {
         "A": {

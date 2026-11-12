@@ -7,7 +7,6 @@
   "circuits": [
     {
       "id": "patch-01",
-      "name": "Cross Talk",
       "hint": "A bit block reads any signal as a bit: a digit is 1 unless it's 0, so 0505 reads as 0101. You don't have to use every input.",
       "inputs": {
         "A": {
@@ -42,7 +41,6 @@
     },
     {
       "id": "patch-02",
-      "name": "Reading",
       "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
@@ -77,7 +75,6 @@
     },
     {
       "id": "patch-03",
-      "name": "Level",
       "hint": "A wave block reads a digit as a level, 0 at the bottom up to 9 at the top.",
       "inputs": {
         "A": {
@@ -112,7 +109,6 @@
     },
     {
       "id": "patch-04",
-      "name": "Top and Bottom",
       "hint": "A wave block reads a bit as the top for 1 and the bottom for 0.",
       "inputs": {
         "A": {
@@ -147,7 +143,6 @@
     },
     {
       "id": "patch-05",
-      "name": "Crossover",
       "hint": "Look at each target and ask which input could have made it.",
       "inputs": {
         "A": {

@@ -109,6 +109,11 @@ namespace Blackbox.Puzzles
     public sealed class PuzzleDef
     {
         public string Id;
+        /// <summary>
+        /// What the circuit is called: its chapter's title and its number in the
+        /// chapter, such as "TALLY 1". A circuit read on its own keeps its file's
+        /// "name", if it has one, or else its id.
+        /// </summary>
         public string Name;
         /// <summary>A line about the controls or what is new. Never about what blocks do.</summary>
         public string Hint;
@@ -203,8 +208,10 @@ namespace Blackbox.Puzzles
         None,
         /// <summary>A bit's line above or below the middle, steady or switching.</summary>
         Bits,
-        /// <summary>A digit as a height from 0 to 9, or as just its number when it stays put.</summary>
+        /// <summary>A steady digit: a whole number from 0 to 9, shown as just its number, a higher digit sounding higher.</summary>
         Digits,
+        /// <summary>A digit that changes through the loop: a line whose height is the digit, each step's digit written on it.</summary>
+        ChangingDigits,
         /// <summary>A wave's frequency, amplitude, form and phase.</summary>
         Waves,
         /// <summary>One signal of each kind, as each kind of block reads it.</summary>

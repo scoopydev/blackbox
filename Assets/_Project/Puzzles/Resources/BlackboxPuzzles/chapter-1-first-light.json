@@ -9,7 +9,6 @@
   "circuits": [
     {
       "id": "first-light-01",
-      "name": "First Light",
       "hint": "The wires are drawn, but one starts at the wrong input. Click the wire into {g} to take it off, drag from B's dot to {g}'s left dot, then press RUN.",
       "inputs": {
         "A": {
@@ -40,7 +39,6 @@
     },
     {
       "id": "first-light-02",
-      "name": "Switch",
       "hint": "{g} has two inputs and one is empty. A block with an empty input sends nothing, so wire something into it.",
       "inputs": {
         "A": {
@@ -72,7 +70,6 @@
     },
     {
       "id": "first-light-03",
-      "name": "Under the Lid",
       "hint": "Now you wire it all. Every block has to be used, and every block input needs a wire.",
       "inputs": {
         "A": {
@@ -104,7 +101,6 @@
     },
     {
       "id": "first-light-04",
-      "name": "Sequence",
       "hint": "From here a signal can change as the loop plays: 0011 is 0 for the first half of the loop, then 1. A block works on each moment in turn.",
       "inputs": {
         "A": {
@@ -132,7 +128,6 @@
     },
     {
       "id": "first-light-05",
-      "name": "Fork",
       "hint": "One signal can feed many wires: drag from the same dot again.",
       "inputs": {
         "A": {
@@ -168,7 +163,6 @@
     },
     {
       "id": "first-light-06",
-      "name": "Relay",
       "hint": "Three blocks, one after another.",
       "inputs": {
         "A": {
@@ -208,7 +202,6 @@
     },
     {
       "id": "first-light-07",
-      "name": "Tangle",
       "hint": "Work out one output at a time.",
       "inputs": {
         "A": {

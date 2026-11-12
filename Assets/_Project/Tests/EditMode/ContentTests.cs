@@ -24,8 +24,8 @@ namespace Blackbox.Tests
             Assert.That(library.Parts.Select(p => p.Id), Is.EqualTo(new[] { "learn", "combine", "build" }));
             Assert.That(library.Parts[0].AfterPrevious, Is.False, "Part One is open from the start");
             Assert.That(library.Parts[1].AfterPrevious && library.Parts[2].AfterPrevious, Is.True, "each later part waits for the one before");
-            Assert.That(library.Chapters.Count, Is.EqualTo(8));
-            Assert.That(library.Parts[0].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "first-light", "tally", "resonance" }), "bits, digits, then waves; shapes are set aside");
+            Assert.That(library.Chapters.Count, Is.EqualTo(9));
+            Assert.That(library.Parts[0].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "first-light", "tally", "ticker", "resonance" }), "bits, steady digits, changing digits, then waves; shapes are set aside");
             Assert.That(library.Parts[1].Chapters.Select(c => c.Id), Is.EqualTo(new[] { "patch", "junction", "blend" }), "Combine reads, then meets, then mixes");
             Assert.That(library.Chapters, Is.EqualTo(library.Parts.SelectMany(p => p.Chapters)), "the parts hold every chapter, in order");
             Assert.That(library.AllPuzzles.All(p => p.Wiring), Is.True, "the player wires every circuit in the game");
@@ -47,13 +47,14 @@ namespace Blackbox.Tests
             foreach (var chapter in LearnChapters)
             {
                 Assert.That(chapter.Mixed, Is.False, $"{chapter.Title} is about one kind of signal");
-                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" ? 7 : 6), chapter.Title);
+                Assert.That(chapter.Puzzles.Count, Is.EqualTo(chapter.Id == "first-light" ? 7 : chapter.Id == "tally" ? 5 : 6), chapter.Title);
             }
             foreach (var chapter in library.Parts.Skip(1).SelectMany(p => p.Chapters))
                 Assert.That(chapter.Mixed, Is.True, $"{chapter.Title} mixes kinds of signal");
             var media = LearnChapters.Select(c => c.Medium).ToList();
-            Assert.That(media.Distinct().Count(), Is.EqualTo(media.Count), "one chapter for each medium");
-            Assert.That(media, Is.EquivalentTo(System.Enum.GetValues(typeof(Medium)).Cast<Medium>().Where(m => !KindCatalog.MediumShelved(m))), "every medium in play has its chapter");
+            Assert.That(media.Count(m => m == Medium.Decimal), Is.EqualTo(2), "digits have two chapters, steady then changing");
+            Assert.That(media.Where(m => m != Medium.Decimal).Distinct().Count(), Is.EqualTo(media.Count - 2), "every other medium has one chapter");
+            Assert.That(media.Distinct(), Is.EquivalentTo(System.Enum.GetValues(typeof(Medium)).Cast<Medium>().Where(m => !KindCatalog.MediumShelved(m))), "every medium in play has its chapter");
         }
 
         [Test]
@@ -64,6 +65,7 @@ namespace Blackbox.Tests
             {
                 ["first-light"] = SignalGuide.Bits,
                 ["tally"] = SignalGuide.Digits,
+                ["ticker"] = SignalGuide.ChangingDigits,
                 ["resonance"] = SignalGuide.Waves,
                 ["patch"] = SignalGuide.Readings,
                 ["junction"] = SignalGuide.Readings,
@@ -169,11 +171,39 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void DigitsComeSteadyThenChanging()
+        {
+            // Tally keeps to whole digits that hold steady all loop; Ticker, after it,
+            // is about digits that change as the loop plays.
+            var learn = TestContent.Library.Parts[0].Chapters;
+            var tally = learn.First(c => c.Id == "tally");
+            var ticker = learn.First(c => c.Id == "ticker");
+            Assert.That(learn.IndexOf(ticker), Is.EqualTo(learn.IndexOf(tally) + 1));
+            foreach (var p in tally.Puzzles)
+            {
+                foreach (var i in p.Inputs) Assert.That(i.Signal.Trace.IsFlat, Is.True, $"{p.Id}: input {i.Id} is steady");
+                foreach (var o in p.Outputs) Assert.That(o.Want.IsFlat, Is.True, $"{p.Id}: target {o.Id} is steady");
+            }
+            foreach (var p in ticker.Puzzles)
+                Assert.That(p.Inputs.Any(i => !i.Signal.Trace.IsFlat), Is.True, $"{p.Id} has a digit that changes");
+        }
+
+        [Test]
+        public void CircuitsAreNamedByChapterAndNumber()
+        {
+            foreach (var chapter in TestContent.Library.Chapters)
+                for (int i = 0; i < chapter.Puzzles.Count; i++)
+                    Assert.That(chapter.Puzzles[i].Name, Is.EqualTo($"{chapter.Title.ToUpperInvariant()} {i + 1}"));
+            Assert.That(TestContent.Library.Chapters[1].Puzzles[0].Name, Is.EqualTo("TALLY 1"));
+        }
+
+        [Test]
         public void EachLearnChapterTeachesWiringStepByStep()
         {
             // The first circuit comes wired and needs one wire moved; the second is
-            // half wired; from the third on, the player draws every wire.
-            foreach (var chapter in LearnChapters)
+            // half wired; from the third on, the player draws every wire. Ticker
+            // carries on from Tally's digits, so the player draws every wire there.
+            foreach (var chapter in LearnChapters.Where(c => c.Id != "ticker"))
             {
                 var first = chapter.Puzzles[0];
                 var second = chapter.Puzzles[1];
@@ -192,6 +222,8 @@ namespace Blackbox.Tests
                     Assert.That(p.Start, Is.Empty, $"{p.Id}: from the third circuit on, the player draws every wire");
             }
             foreach (var p in TestContent.Library.Parts.Skip(1).SelectMany(part => part.Chapters).SelectMany(c => c.Puzzles))
+                Assert.That(p.Start, Is.Empty, $"{p.Id} starts with no wires");
+            foreach (var p in LearnChapters.First(c => c.Id == "ticker").Puzzles)
                 Assert.That(p.Start, Is.Empty, $"{p.Id} starts with no wires");
         }
 

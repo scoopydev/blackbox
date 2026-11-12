@@ -65,6 +65,7 @@ namespace Blackbox.UI.Screens
             {
                 case SignalGuide.Bits: BuildBits(); break;
                 case SignalGuide.Digits: BuildDigits(); break;
+                case SignalGuide.ChangingDigits: BuildChangingDigits(); break;
                 case SignalGuide.Waves: BuildWaves(); break;
                 case SignalGuide.Readings: BuildReadings(); break;
                 default: BuildRecap(); break;
@@ -111,10 +112,29 @@ namespace Blackbox.UI.Screens
             LoopArrow(big, 862f);
         }
 
-        /// <summary>Tally: a steady digit is its number; a changing one is a height, 0 at the bottom and 9 at the top.</summary>
+        /// <summary>Tally: a steady digit is a whole number, shown as just its number; a bigger one sounds higher.</summary>
         void BuildDigits()
         {
-            Header("READING A DIGIT", "A DIGIT IS A NUMBER FROM 0 TO 9.");
+            Header("READING A DIGIT", "A DIGIT IS A WHOLE NUMBER FROM 0 TO 9. HERE EACH ONE STAYS THE SAME ALL LOOP LONG.");
+
+            _lead = Example("decimal 7", Cx, 420f, 240f, 120f);
+            Caption(Cx, 492f, "A STEADY DIGIT", "SHOWN AS JUST ITS NUMBER, AND HEARD AS ONE SHORT TONE", 520f);
+
+            Section(Cx, 632f, "A BIGGER DIGIT SOUNDS HIGHER");
+            int[] digits = { 0, 3, 6, 9 };
+            for (int i = 0; i < digits.Length; i++)
+            {
+                float x = Cx + (i - 1.5f) * 260f;
+                Example($"decimal {digits[i]}", x, 716f, 150f, 72f);
+                if (i == 0) Caption(x, 768f, null, "THE LOWEST TONE", 240f);
+                if (i == digits.Length - 1) Caption(x, 768f, null, "THE HIGHEST TONE", 240f);
+            }
+        }
+
+        /// <summary>Ticker: a digit that changes is a line, its height the digit, 0 at the bottom and 9 at the top.</summary>
+        void BuildChangingDigits()
+        {
+            Header("DIGITS THAT CHANGE", "A DIGIT CAN CHANGE AS THE LOOP PLAYS. THEN IT'S DRAWN AS A LINE, ONE STEP FOR EACH DIGIT.");
 
             Example("decimal 7", 600f, 318f, 150f, 72f);
             Caption(600f, 370f, "A STEADY DIGIT", "SHOWN AS JUST ITS NUMBER");

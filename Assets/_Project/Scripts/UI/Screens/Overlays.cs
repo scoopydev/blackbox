@@ -29,7 +29,7 @@ namespace Blackbox.UI.Screens
             var p = Puzzle;
             var name = UIKit.Text(Root, p.Name, TextStyle.Heading.WithSize(40).WithWeight(200));
             name.rectTransform.At(cx, 350f, 900f, 56f);
-            var where = UIKit.Text(Root, $"CHAPTER {p.Chapter.Numeral}  ·  {p.Chapter.Title}  ·  CIRCUIT {p.Label}", TextStyle.Label.WithSize(12).WithColor(Palette.Faint));
+            var where = UIKit.Text(Root, $"CHAPTER {p.Chapter.Numeral}  ·  CIRCUIT {p.Label}  OF  {p.Chapter.Puzzles.Count:00}", TextStyle.Label.WithSize(12).WithColor(Palette.Faint));
             where.rectTransform.At(cx, 396f, 600f, 18f);
 
             int solvedHere = Game.Progress.SolvedIn(p.Chapter);

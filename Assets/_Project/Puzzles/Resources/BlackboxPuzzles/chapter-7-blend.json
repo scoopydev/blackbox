@@ -7,7 +7,6 @@
   "circuits": [
     {
       "id": "blend-01",
-      "name": "Pulse",
       "hint": "A wave into a bit block turns on and off as the wave rises and falls. A bit into a wave block is the top or the bottom.",
       "inputs": {
         "A": {
@@ -42,7 +41,6 @@
     },
     {
       "id": "blend-02",
-      "name": "Silence",
       "hint": "Two waves can cancel each other out.",
       "inputs": {
         "A": {
@@ -78,7 +76,6 @@
     },
     {
       "id": "blend-03",
-      "name": "Square Up",
       "hint": "A wave block reads a bit as a wave: at the top for 1, at the bottom for 0.",
       "inputs": {
         "A": {
@@ -121,7 +118,6 @@
     },
     {
       "id": "blend-04",
-      "name": "Late",
       "hint": "One input can feed two blocks. What does a wave mixed with a late copy of itself look like?",
       "inputs": {
         "A": {
@@ -153,7 +149,6 @@
     },
     {
       "id": "blend-05",
-      "name": "Burst",
       "hint": "{g} is a new kind of block. Listen to the target, then to what you make.",
       "inputs": {
         "A": {
@@ -188,7 +183,6 @@
     },
     {
       "id": "blend-06",
-      "name": "Count",
       "hint": "{g} is a new kind of block. Watch the target's digit change through the loop.",
       "inputs": {
         "A": {
@@ -227,7 +221,6 @@
     },
     {
       "id": "blend-07",
-      "name": "Threshold",
       "hint": "{g} is a new kind of block. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The target stays at 1 for longer when the height is lower.",
       "inputs": {
         "A": {
@@ -262,7 +255,6 @@
     },
     {
       "id": "blend-08",
-      "name": "Counter",
       "hint": "One block's signal can feed an output and another block at once.",
       "inputs": {
         "A": {

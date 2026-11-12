@@ -171,7 +171,7 @@ namespace Blackbox.UI.Screens
                 c.HoverChanged = on =>
                 {
                     dot.rectTransform.Centered(0f, 0f, on ? 11f : 8f, on ? 11f : 8f);
-                    if (on) Say($"Circuit {other.Label}: {other.Name}{(solved ? ", solved" : "")}. Click to go to it.", 2.5f);
+                    if (on) Say($"{other.Name}{(solved ? ", solved" : "")}. Click to go to it.", 2.5f);
                 };
                 c.Clicked = () => Game.GoPuzzle(other);
             }
