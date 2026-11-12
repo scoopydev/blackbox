@@ -695,23 +695,10 @@ namespace Blackbox.UI.Screens
                 return;
             }
             App.Sound(report.Met > 0 ? Sfx.Match : Sfx.Miss, report.Met > 0 ? 0.9f : 1.2f, 0.45f);
-            Say(Verdict(report), 6f);
+            // No verdict line: the board marks unused blocks and empty inputs itself.
+            Hush();
         }
 
-        /// <summary>What the run found, in a sentence: the first broken rule, or how many outputs are right.</summary>
-        string Verdict(WiringReport r)
-        {
-            int total = Puzzle.Outputs.Count;
-            bool allMet = r.Met == total;
-            string broken = GoalText.BrokenRules(Puzzle, r);
-            if (broken != null) return allMet ? "Every output matches, but " + char.ToLowerInvariant(broken[0]) + broken.Substring(1) : broken;
-            if (r.UnwiredOutputs.Count > 0 && r.Met == 0)
-                return $"Output {Puzzle.Outputs[r.UnwiredOutputs[0]].Id} has no wire into it yet.";
-            if (r.Met == 0) return total == 1 ? "The output doesn't do what its target shows yet. Change the wiring and run it again." : "No output does what its target shows yet. Change the wiring and run it again.";
-            return $"{r.Met} of {total} outputs do what their targets show. Change the wiring and run it again.";
-        }
-
-        /// <param name="conceal">Hide what the run has shown so far. A wiring change leaves that to <see cref="ConcealChanged"/>.</param>
         void CancelRun(bool conceal = true)
         {
             if (!_running) return;
