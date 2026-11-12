@@ -96,13 +96,34 @@ namespace Blackbox.Components
         /// True when both are the same medium and level at every step: exactly for
         /// everything but analog waves, which may differ by <see cref="Tolerance"/>.
         /// </summary>
-        public bool Matches(Trace other)
+        public bool Matches(Trace other) => Differences(other, 0) == 0;
+
+        /// <summary>
+        /// The most steps on which an output's signal may differ from its target and
+        /// still count as doing what the target does: a blip of about 1% of the
+        /// loop, too short to see on a display or hear. Such blips come from where a
+        /// wave crosses a line: read as a bit at the very step it is level with the
+        /// middle, or compared with another signal at the step they are equal. Two
+        /// wirings can disagree there and nowhere else.
+        /// </summary>
+        public const int Blip = 3;
+
+        /// <summary>
+        /// True when both are the same medium and agree on all but at most
+        /// <see cref="Blip"/> steps, each step judged as in <see cref="Matches"/>.
+        /// This is how an output is judged, whatever wiring made its signal.
+        /// </summary>
+        public bool LooksLike(Trace other) => Differences(other, Blip) <= Blip;
+
+        /// <summary>The steps on which the two differ, counting up to one past <paramref name="stopAfter"/>; past it when the media differ.</summary>
+        int Differences(Trace other, int stopAfter)
         {
-            if (other == null || other.Medium != Medium) return false;
+            if (other == null || other.Medium != Medium) return stopAfter + 1;
             float slack = Medium == Medium.Wave ? Tolerance : 0.001f;
+            int off = 0;
             for (int k = 0; k < Steps; k++)
-                if (Math.Abs(_levels[k] - other._levels[k]) > slack) return false;
-            return true;
+                if (Math.Abs(_levels[k] - other._levels[k]) > slack && ++off > stopAfter) break;
+            return off;
         }
 
         /// <summary>

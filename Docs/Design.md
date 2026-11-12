@@ -9,7 +9,7 @@ Every circuit gives the player **inputs** on the left, **blocks** in the middle 
 
 1. **Read the goal.** Above the board, beside GOAL, the same line for every circuit: "MATCH ALL OUTPUTS. USE ALL PROVIDED BLOCKS." (`GoalText.WiringRules`), with a count of the outputs met at the right. Every output shows its target beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
 2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires. Dragging a block by its body moves it, and its wires follow, so the player can untangle a circuit; a block can't be dropped on another card. The circuit remembers where its blocks were left, and RESET in the menu puts them back.
-3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs show what reaches them, top to bottom, each playing its sound. A change to the wires hides the outputs again, except an output that was solved on the last run with nothing feeding it rewired since: it stays solved, and the next run leaves it as it is and doesn't play it again, so only the outputs still in question sound (`WiringSession.OutputsUnchanged`). Each block keeps the signal it showed until the next run, unless its own input wires change or a block feeding it changes; rewiring where a block's signal goes leaves it showing (`WiringSession.BlocksUnchanged`). So every signal on show is still what that block sends as wired now.
+3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs show what reaches them, top to bottom, each playing its sound. An output lights up as met whenever its signal does what its target does, whatever wiring made it: the designer's solution is only one way there. A blip of up to 3 of the loop's 288 steps (about 1%), too short to see or hear, doesn't count against it (`Trace.LooksLike`); such blips come where a wave is read as a bit at the very step it crosses the middle, so two wirings can disagree there and nowhere else. A change to the wires hides the outputs again, except an output that was solved on the last run with nothing feeding it rewired since: it stays solved, and the next run leaves it as it is and doesn't play it again, so only the outputs still in question sound (`WiringSession.OutputsUnchanged`). Each block keeps the signal it showed until the next run, unless its own input wires change or a block feeding it changes; rewiring where a block's signal goes leaves it showing (`WiringSession.BlocksUnchanged`). So every signal on show is still what that block sends as wired now.
 4. **Keep the rules.** Every block must be used: each must lead to an output, through other blocks or straight there. Every input of a block needs a wire, and a block with an empty input sends nothing. Inputs may go unused, so a circuit can offer more signals than it needs and the player is free to try any of them. The verdict after a run names every broken rule and every block that broke it, such as "Block K2 isn't used: its signal doesn't reach an output. Every block has to lead to an output." (`GoalText.BrokenRules`), and the run marks each unused block NOT USED on the board.
 5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it.
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
@@ -212,7 +212,7 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 4 | Two outputs from one chain | 64 | 4 |
 | 5 | A count, mirrored | 9 | 1 |
 | 6 | XOR, then MIRROR: one block feeding an output and another block | 27 | 1 |
-| 7 | Three separate machines in one circuit, five blocks (Blackbox's old finale) | 2,097,152 | 1 |
+| 7 | Three separate machines in one circuit, five blocks (Blackbox's old finale) | 2,097,152 | 2 |
 
 ### Chapter IX: Blackbox
 
@@ -224,12 +224,12 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 | 2 | Mix two waves, gate the mix, flip the gate | 3,125 | 1 |
 | 3 | A flipped saw, sped up, beside a digit | 125 | 2 |
 | 4 | One wave read as bits by two blocks and as a digit by a third, three outputs | 279,936 | 2 |
-| 5 | A threshold from a difference, three readers of one pulse | 46,656 | 1 |
+| 5 | A threshold from a difference, three readers of one pulse | 46,656 | 2 |
 | 6 | MAJORITY: two of three bit patterns, and NOT | 625 | 1 |
 | 7 | MIDDLE: a saw held between two digits, and MIRROR | 256 | 1 |
 | 8 | BETWEEN: when a sine is between two levels, and COUNT | 256 | 1 |
-| 9 | SWITCH: a pattern chooses between a sine and a flipped saw | 625 | 1 |
-| 10 | The higher of two waves (COMPARE choosing for SWITCH), its count, and a gated saw | 1,679,616 | 1 |
+| 9 | SWITCH: a pattern chooses between a sine and a flipped saw | 625 | 3 |
+| 10 | The higher of two waves (COMPARE choosing for SWITCH), its count, and a gated saw | 1,679,616 | 2 |
 
 ## Look and sound
 

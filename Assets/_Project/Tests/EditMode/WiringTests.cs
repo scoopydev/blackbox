@@ -311,6 +311,29 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void AnOutputIsJudgedByItsSignalAlone()
+        {
+            // Any wiring that makes the target's signal meets the output, the
+            // designer's or not, and a blip too short to see or hear doesn't count
+            // against it: here a wave read as a bit, 0 at the one step it sits on
+            // the middle, where the pattern 01 is already 1.
+            var p = TestContent.ParseWired(@"{
+                ""id"": ""t"", ""name"": ""Test"",
+                ""inputs"": { ""A"": ""binary 01"", ""B"": ""wave sine f1 a7 p2"", ""C"": ""binary 0101"" },
+                ""blocks"": { ""g"": ""NOT"" },
+                ""outputs"": { ""X"": ""display"" },
+                ""solution"": [ ""A -> g"", ""g -> X"" ]
+            }");
+            var fromWave = new WiringSession(p, new[] { "B -> g", "g -> X" });
+            var got = fromWave.Check().Values[fromWave.OutputNode(0)];
+            Assert.That(got.Matches(p.Outputs[0].Want), Is.False, "the wave crosses the middle a step later than the pattern switches");
+            Assert.That(fromWave.Check().OutputMet[0], Is.True, "but the display shows the same, so X is met");
+            Assert.That(fromWave.Check().Solved, Is.True, "and a different wiring from the designer's solves it");
+            Assert.That(new WiringSession(p, new[] { "C -> g", "g -> X" }).Check().OutputMet[0], Is.False, "a quarter of the loop out is not a blip");
+            Assert.That(Trace.Of(Medium.Binary, 1).LooksLike(Trace.Of(Medium.Decimal, 1)), Is.False, "a bit is still not a digit");
+        }
+
+        [Test]
         public void SolvedOutputsHoldUntilWhatFeedsThemChanges()
         {
             // An output solved on a run stays solved, and quiet on the next, while

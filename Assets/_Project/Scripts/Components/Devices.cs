@@ -120,11 +120,15 @@ namespace Blackbox.Components
         /// </summary>
         public static int LightColour(Medium m, float level) => m == Medium.Shape && Shapes.Colour((int)level) > 0 ? Shapes.Colour((int)level) : -1;
 
-        /// <summary>True when the device does the same thing with both signals at every step.</summary>
+        /// <summary>
+        /// True when the device does the same thing with both signals. A display or
+        /// speaker shows or plays the signal itself, so it judges by the signal alone,
+        /// letting a blip too short to see or hear pass (<see cref="Trace.LooksLike"/>).
+        /// </summary>
         public static bool Same(Device d, Trace a, Trace b)
         {
             if (a == null || b == null) return false;
-            if (d == Device.Display || d == Device.Speaker) return a.Matches(b);
+            if (d == Device.Display || d == Device.Speaker) return a.LooksLike(b);
             for (int k = 0; k < Trace.Steps; k++)
             {
                 if (Math.Abs(Read(d, a.Medium, a[k]) - Read(d, b.Medium, b[k])) > Tolerance) return false;
