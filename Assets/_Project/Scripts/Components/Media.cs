@@ -15,7 +15,7 @@ namespace Blackbox.Components
         Decimal,
         /// <summary>A form (circle, triangle, square, hexagon) that is hollow or solid.</summary>
         Shape,
-        /// <summary>An analog wave: a sine, square or saw at one of 7 frequencies and 7 heights, shifted by 0 to 3 quarter cycles.</summary>
+        /// <summary>An analog wave: a sine, square or saw at one of 7 frequencies and 9 heights, shifted by 0 to 3 quarter cycles.</summary>
         Wave,
         /// <summary>A sampled wave: an analog wave read a few times a cycle and held between readings, so it rises and falls in steps.</summary>
         Sampled,
@@ -45,17 +45,17 @@ namespace Blackbox.Components
     }
 
     /// <summary>
-    /// Analog wave values: <c>((form * 7 + frequency) * 7 + height) * 4 + phase</c>,
+    /// Analog wave values: <c>((form * 7 + frequency) * 9 + height) * 4 + phase</c>,
     /// 588 in all. Every step is counted from 0 here and shown to the player from 1.
     /// <list type="bullet">
     /// <item>Frequency: how many cycles fit in one loop of a run, <see cref="Cycles"/>. It is also the pitch the wave sounds at.</item>
-    /// <item>Height (amplitude): the peak, 1 to 7 levels above the middle. It is also how loud the wave sounds.</item>
+    /// <item>Height (amplitude): the peak, 1 to 9 levels above the middle, so a digit block reads its peak as its amplitude. It is also how loud the wave sounds.</item>
     /// <item>Phase: how many quarter cycles later the wave starts. A sine half a cycle late is the same sine upside down.</item>
     /// </list>
     /// </summary>
     public static class Waves
     {
-        public const int Forms = 3, Frequencies = 7, Heights = 7, Phases = 4;
+        public const int Forms = 3, Frequencies = 7, Heights = 9, Phases = 4;
         public const int Size = Forms * Frequencies * Heights * Phases;
         public const int Sine = 0, SquareWave = 1, Saw = 2;
         public static readonly string[] FormNames = { "sine", "square", "saw" };
@@ -100,7 +100,7 @@ namespace Blackbox.Components
             }
         }
 
-        /// <summary>The wave's level, in steps of height (-7 to 7), a fraction <paramref name="loop"/> of the way through a loop.</summary>
+        /// <summary>The wave's level, in steps of height (-9 to 9), a fraction <paramref name="loop"/> of the way through a loop.</summary>
         public static double At(int v, double loop) =>
             (Height(v) + 1) * Shape(Form(v), Cycles[Frequency(v)] * loop - Phase(v) * 0.25);
 
@@ -187,7 +187,7 @@ namespace Blackbox.Components
     }
 
     /// <summary>
-    /// Sampled wave values: <c>((form * 7 + frequency) * 7 + height) * 3 + rate</c>,
+    /// Sampled wave values: <c>((form * 7 + frequency) * 9 + height) * 3 + rate</c>,
     /// 441 in all. A sampled wave is an analog one read <see cref="StepsPerCycle"/>
     /// times a cycle, each reading taken at the middle of its step, rounded to a
     /// whole level and held for the step, so it climbs and falls in steps. Frequency
@@ -389,7 +389,7 @@ namespace Blackbox.Components
         /// <summary>
         /// Reads a value as puzzle files write it: a number for binary and decimal,
         /// words for shapes ("solid triangle"), and for waves the form followed by
-        /// its settings in any order: f1 to f7 (frequency), a1 to a7 (amplitude),
+        /// its settings in any order: f1 to f7 (frequency), a1 to a9 (amplitude),
         /// p0 to p3 for an analog wave (quarter cycles late, 0 if left out) and s3,
         /// s6 or s12 for a sampled one (steps a cycle). "sine f3 a5", "saw f1 a7 s6".
         /// </summary>

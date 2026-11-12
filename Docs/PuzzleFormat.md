@@ -146,7 +146,7 @@ Write values the way the player sees them:
 | `binary` | 0 and 1 | `1` |
 | `decimal` | 0 to 9 | `7` |
 | `shape` (set aside) | `hollow` or `solid`, then `circle`, `triangle`, `square` or `hexagon` | `"solid triangle"` |
-| `wave` | `sine`, `square` or `saw`, then `f1` to `f7` (frequency) and `a1` to `a7` (amplitude), and optionally `p1`, `p2` or `p3` (quarter cycles late), in any order | `"sine f3 a5"`, `"square f1 a7 p2"` |
+| `wave` | `sine`, `square` or `saw`, then `f1` to `f7` (frequency) and `a1` to `a9` (amplitude), and optionally `p1`, `p2` or `p3` (quarter cycles late), in any order | `"sine f3 a5"`, `"square f1 a7 p2"` |
 | `sampled` | the same form, frequency and amplitude, then `s3`, `s6` or `s12` (steps a cycle) | `"saw f2 a6 s6"` |
 
 **Sampled (stepped) waves are set aside for now:** the loader refuses a circuit with one as an input, and Grain, their chapter, is kept in `Assets/_Project/Puzzles/Shelved/` where the game doesn't look. The rest of this section is for when they come back. Two sampled waves can trace the same staircase: a square is a square whether it is read 6 or 12 times a cycle, and a low sine read 3 times rounds the same way at A3 and A4. Either meets a target that names the other. Write targets as the intended solution makes them, so the target's caption matches the output's; a test checks this.

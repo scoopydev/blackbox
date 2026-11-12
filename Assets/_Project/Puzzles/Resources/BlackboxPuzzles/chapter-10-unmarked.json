@@ -97,7 +97,7 @@
       "hint": "Count how often the target beats, and how often the input's wave repeats.",
       "inputs": {
         "A": {
-          "signal": "wave sine f4 a7"
+          "signal": "wave sine f4 a9"
         },
         "B": {
           "signal": "decimal 8"

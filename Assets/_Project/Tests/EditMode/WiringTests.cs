@@ -91,8 +91,8 @@ namespace Blackbox.Tests
             }
             // GATE is a wave block: whatever comes in, a wave comes out, and off is the middle.
             Assert.That(Mix("GATE", T("decimal 6"), T("binary 0")).Matches(Trace.Flat(Medium.Wave, 0f)), Is.True, "off is a flat line");
-            Assert.That(Mix("GATE", T("binary 1"), T("binary 1")).Matches(Trace.Flat(Medium.Wave, 7f)), Is.True, "a bit comes through as a wave at the top");
-            Assert.That(Mix("GATE", T("decimal 9"), T("binary 1")).Matches(Trace.Flat(Medium.Wave, 7f)), Is.True, "and a digit as a level");
+            Assert.That(Mix("GATE", T("binary 1"), T("binary 1")).Matches(Trace.Flat(Medium.Wave, 9f)), Is.True, "a bit comes through as a wave at the top");
+            Assert.That(Mix("GATE", T("decimal 9"), T("binary 1")).Matches(Trace.Flat(Medium.Wave, 9f)), Is.True, "and a digit as a level");
         }
 
         [Test]

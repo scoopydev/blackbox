@@ -42,14 +42,14 @@ The game has three kinds of signal, and **every signal is drawn as a waveform**:
 |---|---|---|---|
 | I First Light | binary | 0 and 1 | A line above a faint midline for 1 and below it for 0, square where it switches |
 | II Tally, III Ticker | decimal | 0 to 9 | A steady digit (Tally) is its number, written large. A digit that changes (Ticker) is a stepped line whose height is the digit, 0 at the bottom up to 9 at the top, with each step's number written on it |
-| IV Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A7, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
+| IV Resonance | wave (analog) | sine, square or saw, at frequency F1 to F7 and amplitude A1 to A9, starting 0, ¼, ½ or ¾ of a cycle late | The waveform, with more cycles for a higher frequency and taller for a higher amplitude, its settings written under it ("F3 A5 +1/4") |
 
 ### Signals over time
 
 Every signal is a **trace**: its level at each of the 288 steps of one loop of a run (`Components/Trace.cs`). An input can be a single value or a pattern, like `binary 0110`, held for an equal share of the loop each. Waves rise and fall.
 
 * **Frequency** F1 to F7 fits 1, 2, 3, 4, 6, 8 or 12 cycles into a loop. Those are octaves and fifths of each other, so the pitches are in tune, and every cycle, half and quarter cycle lands exactly on a step.
-* **Amplitude** A1 to A7 is the peak, 1 to 7 levels from the middle.
+* **Amplitude** A1 to A9 is the peak, 1 to 9 levels from the middle, so a digit block reads a wave's peak as its amplitude (12 Nov 2026, from fella: "let amplitudes go up to 9"; it was A1 to A7). A bit or digit read as a wave fills the whole height, -9 to 9.
 * **Phase** moves an analog wave a quarter cycle at a time. A sine half a cycle late is the same sine upside down, so the two cancel when added; a sine and a cosine (a quarter apart) don't.
 
 Bit and digit blocks work step by step through the loop, and read any signal as their own kind:
@@ -74,7 +74,7 @@ Each medium is heard in its own way, so a player can follow a circuit by ear as 
 |---|---|
 | binary | A 1 is a clear beep. A 0 is only a soft, dull tap, so the player knows it played. |
 | decimal | One short tone whose pitch is the digit, climbing a major scale: 0 is C4 (do), 7 is C5, 9 is E5. Every digit lasts as long. |
-| wave | The wave itself. Its frequency is its pitch (F1 is D3, F3 is A4, F7 is A6) and its amplitude its loudness, 2.5 dB a step. Phase can't be heard. |
+| wave | The wave itself. Its frequency is its pitch (F1 is D3, F3 is A4, F7 is A6) and its amplitude its loudness: the taller, the louder, A9 the loudest. Phase can't be heard. |
 
 A signal that changes through the loop plays each of its values in turn. Signal sounds can be turned off in Settings (**SIGNAL SOUNDS**): runs then show each output with a soft blip instead. Clicking a signal always plays it. Each chapter's signal guide plays its main example, and every signal on it can be clicked, so the player learns the sounds before the first circuit.
 
@@ -316,7 +316,7 @@ Tests/EditMode/ NUnit tests for everything in Core, Components, Circuit and Puzz
 
 ### Evaluation
 
-Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 588 analog waves (((form × 7 + frequency) × 7 + amplitude) × 4 + phase), and, set aside for now, 32 shapes ((colour × 4 + form) × 2 + fill) and 441 sampled waves (((form × 7 + frequency) × 7 + amplitude) × 3 + steps). Inputs are traces: 288 steps of one loop, each a level of the signal's medium. `WiringSession` evaluates the wires from the inputs on, and `WiringSolver` tries every way to wire a circuit's blocks (skipping loops), then every source each output could take, to count the solutions. Circuits have no memory and no loops; a wire that would make one is refused.
+Values are small whole numbers, one range per medium: 2 for bits, 10 for digits, 756 analog waves (((form × 7 + frequency) × 9 + amplitude) × 4 + phase), and, set aside for now, 32 shapes ((colour × 4 + form) × 2 + fill) and 567 sampled waves (((form × 7 + frequency) × 9 + amplitude) × 3 + steps). Inputs are traces: 288 steps of one loop, each a level of the signal's medium. `WiringSession` evaluates the wires from the inputs on, and `WiringSolver` tries every way to wire a circuit's blocks (skipping loops), then every source each output could take, to count the solutions. Circuits have no memory and no loops; a wire that would make one is refused.
 
 ### Adding a chapter
 

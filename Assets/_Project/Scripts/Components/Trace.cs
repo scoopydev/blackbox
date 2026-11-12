@@ -28,7 +28,7 @@ namespace Blackbox.Components
         public const int Steps = 288;
 
         /// <summary>The highest a wave goes above (or below) the middle.</summary>
-        public const int Peak = 7;
+        public const int Peak = 9;
 
         /// <summary>How far apart two analog levels may be and still count as equal.</summary>
         public const float Tolerance = 0.05f;

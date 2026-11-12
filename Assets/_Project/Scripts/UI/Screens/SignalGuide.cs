@@ -268,7 +268,7 @@ namespace Blackbox.UI.Screens
             Line(g, LeaderColour.WithAlpha(0.35f), new Vector2(peak.x + 6f, peak.y), new Vector2(x - 12f, peak.y));
             Line(g, new Vector2(x - 9f, peak.y), new Vector2(x, peak.y), new Vector2(x, middle.y), new Vector2(x - 9f, middle.y));
             Words(g, new Vector2(x + 4f, (peak.y + middle.y) * 0.5f), Side.Right, "A5: 5 up from the middle",
-                "And 5 down. The higher A is, from 1 to 7, the taller it is and the louder it sounds.", 300f);
+                "And 5 down. The higher A is, from 1 to 9, the taller it is and the louder it sounds.", 300f);
             Reveal(g);
 
             // F and A are written under every wave, as here.
@@ -316,7 +316,7 @@ namespace Blackbox.UI.Screens
             }
 
             Section(Cx, 640f, "Amplitude: A changes how tall it is");
-            (int a, string sub)[] amps = { (1, "1 up and down. The quietest"), (3, "3 up and down"), (5, "5 up and down"), (7, "7 up and down. The loudest") };
+            (int a, string sub)[] amps = { (1, "1 up and down. The quietest"), (3, "3 up and down"), (6, "6 up and down"), (9, "9 up and down. The loudest") };
             for (int i = 0; i < amps.Length; i++)
             {
                 float x = Cx + (i - 1.5f) * 380f;

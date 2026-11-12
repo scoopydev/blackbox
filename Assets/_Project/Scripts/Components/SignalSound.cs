@@ -54,8 +54,8 @@ namespace Blackbox.Components
         /// <summary>The pitch of a wave's frequency step, in Hz.</summary>
         public static float WaveHz(int frequency) => WaveBaseHz * Waves.Cycles[Clamp(frequency, 0, Waves.Frequencies - 1)];
 
-        /// <summary>How loud a height step is, from 1 (the tallest) down by 2.5 dB a step.</summary>
-        public static float HeightGain(int height) => (float)Math.Pow(10.0, -2.5 * (Waves.Heights - 1 - Clamp(height, 0, Waves.Heights - 1)) / 20.0);
+        /// <summary>How loud a height step is, from 1 (the tallest) down by 2 dB a step.</summary>
+        public static float HeightGain(int height) => (float)Math.Pow(10.0, -2.0 * (Waves.Heights - 1 - Clamp(height, 0, Waves.Heights - 1)) / 20.0);
 
         /// <summary>The sound of one value, as mono samples between -1 and 1.</summary>
         public static float[] Render(Medium m, int v, int rate = SampleRate)

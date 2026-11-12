@@ -59,7 +59,7 @@ namespace Blackbox.Tests
             var got = sw.Apply(new[] { T("decimal 7"), T("decimal 2"), T("binary 0011") });
             Assert.That(got.Medium, Is.EqualTo(Medium.Wave), "SWITCH is a wave block");
             Assert.That(got.Matches(T("decimal 2277").As(Medium.Wave)), Is.True, "the middle while the bottom is off, then the top, as waves");
-            Assert.That(sw.Apply(new[] { T("decimal 7"), T("binary 1"), T("binary 0") }).First, Is.EqualTo(7f), "a bit comes through as a wave at the top");
+            Assert.That(sw.Apply(new[] { T("decimal 7"), T("binary 1"), T("binary 0") }).First, Is.EqualTo(9f), "a bit comes through as a wave at the top");
         }
 
         [Test]
@@ -257,7 +257,7 @@ namespace Blackbox.Tests
             var bit = Trace.Of(Medium.Binary, 1);
             var flipped = Run("FLIP", bit);
             Assert.That(flipped.Medium, Is.EqualTo(Medium.Wave));
-            Assert.That(flipped[0], Is.EqualTo(-7f), "a 1 is a wave at the top, so upside down it's at the bottom");
+            Assert.That(flipped[0], Is.EqualTo(-9f), "a 1 is a wave at the top, so upside down it's at the bottom");
             Assert.That(Run("MIX", Trace.Of(Medium.Decimal, 9), Trace.Of(Medium.Binary, 0))[0], Is.EqualTo(0f), "9 is the top, a 0 bit the bottom");
         }
 
@@ -305,10 +305,10 @@ namespace Blackbox.Tests
                     Assert.That(Shapes.Form(v), Is.EqualTo(f));
                     Assert.That(Shapes.Solid(v), Is.EqualTo(solid));
                 }
-            Assert.That(Media.Size(Medium.Wave), Is.EqualTo(3 * 7 * 7 * 4));
+            Assert.That(Media.Size(Medium.Wave), Is.EqualTo(3 * 7 * 9 * 4));
             foreach (int v in Media.All(Medium.Wave))
                 Assert.That(Waves.Make(Waves.Form(v), Waves.Frequency(v), Waves.Height(v), Waves.Phase(v)), Is.EqualTo(v));
-            Assert.That(Media.Size(Medium.Sampled), Is.EqualTo(3 * 7 * 7 * 3));
+            Assert.That(Media.Size(Medium.Sampled), Is.EqualTo(3 * 7 * 9 * 3));
             foreach (int v in Media.All(Medium.Sampled))
                 Assert.That(Sampled.Make(Sampled.Form(v), Sampled.Frequency(v), Sampled.Height(v), Sampled.Rate(v)), Is.EqualTo(v));
         }
@@ -464,10 +464,12 @@ namespace Blackbox.Tests
             Assert.That(Trace.Of(Medium.Shape, Shapes.Make(Shapes.Triangle, true)).As(Medium.Binary)[0], Is.EqualTo(1f));
             Assert.That(Trace.Of(Medium.Shape, Shapes.Make(Shapes.Hexagon, false)).As(Medium.Decimal)[0], Is.EqualTo(6f), "a shape as a digit is its corners");
             Assert.That(Trace.Of(Medium.Binary, 1).As(Medium.Shape)[0], Is.EqualTo((float)Shapes.Make(Shapes.Circle, true)));
-            Assert.That(Trace.Of(Medium.Binary, 1).As(Medium.Wave)[0], Is.EqualTo(7f));
-            Assert.That(Trace.Of(Medium.Binary, 0).As(Medium.Wave)[0], Is.EqualTo(-7f));
-            Assert.That(Trace.Of(Medium.Decimal, 9).As(Medium.Wave)[0], Is.EqualTo(7f));
-            Assert.That(Trace.Of(Medium.Decimal, 0).As(Medium.Wave)[0], Is.EqualTo(-7f));
+            // A bit or a digit read as a wave fills its whole height, -9 to 9.
+            Assert.That(Trace.Peak, Is.EqualTo(9));
+            Assert.That(Trace.Of(Medium.Binary, 1).As(Medium.Wave)[0], Is.EqualTo(9f));
+            Assert.That(Trace.Of(Medium.Binary, 0).As(Medium.Wave)[0], Is.EqualTo(-9f));
+            Assert.That(Trace.Of(Medium.Decimal, 9).As(Medium.Wave)[0], Is.EqualTo(9f));
+            Assert.That(Trace.Of(Medium.Decimal, 0).As(Medium.Wave)[0], Is.EqualTo(-9f));
 
             var sine = Trace.Of(Medium.Wave, Waves.Make(Waves.Sine, 0, 6));
             var digits = sine.As(Medium.Decimal);
@@ -478,6 +480,11 @@ namespace Blackbox.Tests
             var quiet = Trace.Of(Medium.Wave, Waves.Make(Waves.Sine, 0, 2)).As(Medium.Decimal);
             Assert.That(quiet[Step(0.25)], Is.EqualTo(3f), "an A3 wave's peak reads 3");
             Assert.That(quiet[Step(0.75)], Is.EqualTo(0f));
+            // Amplitudes go up to 9, so a wave's peak can read as any digit.
+            var loud = Signals.Parse("wave sine f1 a9").Trace;
+            Assert.That(loud[Step(0.25)], Is.EqualTo(9f).Within(0.001f));
+            Assert.That(loud.As(Medium.Decimal)[Step(0.25)], Is.EqualTo(9f), "an A9 wave's peak reads 9");
+            Assert.That(Signals.TryParse("wave sine f1 a10", out _, out _), Is.False, "A9 is the tallest");
             var rounded = sine.As(Medium.Sampled);
             for (int k = 0; k < Trace.Steps; k++)
             {
