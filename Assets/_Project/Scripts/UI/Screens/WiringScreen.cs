@@ -661,7 +661,7 @@ namespace Blackbox.UI.Screens
                 Plan(t, () =>
                 {
                     _board.ShowOutput(index, report);
-                    if (audible) App.Audio?.PlayTrace(got);
+                    if (audible) { _board.RestartLoop(); App.Audio?.PlayTrace(got); }
                     else App.Sound(got == null ? Sfx.Miss : Sfx.Arrive, got == null ? 1.4f : 1f, 0.45f);
                 });
                 t += audible ? SignalSound.Duration(got) + 0.16f : 0.45f;
@@ -733,6 +733,7 @@ namespace Blackbox.UI.Screens
         public void PlayTrace(Trace trace)
         {
             if (trace == null) return;
+            _board.RestartLoop();
             App.Audio?.PlayTrace(trace);
         }
 

@@ -55,7 +55,10 @@ namespace Blackbox.UI.Board
         bool _shown;
 
         /// <summary>Seconds for one loop of the signals on screen.</summary>
-        public const float LoopSeconds = 2.4f;
+        public const float LoopSeconds = SignalSound.PatternLength;
+
+        /// <summary>Starts every signal's playhead again from the left, so a sound starting now lines up with it.</summary>
+        public void RestartLoop() => _clock = 0f;
         const float SnapReach = 30f;
 
         /// <param name="places">Where the player last left each block, by block id, in board coordinates. Missing blocks sit where the circuit puts them.</param>

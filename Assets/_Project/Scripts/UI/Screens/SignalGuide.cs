@@ -492,7 +492,8 @@ namespace Blackbox.UI.Screens
             view.Ping();
             var run = _loops.Find(l => l.View == view);
             if (run == null) _loops.Add(run = new Loop { View = view, Seconds = SecondsFor(view.Trace), Once = true });
-            run.Start = Time.unscaledTime;
+            // Every playhead on the page starts again with the sound.
+            foreach (var l in _loops) l.Start = Time.unscaledTime;
         }
 
         /// <summary>

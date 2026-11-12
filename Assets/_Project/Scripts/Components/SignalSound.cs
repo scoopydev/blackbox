@@ -73,8 +73,12 @@ namespace Blackbox.Components
             return data;
         }
 
-        /// <summary>How long a whole signal plays for when it changes through the loop.</summary>
-        public const float PatternLength = 1.6f;
+        /// <summary>
+        /// How long a whole signal plays for when it changes through the loop. The
+        /// same as one loop of the signals on screen, so the playhead sweeps each
+        /// value as it sounds.
+        /// </summary>
+        public const float PatternLength = 2.4f;
 
         /// <summary>How long a signal over a loop sounds, in seconds.</summary>
         public static float Duration(Trace t)
