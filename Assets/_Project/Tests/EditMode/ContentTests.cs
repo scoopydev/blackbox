@@ -113,6 +113,38 @@ namespace Blackbox.Tests
         }
 
         [Test]
+        public void CombineGetsHarderAsItGoes()
+        {
+            // Patch, Junction and Blend each climb: inside a chapter no circuit has
+            // fewer blocks, or fewer ways to wire them, than the one before it, and
+            // each chapter opens and closes on a bigger circuit than the one before.
+            var combine = TestContent.Library.Parts[1];
+            long Space(PuzzleDef p) => WiringSolver.Analyse(p, maxSpace: 0).Space;
+            PuzzleDef openerBefore = null, finaleBefore = null;
+            foreach (var chapter in combine.Chapters)
+            {
+                for (int i = 1; i < chapter.Puzzles.Count; i++)
+                {
+                    var before = chapter.Puzzles[i - 1];
+                    var p = chapter.Puzzles[i];
+                    Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(before.Blocks.Count), $"{p.Id} has fewer blocks than {before.Id}");
+                    Assert.That(Space(p), Is.GreaterThanOrEqualTo(Space(before)), $"{p.Id} has fewer ways to wire it than {before.Id}");
+                }
+                var opener = chapter.Puzzles[0];
+                var finale = chapter.Puzzles[chapter.Puzzles.Count - 1];
+                if (openerBefore != null)
+                {
+                    Assert.That(Space(opener), Is.GreaterThan(Space(openerBefore)), $"{opener.Id} opens no harder than {openerBefore.Id}");
+                    Assert.That(Space(finale), Is.GreaterThan(Space(finaleBefore)), $"{finale.Id} closes no harder than {finaleBefore.Id}");
+                }
+                openerBefore = opener;
+                finaleBefore = finale;
+            }
+            foreach (var p in TestContent.Library.Chapters.Single(c => c.Id == "blend").Puzzles)
+                Assert.That(p.Blocks.Count, Is.GreaterThanOrEqualTo(3), $"{p.Id}: every Blend circuit has three blocks or more");
+        }
+
+        [Test]
         public void JunctionBringsKindsTogether()
         {
             // Every Junction circuit's solution feeds some block two different

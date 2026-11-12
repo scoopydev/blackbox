@@ -119,6 +119,9 @@
         },
         "C": {
           "signal": "decimal 0369"
+        },
+        "D": {
+          "signal": "binary 1001"
         }
       },
       "blocks": {

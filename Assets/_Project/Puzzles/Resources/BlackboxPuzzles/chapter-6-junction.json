@@ -42,24 +42,42 @@
     },
     {
       "id": "junction-02",
-      "hint": "A digit block reads a bit as the digit 0 or 1.",
+      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0. Three blocks in a row, and the order they come in matters.",
       "inputs": {
         "A": {
-          "signal": "decimal 5"
+          "signal": "wave sine f1 a4"
         },
         "B": {
-          "signal": "binary 0011"
+          "signal": "binary 0110"
         },
         "C": {
           "signal": "decimal 9"
+        },
+        "D": {
+          "signal": "binary 1"
         }
       },
       "blocks": {
         "g": {
-          "kind": "DIFF"
+          "kind": "MIX",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "MIRROR"
+          "kind": "LATER",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "FASTER",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -71,12 +89,52 @@
         "A -> g.0",
         "B -> g.1",
         "g -> h",
-        "h -> X"
+        "h -> k",
+        "k -> X"
       ]
     },
     {
       "id": "junction-03",
-      "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle.",
+      "hint": "A digit block reads a bit as the digit 0 or 1, and a wave by its height: 0 at the bottom up to 9 at the top.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 7"
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "wave saw f1 a7"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "DIFF"
+        },
+        "h": {
+          "kind": "MIRROR"
+        },
+        "k": {
+          "kind": "MIN"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "h -> k.0",
+        "C -> k.1",
+        "k -> X"
+      ]
+    },
+    {
+      "id": "junction-04",
+      "hint": "A bit block reads a digit as 1 unless it's 0, and a wave as 1 while it's above the middle. Work back from the target, one block at a time.",
       "inputs": {
         "A": {
           "signal": "decimal 5"
@@ -94,6 +152,9 @@
         },
         "h": {
           "kind": "OR"
+        },
+        "k": {
+          "kind": "FLIP"
         }
       },
       "outputs": {
@@ -106,11 +167,12 @@
         "B -> g.1",
         "g -> h.0",
         "C -> h.1",
-        "h -> X"
+        "h -> k",
+        "k -> X"
       ]
     },
     {
-      "id": "junction-04",
+      "id": "junction-05",
       "hint": "A digit block reads a wave by its height: 0 at the bottom up to 9 at the top. One input can feed two blocks.",
       "inputs": {
         "A": {
@@ -121,14 +183,32 @@
         },
         "C": {
           "signal": "binary 1"
+        },
+        "D": {
+          "signal": "decimal 6"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MAX"
+          "kind": "MAX",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "DIFF"
+          "kind": "DIFF",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "MIRROR",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -141,41 +221,8 @@
         "B -> g.1",
         "g -> h.0",
         "B -> h.1",
-        "h -> X"
-      ]
-    },
-    {
-      "id": "junction-05",
-      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0.",
-      "inputs": {
-        "A": {
-          "signal": "wave sine f1 a4"
-        },
-        "B": {
-          "signal": "binary 0110"
-        },
-        "C": {
-          "signal": "decimal 9"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "MIX"
-        },
-        "h": {
-          "kind": "LATER"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
-        "h -> X"
+        "h -> k",
+        "k -> X"
       ]
     },
     {

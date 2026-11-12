@@ -80,7 +80,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, with more blocks to a circuit: every Combine circuit chains two or three blocks, offers a spare input or two to rule out, and has one answer. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal; late in Blackbox come the four blocks with three inputs. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Blend) teaches how kinds of signal read each other, how two kinds meet in one block, and the three mixing blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.CombineGetsHarderAsItGoes`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox) is the main game, with every kind of signal; late in Blackbox come the four blocks with three inputs. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -163,27 +163,27 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter V: Patch
 
-*Every block reads every signal.* Blocks of one kind, fed signals of another. Each circuit has three inputs of mixed kinds, one of them spare, and two blocks in a chain, so the player has to work out which signal each block reads and what it reads it as.
+*Every block reads every signal.* Blocks of one kind, fed signals of another. Each circuit has three or four inputs of mixed kinds, one or two of them spare, and two blocks in a chain, so the player has to work out which signal each block reads and what it reads it as. The finale has three blocks and two outputs.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
 | 1 | AND reads a pattern of digits as bits, then NOT; a steady digit is the spare | 64 | 1 |
 | 2 | MIRROR reads a saw by its height, then MIN with a digit | 64 | 1 |
 | 3 | FLIP reads digits as levels, then MIX with a steady 9 lifts them to the top half | 64 | 1 |
-| 4 | FLIP reads bits as top and bottom, then MIX with a saw | 64 | 1 |
+| 4 | FLIP reads bits as top and bottom, then MIX with a saw; two spares, one of them the same bits upside down | 125 | 1 |
 | 5 | Three blocks, two outputs: a wave into MIRROR; bits into NOT, then AND with a pattern of digits | 625 | 1 |
 
 ### Chapter VI: Junction
 
-*Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No mixing blocks yet; a test checks that every solution feeds some block two kinds at once. Every circuit chains two blocks or more, with a spare input.
+*Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No mixing blocks yet; a test checks that every solution feeds some block two kinds at once. The opener chains two blocks; every other circuit chains three, with a spare input or two.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
 | 1 | AND of a pattern of digits and a pattern of bits, then XOR with a square wave | 256 | 1 |
-| 2 | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR | 64 | 1 |
-| 3 | XOR of a digit and a saw, then OR with bits | 256 | 1 |
-| 4 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again: one input feeding two blocks | 256 | 1 |
-| 5 | MIX of a wave and bits, then LATER | 64 | 1 |
+| 2 | MIX of a wave and bits, then LATER, then FASTER: the order matters | 1,296 | 1 |
+| 3 | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR, then MIN with a saw read as a rising digit | 3,125 | 1 |
+| 4 | XOR of a digit and a saw, then OR with bits, then FLIP reads the bits as a square wave | 3,125 | 1 |
+| 5 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again (one input feeding two blocks), then MIRROR | 7,776 | 1 |
 | 6 | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 1 |
 
 ### Chapter VII: Blend
@@ -192,14 +192,14 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | A wave into AND blinks a bit, and FLIP turns the bits back into a wave | 64 | 1 |
-| 2 | MIX: a wave and its half-cycle twin cancel, then a square wave mixed with the silence (two MIX blocks, so either can do either job) | 256 | 2 |
-| 3 | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 625 | 1 |
-| 4 | LATER and MIX on one input: a wave mixed with its own late copy | 27 | 1 |
-| 5 | GATE lets a sped-up saw through a pattern | 64 | 1 |
-| 6 | COUNT counts the switch-ons of a gated wave; the gate feeds an output too | 64 | 1 |
-| 7 | COMPARE against a mirrored digit makes a pulse | 64 | 1 |
-| 8 | COMPARE, then COUNT the pulses | 64 | 1 |
+| 1 | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 1,296 | 1 |
+| 2 | A wave into AND blinks a bit, FLIP turns the bits back into a wave, and MIX with a digit lifts it | 3,125 | 1 |
+| 3 | A wave and its own copy half a cycle later (LATER) cancel in MIX, and the silence halves a bit pattern in a second MIX (either MIX can do either job) | 7,776 | 2 |
+| 4 | LATER and MIX on one input: a wave mixed with its own late copy, then OR with bits | 7,776 | 1 |
+| 5 | GATE lets a sped-up saw through a pattern made by XOR | 7,776 | 1 |
+| 6 | COUNT counts the switch-ons of a gated wave, and DIFF takes the count from a digit; the gate feeds an output too | 7,776 | 1 |
+| 7 | COMPARE against a mirrored digit makes a pulse, and AND cuts it with bits | 7,776 | 1 |
+| 8 | Four blocks: COMPARE makes pulses that COUNT counts and that GATE lets a sped-up saw through | 117,649 | 1 |
 
 ### Chapter VIII: Unmarked
 

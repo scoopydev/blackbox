@@ -7,75 +7,6 @@
   "circuits": [
     {
       "id": "blend-01",
-      "hint": "A wave into a bit block turns on and off as the wave rises and falls. A bit into a wave block is the top or the bottom.",
-      "inputs": {
-        "A": {
-          "signal": "binary 0110"
-        },
-        "B": {
-          "signal": "wave sine f3 a7"
-        },
-        "C": {
-          "signal": "decimal 5"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "AND"
-        },
-        "h": {
-          "kind": "FLIP"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
-        "h -> X"
-      ]
-    },
-    {
-      "id": "blend-02",
-      "hint": "Two waves can cancel each other out.",
-      "inputs": {
-        "A": {
-          "signal": "wave sine f2 a7"
-        },
-        "B": {
-          "signal": "wave sine f2 a7 p2"
-        },
-        "C": {
-          "signal": "wave square f1 a7"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "MIX"
-        },
-        "h": {
-          "kind": "MIX"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h.0",
-        "C -> h.1",
-        "h -> X"
-      ]
-    },
-    {
-      "id": "blend-03",
       "hint": "A wave block reads a bit as a wave: at the top for 1, at the bottom for 0.",
       "inputs": {
         "A": {
@@ -86,6 +17,9 @@
         },
         "C": {
           "signal": "wave sine f1 a7"
+        },
+        "D": {
+          "signal": "decimal 6"
         }
       },
       "blocks": {
@@ -117,22 +51,82 @@
       ]
     },
     {
-      "id": "blend-04",
-      "hint": "One input can feed two blocks. What does a wave mixed with a late copy of itself look like?",
+      "id": "blend-02",
+      "hint": "A wave into a bit block turns on and off as the wave rises and falls. A wave block reads a bit as the top or the bottom, and a digit as a level.",
       "inputs": {
         "A": {
-          "signal": "wave sine f1 a7"
+          "signal": "binary 0110"
         },
         "B": {
-          "signal": "wave sine f2 a7"
+          "signal": "wave sine f3 a7"
+        },
+        "C": {
+          "signal": "decimal 5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "LATER"
+          "kind": "AND"
         },
         "h": {
+          "kind": "FLIP"
+        },
+        "k": {
           "kind": "MIX"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "C -> k.0",
+        "h -> k.1",
+        "k -> X"
+      ]
+    },
+    {
+      "id": "blend-03",
+      "hint": "Two waves can cancel each other out. How could a wave cancel itself?",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f2 a7"
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "decimal 9"
+        },
+        "D": {
+          "signal": "wave saw f2 a7"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "LATER",
+          "at": [
+            1,
+            0
+          ]
+        },
+        "h": {
+          "kind": "MIX",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "MIX",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -144,12 +138,72 @@
         "A -> g",
         "A -> h.0",
         "g -> h.1",
-        "h -> X"
+        "h -> k.0",
+        "B -> k.1",
+        "k -> X"
+      ]
+    },
+    {
+      "id": "blend-04",
+      "hint": "One input can feed two blocks. What does a wave mixed with a late copy of itself look like?",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f1 a7"
+        },
+        "B": {
+          "signal": "wave sine f2 a7"
+        },
+        "C": {
+          "signal": "binary 0011"
+        },
+        "D": {
+          "signal": "decimal 5"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "LATER",
+          "at": [
+            1,
+            0
+          ]
+        },
+        "h": {
+          "kind": "MIX",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "OR",
+          "at": [
+            1,
+            3
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g",
+        "A -> h.0",
+        "g -> h.1",
+        "h -> X",
+        "h -> k.0",
+        "C -> k.1",
+        "k -> Y"
       ]
     },
     {
       "id": "blend-05",
-      "hint": "You met {g}'s kind in Resonance, with two waves. Here its bottom input is a bit pattern. Listen to the target, then to what you make.",
+      "hint": "You met {g}'s kind in Resonance, with two waves. Here a bit pattern decides when it lets the signal through: which pattern does the target need?",
       "inputs": {
         "A": {
           "signal": "wave saw f1 a7"
@@ -158,15 +212,33 @@
           "signal": "binary 0110"
         },
         "C": {
-          "signal": "decimal 4"
+          "signal": "binary 1"
+        },
+        "D": {
+          "signal": "decimal 0"
         }
       },
       "blocks": {
         "g": {
-          "kind": "GATE"
+          "kind": "GATE",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "FASTER"
+          "kind": "FASTER",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "XOR",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -177,13 +249,15 @@
       "solution": [
         "A -> h",
         "h -> g.0",
-        "B -> g.1",
+        "B -> k.0",
+        "C -> k.1",
+        "k -> g.1",
         "g -> X"
       ]
     },
     {
       "id": "blend-06",
-      "hint": "{g} is a new kind of block. Watch the target's digit change through the loop.",
+      "hint": "{g} is a new kind of block. Watch how the digit changes through the loop.",
       "inputs": {
         "A": {
           "signal": "wave sine f4 a7"
@@ -193,14 +267,32 @@
         },
         "C": {
           "signal": "binary 1"
+        },
+        "D": {
+          "signal": "decimal 5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "COUNT"
+          "kind": "COUNT",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "GATE"
+          "kind": "GATE",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "DIFF",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -216,12 +308,14 @@
         "B -> h.1",
         "h -> X",
         "h -> g",
-        "g -> Y"
+        "g -> k.0",
+        "D -> k.1",
+        "k -> Y"
       ]
     },
     {
       "id": "blend-07",
-      "hint": "{g} is a new kind of block. A digit read as a wave is a height: 0 at the bottom, 9 at the top. The target stays at 1 for longer when the height is lower.",
+      "hint": "{g} is a new kind of block. A digit read as a wave is a height: 0 at the bottom, 9 at the top.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a7"
@@ -230,15 +324,33 @@
           "signal": "decimal 2"
         },
         "C": {
-          "signal": "binary 0011"
+          "signal": "binary 0110"
+        },
+        "D": {
+          "signal": "decimal 5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "COMPARE"
+          "kind": "COMPARE",
+          "at": [
+            1,
+            0
+          ]
         },
         "h": {
-          "kind": "MIRROR"
+          "kind": "MIRROR",
+          "at": [
+            1,
+            1.5
+          ]
+        },
+        "k": {
+          "kind": "AND",
+          "at": [
+            1,
+            3
+          ]
         }
       },
       "outputs": {
@@ -248,31 +360,58 @@
       },
       "solution": [
         "A -> g.0",
-        "h -> g.1",
         "B -> h",
-        "g -> X"
+        "h -> g.1",
+        "g -> k.0",
+        "C -> k.1",
+        "k -> X"
       ]
     },
     {
       "id": "blend-08",
-      "hint": "One block's signal can feed an output and another block at once.",
+      "hint": "Four blocks and two outputs. One block's signal can feed two others.",
       "inputs": {
         "A": {
           "signal": "wave sine f3 a7"
         },
         "B": {
-          "signal": "decimal 4"
+          "signal": "decimal 7"
         },
         "C": {
           "signal": "decimal 8"
+        },
+        "D": {
+          "signal": "wave saw f1 a5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "COMPARE"
+          "kind": "COMPARE",
+          "at": [
+            1,
+            0.5
+          ]
         },
         "h": {
-          "kind": "COUNT"
+          "kind": "COUNT",
+          "at": [
+            1,
+            2.5
+          ]
+        },
+        "k": {
+          "kind": "GATE",
+          "at": [
+            2,
+            0.5
+          ]
+        },
+        "m": {
+          "kind": "FASTER",
+          "at": [
+            2,
+            2.5
+          ]
         }
       },
       "outputs": {
@@ -285,10 +424,13 @@
       },
       "solution": [
         "A -> g.0",
-        "C -> g.1",
-        "g -> X",
+        "B -> g.1",
         "g -> h",
-        "h -> Y"
+        "h -> Y",
+        "D -> m",
+        "m -> k.0",
+        "g -> k.1",
+        "k -> X"
       ]
     }
   ]
