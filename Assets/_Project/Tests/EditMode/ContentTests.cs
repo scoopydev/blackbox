@@ -335,11 +335,12 @@ namespace Blackbox.Tests
         public void TheGameStartsWithSteadyBits()
         {
             // First Light opens with bits that stay at 0 or 1, and only then moves
-            // on to bits that switch as the loop plays.
+            // on to bits that switch as the loop plays. Two steady circuits, since
+            // steady bits leave too few answers for a third to need any thinking.
             var firstLight = TestContent.Library.Chapters[0];
             Assert.That(firstLight.Id, Is.EqualTo("first-light"));
             var steady = firstLight.Puzzles.TakeWhile(p => p.Inputs.All(i => i.Signal.Trace.IsFlat)).Count();
-            Assert.That(steady, Is.EqualTo(3), "three circuits of steady bits come first");
+            Assert.That(steady, Is.EqualTo(2), "two circuits of steady bits come first");
             foreach (var p in firstLight.Puzzles.Skip(steady))
                 Assert.That(p.Inputs.Any(i => !i.Signal.Trace.IsFlat), Is.True, $"{p.Id}: once patterns start, every circuit has one");
         }
@@ -377,29 +378,49 @@ namespace Blackbox.Tests
         [Test]
         public void TurnaroundTeachesThatInputOrderCanMatter()
         {
-            // It comes wired with its block's two inputs the wrong way round: every
-            // wire is in, the run fails, and swapping the two wires solves it.
+            // It comes with GATE wired the wrong way round and its other block not
+            // yet used: the run fails, and the answer has GATE's two signals the
+            // other way round, with the other block put in on the way.
             var resonance = LearnChapters.First(c => c.Id == "resonance");
             var p = resonance.Puzzles.First(q => q.Id == TurnaroundId);
             Assert.That(resonance.Puzzles.IndexOf(p), Is.EqualTo(2), "after MIX's circuit, whose two inputs are alike");
-            Assert.That(p.Blocks.Count, Is.EqualTo(1));
-            Assert.That(p.Blocks[0].Kind.InputCount, Is.EqualTo(2));
-            Assert.That(p.Blocks[0].Kind.AlikeFrom, Is.LessThan(0), "a block whose inputs are not alike");
+            var gate = p.Blocks.Single(b => b.Kind.Id == "GATE");
+            Assert.That(gate.Kind.AlikeFrom, Is.LessThan(0), "a block whose inputs are not alike");
+            Assert.That(p.Blocks.Count, Is.EqualTo(2));
 
             var session = new WiringSession(p);
-            var report = session.Check();
-            Assert.That(report.EmptyBlocks, Is.Empty, "every input wired");
-            Assert.That(report.Solved, Is.False, "wired the wrong way round");
-
-            int block = session.BlockNode(0);
+            Assert.That(session.Check().Solved, Is.False, "wired the wrong way round");
+            int block = session.BlockNode(gate.Index);
             int top = session.DriverOf(block, 0), bottom = session.DriverOf(block, 1);
             Assert.That(top, Is.Not.EqualTo(bottom), "two different signals go in");
-            session.Disconnect(block, 0);
-            session.Disconnect(block, 1);
-            session.Connect(bottom, block, 0);
-            session.Connect(top, block, 1);
-            Assert.That(session.Check().Solved, Is.True, "swapping the two wires solves it");
+            Assert.That(top, Is.LessThan(session.InputCount), "straight from an input");
+            Assert.That(bottom, Is.LessThan(session.InputCount), "straight from an input");
+
+            int Driver(NodeDef to, int port) => session.NodeOf(p.Solution.Single(w => w.To == to && w.ToPort == port).From);
+            var other = p.Blocks.Single(b => b != gate);
+            Assert.That(Driver(gate, 1), Is.EqualTo(top), "what went on top goes underneath");
+            Assert.That(Driver(gate, 0), Is.EqualTo(session.BlockNode(other.Index)), "the other block goes on top");
+            Assert.That(Driver(other, 0), Is.EqualTo(bottom), "fed what went underneath");
             Assert.That(WiringSolver.Analyse(p).Solutions, Is.EqualTo(1), "and nothing else does");
+        }
+
+        [Test]
+        public void CircuitsAfterTheFirstTwoNeedADecision()
+        {
+            // Apart from the first two circuits of each chapter, a circuit can't be
+            // solved without thinking: of the wirings that keep the rules, there are
+            // plenty, they send different things, and few of them solve it. Steady
+            // signals send few different things, so some circuits allow a few
+            // answers, but never more than one legal wiring in eight.
+            foreach (var chapter in TestContent.Library.Parts.Take(2).SelectMany(part => part.Chapters))
+                foreach (var p in chapter.Puzzles.Skip(2))
+                {
+                    var r = WiringSolver.Analyse(p, 300_000, 1, countLegal: true);
+                    if (!r.Searched) continue;
+                    Assert.That(r.Legal, Is.GreaterThanOrEqualTo(12), $"{p.Id}: only {r.Legal} legal wirings");
+                    Assert.That(r.Outcomes, Is.GreaterThanOrEqualTo(4), $"{p.Id}: the legal wirings send only {r.Outcomes} different things");
+                    Assert.That(r.Solutions * 8, Is.LessThanOrEqualTo(r.Legal), $"{p.Id}: {r.Solutions} of {r.Legal} legal wirings solve it");
+                }
         }
 
         [Test]

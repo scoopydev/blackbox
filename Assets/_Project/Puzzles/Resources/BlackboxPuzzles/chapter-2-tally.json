@@ -73,18 +73,21 @@
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
-          "signal": "decimal 2"
+          "signal": "decimal 6"
         },
         "B": {
-          "signal": "decimal 6"
+          "signal": "decimal 8"
+        },
+        "C": {
+          "signal": "decimal 5"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MAX"
+          "kind": "DIFF"
         },
         "h": {
-          "kind": "MIRROR"
+          "kind": "MAX"
         }
       },
       "outputs": {
@@ -93,10 +96,11 @@
         }
       },
       "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
-        "h -> X"
+        "A -> h.0",
+        "B -> h.1",
+        "h -> g.0",
+        "C -> g.1",
+        "g -> X"
       ]
     },
     {

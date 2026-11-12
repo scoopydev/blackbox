@@ -95,14 +95,16 @@ A signal that changes through the loop plays each of its values in turn. Signal 
   * Unmarked and Blackbox, **every kind of signal**: the three kinds side by side, with what to look for in each and how each kind of block reads the others.
   * Lights Out, **by ear alone**: nothing is drawn, so three steps to try (listen to the targets, listen to the inputs, wire and run), what can't be heard, and the promise that an output that sounds like its target is its target.
 * Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
-* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first three use steady bits, and the fourth brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
+* Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first two use steady bits, and the third brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has five circuits, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
   1. **Pre-wired.** Two inputs and one block, every wire drawn, but the block's wire starts at the wrong input. The player moves it to the other one.
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
-  3. From here the player draws every wire: two blocks in a chain.
+  3. From here the player draws every wire: two blocks in a chain, with a spare input or the order of the blocks to work out.
   4. One source feeding two blocks, and a second output.
   5. A two-input block where order matters, or three blocks.
   6. The **tangle**: four blocks, three inputs and two or three outputs.
 * Saves from before the wiring game (version 2 and older) keep only their preferences.
+
+* **No circuit solves itself** (12 Nov 2026, from fella: tutorial circuits were so easy a player could solve them without learning anything). After the first two circuits of each chapter, every circuit makes the player decide something: which input, which block comes first, which way round. Counted over the wirings that keep the rules (`WiringSolver.Analyse` with `countLegal`), there are at least 12, they send at least 4 different things, and at most one in eight solves it (`ContentTests.CircuitsAfterTheFirstTwoNeedADecision`). The block listed first in a chain's file goes on top of the board, so a chain's blocks are listed last first: the board's order never gives away the chain's.
 
 The tables give the number of ways to wire the blocks' inputs, and how many complete wirings solve the circuit. Swapping the wires into a block that treats its inputs alike (AND, OR, XOR, MAX, MIN, DIFF, MIX, MAJORITY, MIDDLE, and BETWEEN's two bounds) counts as the same answer (`BlockKind.AlikeFrom`).
 
@@ -114,8 +116,8 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 |---|---|---|---|
 | 1 | A steady bit. Pre-wired: move one wire to the other input, and NOT | 2 | 1 |
 | 2 | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 2 |
-| 3 | Steady bits. Wiring it all, a chain, and OR | 27 | 4 |
-| 4 | Bits that switch through the loop; AND on every moment | 4 | 1 |
+| 3 | Bits that switch through the loop, a block working on every moment. Wiring it all: OR then NOT, with a spare input | 64 | 1 |
+| 4 | Three patterns, AND and OR: which two go into AND, and which block comes first | 256 | 1 |
 | 5 | One input feeding two blocks, and XOR | 27 | 1 |
 | 6 | Three blocks in a row | 3,125 | 8 |
 | 7 | Four blocks, two outputs | 279,936 | 37 |
@@ -130,7 +132,7 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 |---|---|---|---|
 | 1 | Pre-wired: move one wire to the other digit, and MIRROR | 2 | 1 |
 | 2 | Half wired, and DIFF | 4 | 1 |
-| 3 | MAX, and order matters | 27 | 4 |
+| 3 | MAX, then DIFF with the third digit; the order matters | 256 | 5 |
 | 4 | MIN, and one input feeding two blocks | 1,024 | 14 |
 | 5 | Three blocks in a row, two outputs | 3,125 | 10 |
 
@@ -142,21 +144,21 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 |---|---|---|---|
 | 1 | A pattern of digits, MIRRORed step by step; a steady digit is the spare | 2 | 1 |
 | 2 | MAX of a pattern and a steady digit: a floor | 4 | 1 |
-| 3 | MIN of two patterns, then MIRROR | 27 | 1 |
+| 3 | MIN of two patterns, then MIRROR; a third pattern is spare | 64 | 1 |
 | 4 | One pattern feeding two blocks, two outputs | 27 | 1 |
-| 5 | A longer pattern, MIN with its own MIRROR: one input in two places | 27 | 1 |
+| 5 | A longer pattern, MIN with its own MIRROR: one input in two places, beside another long pattern and a steady digit | 64 | 1 |
 | 6 | Four blocks, two outputs | 279,936 | 3 |
 
 ### Chapter IV: Resonance
 
-*Listen closely.* Analog waves: FLIP, FASTER, LATER, MIX, and GATE for one lesson. Its third circuit, TURNAROUND, comes wired with GATE's two inputs the wrong way round, to teach that which input goes on top can matter: MIX, met just before, treats its inputs alike, and so do the other Part One blocks with two inputs, so this is the only place in Part One a mixing block appears (a test allows just this one). GATE is a wave block; here both its inputs are waves, and it comes back in Blend with a bit pattern on its bottom input.
+*Listen closely.* Analog waves: FLIP, FASTER, LATER, MIX, and GATE for one lesson. Its third circuit, TURNAROUND, comes wired with GATE's two inputs the wrong way round, and FASTER not used yet, to teach that which input goes on top can matter (the answer swaps them, with FASTER on the way to the top): MIX, met just before, treats its inputs alike, and so do the other Part One blocks with two inputs, so this is the only place in Part One a mixing block appears (a test allows just this one). GATE is a wave block; here both its inputs are waves, and it comes back in Blend with a bit pattern on its bottom input.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
 | 1 | Pre-wired: move one wire to the other wave, and FASTER | 2 | 1 |
 | 2 | Half wired, and MIX | 4 | 1 |
-| 3 | Pre-wired the wrong way round: swap GATE's two inputs, because which input goes on top matters | 4 | 1 |
-| 4 | LATER, and the order the blocks come in matters | 9 | 1 |
+| 3 | Pre-wired the wrong way round, with FASTER unused: swap GATE's two inputs, because which input goes on top matters, and speed up the one going on top; a third wave is spare | 64 | 1 |
+| 4 | LATER on one wave, then MIX with another; the order matters, and a third wave is spare | 64 | 1 |
 | 5 | FLIP, feeding an output and a block at once | 27 | 1 |
 | 6 | Two outputs, by ear | 64 | 2 |
 | 7 | Four blocks, two outputs | 7,776 | 1 |

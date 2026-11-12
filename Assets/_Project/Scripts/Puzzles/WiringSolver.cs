@@ -29,6 +29,15 @@ namespace Blackbox.Puzzles
         public long Confusable;
         /// <summary>A few of them: the block wiring, and the wire to an output that would sound right.</summary>
         public readonly List<string> SoundAlikes = new List<string>();
+        /// <summary>
+        /// Counted with <c>countLegal</c>: complete wirings, outputs included, that keep
+        /// every rule (every solid block leads to an output, every port is wired,
+        /// solid inputs are used), whatever reaches the outputs. A circuit with
+        /// few, or where they all send the same, can be solved without thinking.
+        /// </summary>
+        public long Legal;
+        /// <summary>How many different sets of output signals the legal wirings send.</summary>
+        public int Outcomes;
 
         public override string ToString()
         {
@@ -37,6 +46,7 @@ namespace Blackbox.Puzzles
             if (!Searched) sb.Append($", {Space} block wirings: too many to search");
             else sb.Append($", {Solutions} solving wiring(s) out of {Space} block wirings");
             if (Searched && Confusable > 0) sb.Append($", {Confusable} that sound right but aren't");
+            if (Searched && Legal > 0) sb.Append($", {Legal} legal wiring(s) sending {Outcomes} different result(s)");
             foreach (var e in Examples) sb.Append("\n    ").Append(e);
             foreach (var e in SoundAlikes) sb.Append("\n    sounds right but isn't: ").Append(e);
             return sb.ToString();
@@ -61,7 +71,7 @@ namespace Blackbox.Puzzles
     /// </summary>
     public static class WiringSolver
     {
-        public static WiringAnalysis Analyse(PuzzleDef p, long maxSpace = 5_000_000, int keep = 6, bool byEar = false)
+        public static WiringAnalysis Analyse(PuzzleDef p, long maxSpace = 5_000_000, int keep = 6, bool byEar = false, bool countLegal = false)
         {
             var result = new WiringAnalysis { Puzzle = p };
             var session = new WiringSession(p);
@@ -179,6 +189,7 @@ namespace Blackbox.Puzzles
                 var done = new bool[sources];
                 for (int n = inputs; n < sources; n++) Value(n, done);
                 if (byEar) for (int s = 0; s < sources; s++) heard[s] = p.Heard(s, driver);
+                if (countLegal && dangling <= outputs) CountLegal(0);
                 if (byEar && Confusable(out int co, out int cs))
                 {
                     result.Confusable++;
@@ -218,6 +229,39 @@ namespace Blackbox.Puzzles
                         if (c) { output = o; source = s; return true; }
                     }
                 return false;
+            }
+
+            // Every way to wire the outputs from any source that keeps the rules, with what they'd send.
+            var outcomes = new HashSet<string>();
+            void CountLegal(int o)
+            {
+                if (o == outputs)
+                {
+                    for (int b = 0; b < blocks; b++)
+                    {
+                        if (consumed[b] || Off(b)) continue;
+                        bool shown = false;
+                        for (int k = 0; k < outputs && !shown; k++) shown = choice[k] == inputs + b;
+                        if (!shown) return;
+                    }
+                    for (int k = 0; k < outputs; k++) driver[sources + k][0] = choice[k];
+                    bool legal = WiringSession.RequiredUsed(p, driver) && OptionalUsedOrOff();
+                    for (int k = 0; k < outputs; k++) driver[sources + k][0] = -1;
+                    if (!legal) return;
+                    result.Legal++;
+                    var key = new StringBuilder();
+                    for (int k = 0; k < outputs; k++) key.Append(choice[k] < inputs ? inputIds[choice[k]] : value[choice[k]]).Append(',');
+                    outcomes.Add(key.ToString());
+                    result.Outcomes = outcomes.Count;
+                    return;
+                }
+                for (int s = 0; s < sources; s++)
+                {
+                    int id = s < inputs ? inputIds[s] : value[s];
+                    if (id < 0) continue;
+                    choice[o] = s;
+                    CountLegal(o + 1);
+                }
             }
 
             void Choose(int o)

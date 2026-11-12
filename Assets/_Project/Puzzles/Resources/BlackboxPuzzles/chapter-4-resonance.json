@@ -5,7 +5,7 @@
   "mode": "wiring",
   "medium": "wave",
   "tagline": "Listen closely.",
-  "signals": "Signals here are waves: a sine, square or saw. F, from 1 to 7, is how fast a wave repeats and how high it sounds. A, from 1 to 7, is how tall it is and how loud. A wave marked +1/4, +1/2 or +3/4 starts that much of a cycle late.",
+  "signals": "Signals here are waves: a sine, square or saw. F, from 1 to 7, is how fast a wave repeats and how high it sounds. A, from 1 to 9, is how tall it is and how loud. A wave marked +1/4, +1/2 or +3/4 starts that much of a cycle late.",
   "circuits": [
     {
       "id": "resonance-01",
@@ -70,18 +70,24 @@
     },
     {
       "id": "resonance-03",
-      "hint": "Both waves go into {g}, but the wrong way round. Run it, then swap its two wires: for some blocks, which input goes on top matters.",
+      "hint": "{g} came wired the wrong way round, and {h} isn't used yet. For some blocks, which input goes on top matters.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a6"
         },
         "B": {
           "signal": "wave square f3 a4"
+        },
+        "C": {
+          "signal": "wave saw f2 a7"
         }
       },
       "blocks": {
         "g": {
           "kind": "GATE"
+        },
+        "h": {
+          "kind": "FASTER"
         }
       },
       "outputs": {
@@ -95,25 +101,29 @@
         "g -> X"
       ],
       "solution": [
-        "A -> g.0",
+        "A -> h",
+        "h -> g.0",
         "B -> g.1",
         "g -> X"
       ]
     },
     {
       "id": "resonance-04",
-      "hint": "The order the blocks come in matters.",
+      "hint": "The order the blocks come in matters, and not every wave is needed.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a6"
         },
         "B": {
           "signal": "wave saw f1 a3"
+        },
+        "C": {
+          "signal": "wave square f2 a4"
         }
       },
       "blocks": {
         "g": {
-          "kind": "FASTER"
+          "kind": "MIX"
         },
         "h": {
           "kind": "LATER"
@@ -126,7 +136,8 @@
       },
       "solution": [
         "B -> h",
-        "h -> g",
+        "h -> g.0",
+        "A -> g.1",
         "g -> X"
       ]
     },

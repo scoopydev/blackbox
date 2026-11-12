@@ -63,21 +63,24 @@
     },
     {
       "id": "ticker-03",
-      "hint": "Two digits that both change, and two blocks.",
+      "hint": "Not every input is needed. Compare the target with each one, a step at a time.",
       "inputs": {
         "A": {
-          "signal": "decimal 1357"
+          "signal": "decimal 6420"
         },
         "B": {
-          "signal": "decimal 6420"
+          "signal": "decimal 4826"
+        },
+        "C": {
+          "signal": "decimal 2468"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MIN"
+          "kind": "MIRROR"
         },
         "h": {
-          "kind": "MIRROR"
+          "kind": "MIN"
         }
       },
       "outputs": {
@@ -86,10 +89,10 @@
         }
       },
       "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
-        "h -> X"
+        "B -> h.0",
+        "A -> h.1",
+        "h -> g",
+        "g -> X"
       ]
     },
     {
@@ -135,15 +138,18 @@
           "signal": "decimal 02468642"
         },
         "B": {
-          "signal": "decimal 5"
+          "signal": "decimal 01234567"
+        },
+        "C": {
+          "signal": "decimal 3"
         }
       },
       "blocks": {
         "g": {
-          "kind": "MIRROR"
+          "kind": "MIN"
         },
         "h": {
-          "kind": "MIN"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
@@ -152,10 +158,10 @@
         }
       },
       "solution": [
-        "A -> g",
-        "A -> h.0",
-        "g -> h.1",
-        "h -> X"
+        "A -> h",
+        "A -> g.0",
+        "h -> g.1",
+        "g -> X"
       ]
     },
     {
