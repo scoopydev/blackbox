@@ -39,7 +39,6 @@ namespace Blackbox.UI.Board
         TraceGraphic _bit;
         VoidText _settings;
         VoidText _unknown;
-        GlyphGraphic _speaker;
         bool _styled;
         float _ping;
         Vector3 _restScale = Vector3.one;
@@ -102,18 +101,13 @@ namespace Blackbox.UI.Board
         }
 
         /// <summary>
-        /// Lets the player click the value to hear it. A small speaker appears
-        /// beside it on hover, so it reads as something to listen to.
+        /// Lets the player click the value to hear it. No icon: the value itself is the button.
         /// </summary>
         public Clickable MakePlayable(Action<int> play)
         {
             float w = WidthFor(_medium, _size);
             var hit = UIKit.Hit(transform, "Listen");
             hit.rectTransform.Centered(0f, 0f, w + 14f, _size + 12f);
-            float icon = Mathf.Max(11f, _size * 0.3f);
-            _speaker = UIKit.Glyph(transform, "sound", Palette.Dim, 1.3f, "Speaker");
-            _speaker.rectTransform.Centered(w * 0.5f + icon * 0.4f, _size * 0.5f, icon, icon);
-            _speaker.enabled = false;
             var c = hit.gameObject.AddComponent<Clickable>();
             c.HoverSound = false;
             c.ClickSound = Sfx.Hover;
@@ -123,7 +117,6 @@ namespace Blackbox.UI.Board
                 play(_value);
                 Ping();
             };
-            c.HoverChanged = on => _speaker.enabled = on;
             return c;
         }
 

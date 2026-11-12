@@ -37,7 +37,6 @@ namespace Blackbox.UI.Board
         readonly List<VoidText> _scale = new List<VoidText>();
         VoidText _nothing, _caption;
         bool _waveSettings, _captionInside;
-        GlyphGraphic _speaker;
 
         public Trace Trace => _trace;
         public float Width => _w;
@@ -95,15 +94,11 @@ namespace Blackbox.UI.Board
             _captionInside = inside;
         }
 
-        /// <summary>Lets the player click the signal to hear it.</summary>
+        /// <summary>Lets the player click the signal to hear it. No icon: the signal itself is the button.</summary>
         public Clickable MakePlayable(Action play)
         {
             var hit = UIKit.Hit(_rt, "Listen");
             hit.rectTransform.Centered(0f, 0f, _w + 12f, _h + 10f);
-            float icon = Mathf.Clamp(_h * 0.3f, 11f, 15f);
-            _speaker = UIKit.Glyph(_rt, "sound", Palette.Dim, 1.3f, "Speaker");
-            _speaker.rectTransform.Centered(_w * 0.5f + icon * 0.5f, _h * 0.5f, icon, icon);
-            _speaker.enabled = false;
             var c = hit.gameObject.AddComponent<Clickable>();
             c.HoverSound = false;
             c.ClickSound = Sfx.Hover;
@@ -113,7 +108,6 @@ namespace Blackbox.UI.Board
                 play();
                 Ping();
             };
-            c.HoverChanged = on => _speaker.enabled = on && _trace != null;
             return c;
         }
 
