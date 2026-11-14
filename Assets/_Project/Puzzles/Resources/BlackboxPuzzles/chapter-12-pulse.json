@@ -4,7 +4,7 @@
   "mode": "wiring",
   "medium": "binary",
   "tagline": "Bits, and nothing else.",
-  "signals": "Only bits here, and only the blocks that work on bits, with one new one among them. With nothing else to lean on, each circuit turns on one idea about 1s and 0s.",
+  "signals": "Only bits here, and only the blocks that work on bits. With nothing else to lean on, each circuit turns on one idea about 1s and 0s.",
   "circuits": [
     {
       "id": "pulse-01",
@@ -51,7 +51,7 @@
     },
     {
       "id": "pulse-02",
-      "hint": "{h} is a new kind of block, with three inputs: the bottom one decides which of the other two gets through. X needs a block that isn't on the board.",
+      "hint": "{h}'s bottom input decides which of the other two gets through. X needs a block that isn't on the board.",
       "inputs": {
         "A": {
           "signal": "binary 0110100110010110"

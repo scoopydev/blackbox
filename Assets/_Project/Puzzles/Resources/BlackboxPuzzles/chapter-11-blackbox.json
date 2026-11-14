@@ -3,7 +3,7 @@
   "title": "Blackbox",
   "mode": "wiring",
   "tagline": "Everything at once.",
-  "signals": "Bigger circuits with every kind of signal and block. Late in the chapter come blocks with three inputs: learn them the same way, by wiring them up and pressing RUN.",
+  "signals": "Bigger circuits with every kind of signal and block. Late in the chapter come new blocks, most of them with three inputs: learn them the same way, by wiring them up and pressing RUN.",
   "guide": "recap",
   "circuits": [
     {
@@ -541,6 +541,113 @@
     },
     {
       "id": "blackbox-10",
+      "hint": "{g} is a new kind of block, with three inputs, and it sends a bit. X follows one pattern at some steps and another at the rest: what decides which?",
+      "inputs": {
+        "A": {
+          "signal": "binary 01101001"
+        },
+        "B": {
+          "signal": "binary 00110011"
+        },
+        "C": {
+          "signal": "decimal 33639532"
+        },
+        "D": {
+          "signal": "decimal 31634212"
+        }
+      },
+      "blocks": {
+        "k": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "DIFF"
+        },
+        "g": {
+          "kind": "PICK"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "C -> h.0",
+        "D -> h.1",
+        "B -> g.0",
+        "A -> g.1",
+        "h -> g.2",
+        "h -> k",
+        "g -> X",
+        "k -> Y"
+      ]
+    },
+    {
+      "id": "blackbox-11",
+      "hint": "{g} is a new kind of block, and its two inputs do different jobs. The target's peaks shrink a step at a time: what else here changes in steps?",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f4 a5"
+        },
+        "B": {
+          "signal": "binary 01010101"
+        },
+        "C": {
+          "signal": "decimal 2468"
+        },
+        "D": {
+          "signal": "wave saw f1 a7"
+        },
+        "E": {
+          "signal": "binary 0011"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "VOLUME",
+          "at": [
+            2,
+            2
+          ]
+        },
+        "h": {
+          "kind": "COUNT",
+          "at": [
+            1,
+            3
+          ]
+        },
+        "k": {
+          "kind": "MIRROR",
+          "at": [
+            1,
+            1
+          ]
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display",
+          "at": [
+            3,
+            2
+          ]
+        }
+      },
+      "solution": [
+        "B -> h",
+        "h -> k",
+        "A -> g.0",
+        "k -> g.1",
+        "g -> X"
+      ]
+    },
+    {
+      "id": "blackbox-12",
       "hint": "Solve one output at a time. X follows whichever wave is higher.",
       "inputs": {
         "A": {

@@ -87,7 +87,7 @@ namespace Blackbox.Tests
                 }
             }
             var kinds = new HashSet<string>(PureChapters.Keys.SelectMany(id => TestContent.Library.Chapters.Single(c => c.Id == id).Puzzles).SelectMany(p => p.Blocks).Select(b => b.Kind.Id));
-            Assert.That(kinds, Is.SupersetOf(new[] { "PICK", "VOLUME" }), "the pure chapters bring in PICK and VOLUME");
+            Assert.That(kinds, Is.SupersetOf(new[] { "PICK", "VOLUME" }), "the pure chapters use PICK and VOLUME, met late in Blackbox, with only their own kind round them");
         }
 
         [Test]

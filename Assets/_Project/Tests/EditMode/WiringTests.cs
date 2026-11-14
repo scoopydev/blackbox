@@ -733,10 +733,10 @@ namespace Blackbox.Tests
         public void EveryBlockIsTaughtBeforeBuild()
         {
             // Build starts by mixing what came before: Unmarked and the first half of
-            // Blackbox use only kinds met in Part One or Two, and every one- or
-            // two-input kind is met there at least once, bar VOLUME. The kinds new
-            // in Build (the three-input ones, and VOLUME, which waits for Undertow
-            // to have only waves round it) turn up after that, and each turns up.
+            // Blackbox (up to its first three-input block) use only kinds met in Part
+            // One or Two, and every one- or two-input kind is met there at least once,
+            // bar VOLUME. The kinds new in Build (the three-input ones, and VOLUME)
+            // turn up after that, and each turns up.
             var met = new HashSet<string>();
             var build = new List<PuzzleDef>();
             foreach (var chapter in TestContent.Library.Chapters)
@@ -746,7 +746,7 @@ namespace Blackbox.Tests
                     else foreach (var b in p.Blocks) met.Add(b.Kind.Id);
                 }
             int early = TestContent.Library.Chapters.Single(c => c.Id == "unmarked").Puzzles.Count
-                + TestContent.Library.Chapters.Single(c => c.Id == "blackbox").Puzzles.Count / 2;
+                + TestContent.Library.Chapters.Single(c => c.Id == "blackbox").Puzzles.TakeWhile(p => p.Blocks.All(b => b.Kind.InputCount < 3)).Count();
             var fresh = new HashSet<string>();
             for (int i = 0; i < build.Count; i++)
                 foreach (var b in build[i].Blocks.Where(b => !met.Contains(b.Kind.Id)))

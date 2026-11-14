@@ -4,7 +4,7 @@
   "mode": "wiring",
   "medium": "wave",
   "tagline": "Waves, and nothing else.",
-  "signals": "Only waves here, and only the blocks that work on waves, with one new one among them. Where a block reads a wave as a digit, it hears the wave's height above the middle, and 0 below it.",
+  "signals": "Only waves here, and only the blocks that work on waves. Where a block reads a wave as a digit, it hears the wave's height above the middle, and 0 below it.",
   "circuits": [
     {
       "id": "undertow-01",
@@ -53,7 +53,7 @@
     },
     {
       "id": "undertow-02",
-      "hint": "{g} is a new kind of block, and its two inputs do different jobs. Try the same two signals both ways round.",
+      "hint": "{g}'s two inputs do different jobs. Try the same two signals both ways round.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a7"
