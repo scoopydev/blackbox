@@ -9,13 +9,10 @@
   "circuits": [
     {
       "id": "resonance-01",
-      "hint": "These wires are drawn already. Listen to the target, run it, then move {g}'s input to the other wave.",
+      "hint": "One wire is drawn already. Listen to the target, draw the other wire, from {g} to X, then run it.",
       "inputs": {
         "A": {
           "signal": "wave sine f2 a5"
-        },
-        "B": {
-          "signal": "wave saw f3 a7"
         }
       },
       "blocks": {
@@ -29,8 +26,7 @@
         }
       },
       "start": [
-        "B -> g",
-        "g -> X"
+        "A -> g"
       ],
       "solution": [
         "A -> g",
@@ -77,9 +73,6 @@
         },
         "B": {
           "signal": "wave square f3 a4"
-        },
-        "C": {
-          "signal": "wave saw f2 a7"
         }
       },
       "blocks": {
@@ -93,6 +86,9 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "start": [
@@ -104,21 +100,19 @@
         "A -> h",
         "h -> g.0",
         "B -> g.1",
-        "g -> X"
+        "g -> X",
+        "h -> Y"
       ]
     },
     {
       "id": "resonance-04",
-      "hint": "The order the blocks come in matters, and not every wave is needed.",
+      "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
           "signal": "wave sine f1 a6"
         },
         "B": {
           "signal": "wave saw f1 a3"
-        },
-        "C": {
-          "signal": "wave square f2 a4"
         }
       },
       "blocks": {
@@ -132,13 +126,17 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "B -> h",
         "h -> g.0",
         "A -> g.1",
-        "g -> X"
+        "g -> X",
+        "h -> Y"
       ]
     },
     {

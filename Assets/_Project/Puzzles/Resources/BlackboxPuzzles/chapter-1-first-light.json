@@ -9,12 +9,9 @@
   "circuits": [
     {
       "id": "first-light-01",
-      "hint": "The wires are drawn, but one starts at the wrong input. Inputs are dotted because you don't have to use them all. Click the wire into {g} to take it off, drag from B's dot to {g}'s left dot, then press RUN.",
+      "hint": "One wire is drawn already. Drag from {g}'s right dot to X's dot to draw the other, then press RUN. To take a wire off, click it.",
       "inputs": {
         "A": {
-          "signal": "binary 1"
-        },
-        "B": {
           "signal": "binary 0"
         }
       },
@@ -29,11 +26,10 @@
         }
       },
       "start": [
-        "A -> g",
-        "g -> X"
+        "A -> g"
       ],
       "solution": [
-        "B -> g",
+        "A -> g",
         "g -> X"
       ]
     },
@@ -93,52 +89,21 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> h.0",
         "B -> h.1",
-        "h -> g",
-        "g -> X"
+        "h -> X",
+        "C -> g",
+        "g -> Y"
       ]
     },
     {
       "id": "first-light-04",
-      "hint": "Three signals and two blocks. Work out which signals each block needs, and which block comes first.",
-      "inputs": {
-        "A": {
-          "signal": "binary 0101"
-        },
-        "B": {
-          "signal": "binary 1000"
-        },
-        "C": {
-          "signal": "binary 0110"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "OR"
-        },
-        "h": {
-          "kind": "AND"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "C -> h.0",
-        "A -> h.1",
-        "h -> g.0",
-        "B -> g.1",
-        "g -> X"
-      ]
-    },
-    {
-      "id": "first-light-05",
       "hint": "One signal can feed many wires: drag from the same dot again.",
       "inputs": {
         "A": {
@@ -173,6 +138,45 @@
       ]
     },
     {
+      "id": "first-light-05",
+      "hint": "Three signals and two blocks. Work out which signals each block needs, and which block comes first.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0101"
+        },
+        "B": {
+          "signal": "binary 1000"
+        },
+        "C": {
+          "signal": "binary 0110"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "OR"
+        },
+        "h": {
+          "kind": "AND"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "C -> h.0",
+        "A -> h.1",
+        "h -> g.0",
+        "B -> g.1",
+        "g -> X",
+        "h -> Y"
+      ]
+    },
+    {
       "id": "first-light-06",
       "hint": "Three blocks, one after another.",
       "inputs": {
@@ -183,7 +187,7 @@
           "signal": "binary 0101"
         },
         "C": {
-          "signal": "binary 1"
+          "signal": "binary 1101"
         }
       },
       "blocks": {

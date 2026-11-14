@@ -49,12 +49,6 @@
         },
         "B": {
           "signal": "binary 0110"
-        },
-        "C": {
-          "signal": "decimal 9"
-        },
-        "D": {
-          "signal": "binary 1"
         }
       },
       "blocks": {
@@ -95,54 +89,12 @@
     },
     {
       "id": "junction-03",
-      "hint": "A digit block reads a bit as the digit 0 or 1, so a bit taken away from a digit takes off 0 or 1.",
-      "inputs": {
-        "A": {
-          "signal": "decimal 7"
-        },
-        "B": {
-          "signal": "binary 0110"
-        },
-        "C": {
-          "signal": "wave saw f1 a7"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "DIFF"
-        },
-        "h": {
-          "kind": "MIRROR"
-        },
-        "k": {
-          "kind": "MIN"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g.0",
-        "B -> g.1",
-        "g -> h",
-        "h -> k.0",
-        "C -> k.1",
-        "k -> X"
-      ]
-    },
-    {
-      "id": "junction-04",
       "hint": "A bit block reads a wave as 1 while it's above the middle. What lights up where a pattern meets its own late copy?",
       "inputs": {
         "A": {
           "signal": "binary 01101000"
         },
         "B": {
-          "signal": "decimal 5"
-        },
-        "C": {
           "signal": "wave saw f1 a7"
         }
       },
@@ -171,12 +123,12 @@
         "g -> h.1",
         "h -> X",
         "h -> k.0",
-        "C -> k.1",
+        "B -> k.1",
         "k -> Y"
       ]
     },
     {
-      "id": "junction-05",
+      "id": "junction-04",
       "hint": "One input can feed two blocks. A digit block reads a wave by its height above the middle.",
       "inputs": {
         "A": {
@@ -184,12 +136,6 @@
         },
         "B": {
           "signal": "decimal 3"
-        },
-        "C": {
-          "signal": "binary 1"
-        },
-        "D": {
-          "signal": "decimal 6"
         }
       },
       "blocks": {
@@ -226,6 +172,45 @@
         "g -> h.0",
         "B -> h.1",
         "h -> k",
+        "k -> X"
+      ]
+    },
+    {
+      "id": "junction-05",
+      "hint": "A digit block reads a bit as the digit 0 or 1, so a bit taken away from a digit takes off 0 or 1.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 7"
+        },
+        "B": {
+          "signal": "binary 0110"
+        },
+        "C": {
+          "signal": "wave saw f1 a7"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "DIFF"
+        },
+        "h": {
+          "kind": "MIRROR"
+        },
+        "k": {
+          "kind": "MIN"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "B -> g.1",
+        "g -> h",
+        "h -> k.0",
+        "C -> k.1",
         "k -> X"
       ]
     },

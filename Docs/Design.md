@@ -10,7 +10,7 @@ Every circuit gives the player **inputs** on the left, **blocks** in the middle 
 1. **Read the goal.** Above the board, beside GOAL, the same line for every circuit: "MATCH ALL OUTPUTS. USE EVERYTHING WITH A SOLID OUTLINE." (`GoalText.WiringRules`), with a count of the outputs met at the right. Every output shows its target beside the live one, with = or ≠ between them, so the player always knows what finished looks like.
 2. **Wire.** Drag from a dot to a dot, or click one dot and then the other. Dots on the right of inputs and blocks send; dots on the left of blocks and outputs take one wire each. One source can feed many wires. Grabbing a port that already has a wire picks that wire up to move it. Clicking a wire, or right-clicking a dot, takes wires off. A wire that would make a loop is refused, with the reason. Undo and Clear work on wires. Dragging a block by its body moves it, and its wires follow, so the player can untangle a circuit; a block can't be dropped on another card. The circuit remembers where its blocks were left, and RESET in the menu puts them back.
 3. **Run.** Nothing shows until **RUN** (Space). For a few seconds the light runs along the wires, each block shows what it sends, and the outputs show what reaches them, top to bottom, each playing its sound. An output lights up as met whenever its signal does what its target does, whatever wiring made it: the designer's solution is only one way there. A blip of up to 3 of the loop's 288 steps (about 1%), too short to see or hear, doesn't count against it (`Trace.LooksLike`); such blips come where a wave is read as a bit at the very step it crosses the middle, so two wirings can disagree there and nowhere else. A change to the wires hides the outputs again, except an output that was solved on the last run with nothing feeding it rewired since: it stays solved, and the next run leaves it as it is and doesn't play it again, so only the outputs still in question sound (`WiringSession.OutputsUnchanged`). Each block keeps the signal it showed until the next run, unless its own input wires change or a block feeding it changes; rewiring where a block's signal goes leaves it showing (`WiringSession.BlocksUnchanged`). So every signal on show is still what that block sends as wired now.
-4. **Keep the rules.** Everything with a solid outline must be used: each solid block must lead to an output, through other blocks or straight there, and so must each solid input. Every input of a block needs a wire, and a block with an empty input sends nothing. **Inputs are optional by default** (12 Nov 2026) and drawn with a dotted outline, so a circuit can offer more signals than it needs and the player is free to try any of them; a circuit marks an input `"required": true` to make it solid, and the answer always uses a solid input. **Blocks are solid by default**; one marked `"optional": true` is dotted, and the answer may use it or leave it out, so the outline never says which. An optional block may go unused, wired or not, and then shows no note; once it leads to an output it is a block like any other and needs every input wired. The solver counts an optional block left out, or wired but going nowhere, as one answer (`ContentTests.SolidOutlinesMarkWhatHasToBeUsed`). Outline, in Part Two, is the chapter that teaches both; FIRST LIGHT 1's hint and How to Play explain the dotted outline. The verdict after a run names every broken rule and every block or input that broke it, such as "Block B2 isn't used: its signal doesn't reach an output. Every block with a solid outline has to lead to an output." or "Input A isn't used, and its solid outline means it has to be." (`GoalText.BrokenRules`); the run marks each unused block NOT USED and turns an unused solid input's outline violet.
+4. **Keep the rules.** Everything with a solid outline must be used: each solid block must lead to an output, through other blocks or straight there, and so must every input. Every input of a block needs a wire, and a block with an empty input sends nothing. **Every input is solid and has to be used** (14 Nov 2026, from fella; from 12 Nov inputs had been dotted, and optional, unless a circuit marked one required). The format can still mark an input `"optional": true`, drawn dotted, but no circuit does. **Blocks are solid by default**; one marked `"optional": true` is dotted, and the answer may use it or leave it out, so the outline never says which. An optional block may go unused, wired or not, and then shows no note; once it leads to an output it is a block like any other and needs every input wired. The solver counts an optional block left out, or wired but going nowhere, as one answer (`ContentTests.SolidOutlinesMarkWhatHasToBeUsed`). Outline, in Part Two, is the chapter that teaches dotted blocks, and How to Play says what both outlines mean. The verdict after a run names every broken rule and every block or input that broke it, such as "Block B2 isn't used: its signal doesn't reach an output. Every block with a solid outline has to lead to an output." or "Input A isn't used, and its solid outline means it has to be." (`GoalText.BrokenRules`); the run marks each unused block NOT USED and turns an unused solid input's outline violet.
 5. **Listen.** Every signal has a sound as well as a look (see below). Clicking any signal or target plays it. A **listen-only** block (`"listen": true`, Earshot) never shows what it sends: a speaker beside its label marks it, and after a run a speaker sits over it in place of its signal, which plays when clicked. Everything wired after it, blocks and outputs, however far on, shows a speaker too, with no mark of its own, until the circuit is solved; then every signal is drawn (`PuzzleDef.Heard(node, drivers)`, 12 Nov 2026, from fella). In a **dark** chapter (`"dark": true`, Lights Out) every signal is drawn that way, inputs, blocks, outputs and targets, and a run always plays each output, whatever the sound setting. The = or ≠ beside each output still shows. A wave sounds the same started later, turned upside down or raised (`SignalSound.SoundsAlike`), so in every circuit with a heard signal nothing the player could wire to an output sounds like its target without being it, and the answer is still the only one (`ContentTests.HeardCircuitsCanBeSolvedByEar`, which uses the solver's by-ear search).
 6. **Take notes.** The pen (D) draws anywhere on the circuit in one of three inks. The text tool (T) types instead: click anywhere and type, Enter finishes the note, Shift+Enter starts a new line, and long lines wrap. Clicking a typed note edits it and dragging it moves it. The eraser (E) or a right-drag rubs out strokes and typed notes alike. Notes are kept with the circuit.
 7. **Solve.** When a run meets every output and keeps both rules, the whole circuit lights up and the next circuit is offered. Each block's rule is then written under it, in a few words, and pointing at the block puts the whole rule in the status line.
@@ -80,7 +80,7 @@ A signal that changes through the loop plays each of its values in turn. Signal 
 
 ## Progression
 
-* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Outline, Blend, Earshot) teaches how kinds of signal read each other, how two kinds meet in one block, solid and dotted outlines, the three mixing blocks, and listen-only blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four, with a spare input or two to rule out. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 3, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox, Pulse, Cipher, Undertow, Lights Out) is the main game, with every kind of signal, and ends in the dark: Lights Out draws no signal at all. It climbs inside, and opens bigger than Blackbox, but needn't close bigger than Blackbox's three-input finale, since hearing a circuit through is the hard part. Pulse, Cipher and Undertow (12 Nov 2026, from fella) each take one kind of signal alone, bits, digits or waves, with only the blocks that send that kind and nothing mixed in, and use PICK and VOLUME again with only their own kind round them (`ContentTests.PureChaptersKeepToOneSignal`). They're open side by side, so each opens bigger than Blackbox and climbs inside, five circuits each. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the new blocks, the five with three inputs and VOLUME, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
+* Three parts. **Learn** has four chapters: bits, steady digits, digits that change, and waves. It teaches each signal and its four blocks. **Combine** (Patch, Junction, Outline, Blend, Earshot) teaches how kinds of signal read each other, how two kinds meet in one block, solid and dotted outlines, the three mixing blocks, and listen-only blocks, and gets harder all the way through (12 Nov 2026, after play-testing found Blend's openers too easy): Patch chains two blocks, Junction mostly three, and Blend three or four. Every input has to be used, so the choices are where each one goes and in what order. Inside each chapter no circuit has fewer blocks or fewer ways to wire it than the one before, and each chapter opens and closes on a bigger circuit than the last (`ContentTests.PuzzlesGetHarderAfterLearn`). Every circuit has one answer, except Blend 2, whose two MIX blocks can swap jobs. **Build** (Unmarked, Blackbox, Pulse, Cipher, Undertow, Lights Out) is the main game, with every kind of signal, and ends in the dark: Lights Out draws no signal at all. It climbs inside, and opens bigger than Blackbox, but needn't close bigger than Blackbox's three-input finale, since hearing a circuit through is the hard part. Pulse, Cipher and Undertow (12 Nov 2026, from fella) each take one kind of signal alone, bits, digits or waves, with only the blocks that send that kind and nothing mixed in, and use PICK and VOLUME again with only their own kind round them (`ContentTests.PureChaptersKeepToOneSignal`). They're open side by side, so each opens bigger than Blackbox and climbs inside, five circuits each. Unmarked keeps climbing from where Blend ends, and the first half of Blackbox climbs from there; late in Blackbox come the new blocks, the five with three inputs and VOLUME, on smaller boards so the new block is the puzzle. Every circuit after Learn is solved by its own idea, a trick no other circuit needs (12 Nov 2026: a wave cancelling itself, a pattern meeting its own late copy, two delays standing in for a flip, a count read as a bit), listed under each chapter below. No two of them hand the player the same set of blocks (`ContentTests.NoTwoPuzzlesAfterLearnUseTheSameBlocks`). Hints nudge towards the trick without giving it away. Each later part opens when every circuit of the part before it is solved; the chapter screen lists every part and its chapters down the left, with a padlock while a part is locked and a solved count for each chapter.
 * **DEBUG: OPEN EVERYTHING** in Settings opens every part, chapter and circuit, for testing.
 * Within an open part, every chapter is open, with its first circuit open, so a player can begin with any medium.
 * Inside a chapter, solving circuits opens the next ones, and there is always **one spare** open, so a player who is stuck can try the next circuit instead.
@@ -97,9 +97,9 @@ A signal that changes through the loop plays each of its values in turn. Signal 
   * Lights Out, **by ear alone**: nothing is drawn, so three steps to try (listen to the targets, listen to the inputs, wire and run), what can't be heard, and the promise that an output that sounds like its target is its target.
 * Every circuit is named by its chapter and its number in it, such as **TALLY 1**, on the circuit screen, the chapter map, the pause menu and the title screen's Continue line (`PuzzleLoader.NameOf`). The files give circuits no names.
 * Every Learn chapter follows the same arc, so the media are the thing that changes. First Light has one more circuit: its first two use steady bits, and the third brings in bits that switch. Resonance has one more too: its third, which comes wired, teaches that which input goes on top can matter. Digits come in two chapters, steady whole digits in Tally and digits that change in Ticker; Tally has six circuits, the last as big as FIRST LIGHT 7, and Ticker, which brings no new blocks, starts straight in with the player drawing every wire.
-  1. **Pre-wired.** Two inputs and one block, every wire drawn, but the block's wire starts at the wrong input. The player moves it to the other one.
+  1. **One wire to draw.** One input and one block, with the wire into the block drawn. The player draws the last one, from the block to the output (14 Nov 2026; until then the opener had a spare input and a wire to move).
   2. **Half wired.** A two-input block with one input empty. The player finishes it.
-  3. From here the player draws every wire: two blocks in a chain, with a spare input or the order of the blocks to work out.
+  3. From here the player draws every wire: two blocks, often with a second output, and which input goes where or which block comes first to work out.
   4. One source feeding two blocks, and a second output.
   5. A two-input block where order matters, or three blocks.
   6. The **tangle**: four blocks, three inputs and two or three outputs.
@@ -115,15 +115,15 @@ The tables give the number of ways to wire the blocks' inputs, and how many comp
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | A steady bit. Pre-wired: move one wire to the other input, and NOT | 2 | 1 |
-| 2 | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 2 |
-| 3 | Bits that switch through the loop, a block working on every moment. Wiring it all: OR then NOT, with a spare input | 64 | 1 |
-| 4 | Three patterns, AND and OR: which two go into AND, and which block comes first | 256 | 1 |
-| 5 | One input feeding two blocks, and XOR | 27 | 1 |
-| 6 | Three blocks in a row | 3,125 | 8 |
-| 7 | Four blocks, two outputs | 279,936 | 37 |
+| 1 | A steady bit, and NOT. One wire is drawn: draw the last one, to the output | 1 | 1 |
+| 2 | Steady bits. Half wired: an empty input sends nothing, and AND | 4 | 1 |
+| 3 | Bits that switch through the loop, a block working on every moment. Wiring it all: OR of two patterns, and NOT of a third, for two outputs | 64 | 1 |
+| 4 | One input feeding two blocks, and XOR | 27 | 1 |
+| 5 | Three patterns, AND and OR: which two go into AND, and which block comes first; AND's result is a second output | 256 | 1 |
+| 6 | Three blocks in a row | 3,125 | 2 |
+| 7 | Four blocks, two outputs | 279,936 | 15 |
 
-The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves on to bit patterns (such as 0011, 0 for half the loop and then 1) from Sequence on, so a new player meets one bit at a time first. A steady bit target can only be 0 or 1, so an input may already match it; those circuits are excused from the straight-wire check below, and the every-block rule still stops a straight wire solving them. Bit circuits still have more solutions than the others: AND or OR of a signal with itself is that signal, and a steady 1 or 0 can stand in for many things.
+The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves on to bit patterns (such as 0011, 0 for half the loop and then 1) from the third circuit on, so a new player meets one bit at a time first. A steady bit target can only be 0 or 1, so an input may already match it; those circuits are excused from the straight-wire check below, and the every-block rule still stops a straight wire solving them. Bit circuits still have more solutions than the others: AND or OR of a signal with itself is that signal, and a steady 1 or 0 can stand in for many things.
 
 ### Chapter II: Tally
 
@@ -131,24 +131,24 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | Pre-wired: move one wire to the other digit, and MIRROR | 2 | 1 |
+| 1 | MIRROR. One wire is drawn: draw the last one | 1 | 1 |
 | 2 | Half wired, and DIFF | 4 | 1 |
-| 3 | MAX, then DIFF with the third digit; the order matters | 256 | 5 |
+| 3 | MIRROR, then DIFF with the other digit; the order matters, and MIRROR's digit is a second output | 27 | 1 |
 | 4 | MIN, and one input feeding two blocks | 1,024 | 14 |
-| 5 | Three blocks in a row, two outputs | 3,125 | 10 |
-| 6 | The finale, as big as FIRST LIGHT 7: four blocks, two outputs, each target two steps from the inputs (a DIFF of a DIFF, and MIRROR of a DIFF). It uses three DIFFs and a MIRROR, because on steady digits MAX and MIN only ever pass one digit on, so they could be tucked in anywhere and leave nothing to work out | 279,936 | 60 |
+| 5 | Three blocks in a row, two outputs | 3,125 | 1 |
+| 6 | The finale, as big as FIRST LIGHT 7: four blocks, two outputs, each target two steps from the inputs (a DIFF of a DIFF, and MIRROR of a DIFF). It uses three DIFFs and a MIRROR, because on steady digits MAX and MIN only ever pass one digit on, so they could be tucked in anywhere and leave nothing to work out | 279,936 | 48 |
 
 ### Chapter III: Ticker
 
-*Count what changes.* The same four digit blocks, on digits that change as the loop plays, drawn as a stepped line. No new blocks, so it skips the pre-wired and half-wired openers: the player draws every wire.
+*Count what changes.* The same four digit blocks, on digits that change as the loop plays, drawn as a stepped line. No new blocks, so it skips the wired and half-wired openers: the player draws every wire.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | A pattern of digits, MIRRORed step by step; a steady digit is the spare | 2 | 1 |
+| 1 | A pattern of digits, MIRRORed step by step | 1 | 1 |
 | 2 | MAX of a pattern and a steady digit: a floor | 4 | 1 |
-| 3 | MIN of two patterns, then MIRROR; a third pattern is spare | 64 | 1 |
+| 3 | MIN of two patterns, then MIRROR; the MIN is a second output | 27 | 1 |
 | 4 | One pattern feeding two blocks, two outputs | 27 | 1 |
-| 5 | A longer pattern, MIN with its own MIRROR: one input in two places, beside another long pattern and a steady digit | 64 | 1 |
+| 5 | A longer pattern, MIN with its own MIRROR, and MAX with a second long pattern: one input in three places | 1,024 | 1 |
 | 6 | Four blocks, two outputs | 279,936 | 3 |
 
 ### Chapter IV: Resonance
@@ -157,10 +157,10 @@ The game starts with **steady bits**, each 0 or 1 for the whole loop, and moves 
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | Pre-wired: move one wire to the other wave, and FASTER | 2 | 1 |
+| 1 | FASTER. One wire is drawn: draw the last one | 1 | 1 |
 | 2 | Half wired, and MIX | 4 | 1 |
-| 3 | Pre-wired the wrong way round, with FASTER unused: swap GATE's two inputs, because which input goes on top matters, and speed up the one going on top; a third wave is spare | 64 | 1 |
-| 4 | LATER on one wave, then MIX with another; the order matters, and a third wave is spare | 64 | 1 |
+| 3 | Wired the wrong way round, with FASTER unused: swap GATE's two inputs, because which input goes on top matters, and speed up the one going on top; the sped-up wave is a second output | 27 | 1 |
+| 4 | LATER on one wave, then MIX with another; the order matters, and the delayed wave is a second output | 27 | 1 |
 | 5 | FLIP, feeding an output and a block at once | 27 | 1 |
 | 6 | Two outputs, by ear | 64 | 2 |
 | 7 | Four blocks, two outputs | 7,776 | 1 |
@@ -169,40 +169,40 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 ### Chapter V: Patch
 
-*Every block reads every signal.* Blocks of one kind, fed signals of another. Each circuit has three or four inputs of mixed kinds, one or two of them spare, and two blocks in a chain, so the player has to work out which signal each block reads and what it reads it as. The finale has three blocks and two outputs.
+*Every block reads every signal.* Blocks of one kind, fed signals of another. Each circuit has two inputs of different kinds and two blocks in a chain, so the player has to work out which signal each block reads and what it reads it as. The finale has three blocks and two outputs.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | AND reads a pattern of digits as bits, then NOT; a steady digit is the spare | 64 | 1 |
-| 2 | MIRROR reads a saw by its height, then MIN with a digit | 64 | 1 |
-| 3 | FLIP reads digits as levels, then MIX with a steady 9 lifts them to the top half | 64 | 1 |
-| 4 | LATER reads bits as top and bottom and delays them, then MIX with a saw. A decoy: one optional (dotted) input already shows LATER's result, but every block must be used, so it has to be built | 125 | 1 |
+| 1 | AND reads a pattern of digits as bits, then NOT | 27 | 1 |
+| 2 | MIRROR reads a saw by its height, then MIN with a digit | 27 | 1 |
+| 3 | FLIP reads digits as levels, then MIX with a steady 9 lifts them to the top half; the flipped digits are a second output | 27 | 1 |
+| 4 | LATER reads bits as top and bottom and delays them, then MIX with a saw; the delayed bits are a second output | 27 | 1 |
 | 5 | The two readings Patch hasn't shown: NOT reads a wave as bits (then AND with a pattern of digits), and MIRROR reads bits as the digits 0 and 1 | 625 | 1 |
 
 ### Chapter VI: Junction
 
-*Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No mixing blocks yet; a test checks that every solution feeds some block two kinds at once. The opener chains two blocks; every other circuit chains three, with a spare input or two.
+*Where kinds of signal meet.* Two kinds of signal into one block of a Part One kind, the step between Patch (one kind read as another) and Blend (the mixing blocks). No mixing blocks yet; a test checks that every solution feeds some block two kinds at once. The opener chains two blocks; every other circuit has three.
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
 | 1 | AND of a pattern of digits and a pattern of bits, then XOR with a square wave | 256 | 1 |
-| 2 | MIX of a wave and bits, then LATER, then FASTER: the order matters | 1,296 | 1 |
-| 3 | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR, then MIN with a saw read as a rising digit | 3,125 | 1 |
-| 4 | XOR of a pattern and its own LATER copy lights where the pattern changed, then AND with a saw read as bits | 3,125 | 1 |
-| 5 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again (one input feeding two blocks), then MIRROR | 7,776 | 1 |
+| 2 | MIX of a wave and bits, then LATER, then FASTER: the order matters | 256 | 1 |
+| 3 | XOR of a pattern and its own LATER copy lights where the pattern changed, then AND with a saw read as bits | 1,024 | 1 |
+| 4 | MAX of a saw read as digits and a steady digit, then DIFF with that digit again (one input feeding two blocks), then MIRROR | 1,024 | 1 |
+| 5 | DIFF of a digit and a bit takes 0 or 1 off, then MIRROR, then MIN with a saw read as a rising digit | 3,125 | 1 |
 | 6 | A bit, a digit and a wave, three blocks, three outputs | 15,625 | 1 |
 
 ### Chapter VII: Outline
 
-*Solid has to be used. Dotted may not be.* Required (solid) inputs and optional (dotted) blocks, each circuit with its own way of reading the outlines. Every circuit here has a solid input or a dotted block; outside this chapter every input is dotted and no block is.
+*Solid has to be used. Dotted may not be.* Optional (dotted) blocks, each circuit with its own way of reading them. Every circuit here has a dotted block, and none comes before this chapter. Until 14 Nov 2026 it also taught solid inputs among dotted ones; since every input became solid, its opener on one solid input is gone, and a circuit whose dotted block nothing needs came in.
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | The one solid input is the place to start: MIN of it and a wave, then DIFF | 625 | 1 |
-| 2 | Two dotted blocks: LATER is in the answer, FLIP isn't, and the outlines look the same | 900 | 1 |
-| 3 | The solid digit pattern doesn't fit MAX as it is; the dotted MIRROR turns it round first, and the dotted NOT is a decoy | 900 | 1 |
-| 4 | Both dotted blocks are needed, LATER then FASTER, and the order matters; two solid inputs | 63,504 | 1 |
-| 5 | Two solid waves: a dotted FASTER is used, a dotted NOT isn't, and the MIX feeds both an output and AND | 63,504 | 1 |
+| 1 | Two dotted blocks: LATER is in the answer, FLIP isn't, and the outlines look the same | 400 | 1 |
+| 2 | A digit pattern doesn't fit MAX as it is; the dotted MIRROR turns it round first, and the dotted NOT is a decoy | 400 | 1 |
+| 3 | A dotted block is no clue: MIN of a wave and a digit, then DIFF with another digit, and the dotted LATER is left out | 3,750 | 1 |
+| 4 | Both dotted blocks are needed, LATER then FASTER, and the order matters; MAX of the two waves is a second output | 22,500 | 1 |
+| 5 | A dotted FASTER is used and a dotted NOT isn't: MIX of a wave and its sped-up copy feeds both an output and AND | 22,500 | 1 |
 
 ### Chapter VIII: Blend
 
@@ -210,14 +210,14 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | Teaches | Wirings | Solutions |
 |---|---|---|---|
-| 1 | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 1,296 | 1 |
-| 2 | A wave into AND blinks a bit, FLIP turns the bits back into a wave, and MIX with a digit lifts it | 3,125 | 1 |
-| 3 | A wave and its own copy half a cycle later (LATER) cancel in MIX, and the silence halves a bit pattern in a second MIX (either MIX can do either job) | 7,776 | 2 |
-| 4 | No MIRROR, but FLIP turns a digit read as a level upside down, which is the same thing: MIN of a saw and the flipped digit, then MIX with bits | 7,776 | 1 |
-| 5 | GATE lets a sped-up saw through a pattern made by XOR | 7,776 | 1 |
-| 6 | COUNT counts the switch-ons of a gated wave, and DIFF takes the count from a digit; the gate feeds an output too | 7,776 | 1 |
-| 7 | COMPARE against a mirrored digit makes a pulse, and AND cuts it with bits | 7,776 | 1 |
-| 8 | Four blocks: COMPARE makes pulses that COUNT counts and that GATE lets a sped-up saw through | 117,649 | 1 |
+| 1 | FASTER and FLIP read bit patterns as square waves; one mixed with a sine | 625 | 1 |
+| 2 | A wave and its own copy half a cycle later (LATER) cancel in MIX, and the silence halves a bit pattern in a second MIX (either MIX can do either job) | 1,024 | 2 |
+| 3 | A wave into AND blinks a bit, FLIP turns the bits back into a wave, and MIX with a digit lifts it | 3,125 | 1 |
+| 4 | No MIRROR, but FLIP turns a digit read as a level upside down, which is the same thing: MIN of a saw and the flipped digit, then MIX with bits | 3,125 | 1 |
+| 5 | GATE lets a sped-up saw through a pattern made by XOR | 3,125 | 1 |
+| 6 | COUNT counts the switch-ons of a gated wave, and DIFF takes the count from a digit; the gate feeds an output too | 3,125 | 1 |
+| 7 | COMPARE against a mirrored digit makes a pulse, and AND cuts it with bits | 3,125 | 1 |
+| 8 | Four blocks: COMPARE makes pulses that COUNT counts and that GATE lets a sped-up saw through | 46,656 | 1 |
 
 ### Chapter IX: Earshot
 
@@ -225,10 +225,10 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | A listen-only MIRROR: the tune turned upside down, then MAX with a digit; a dotted FLIP decoy | 1,512 | 1 |
-| 2 | A listen-only MIX straight into an output, so the output is heard too: compare it with the target by ear; FASTER feeds the MIX and MAX | 7,776 | 1 |
-| 3 | A listen-only COUNT climbs like a scale; DIFF from 9 and MAX | 7,776 | 1 |
-| 4 | Two listen-only blocks: FASTER can be heard, LATER can't, so it has to be worked out from what it does further on, where MAX and MIN read the delayed wave as a tune that starts in a new place | 117,649 | 1 |
+| 1 | A listen-only MIRROR: the tune turned upside down, then MAX with a digit; a dotted FLIP turns a saw over for a second output | 750 | 1 |
+| 2 | A listen-only MIX straight into an output, so the output is heard too: compare it with the target by ear; FASTER feeds the MIX and MAX | 3,125 | 1 |
+| 3 | A listen-only COUNT climbs like a scale; DIFF from 9 and MAX | 3,125 | 1 |
+| 4 | Two listen-only blocks: FASTER can be heard, LATER can't, so it has to be worked out from what it does further on, where MAX and MIN read the delayed wave as a tune that starts in a new place | 46,656 | 1 |
 | 5 | A listen-only GATE and MIRROR, worked out by ear before wiring the rest | 823,543 | 1 |
 
 ### Chapter X: Unmarked
@@ -237,13 +237,13 @@ Every circuit is checked by trying every way to wire it, in the tests and from *
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | A signal meets its own MIRROR: MIN of the two is a rise and fall, MAX a fall and rise | 3,125 | 1 |
-| 2 | One input feeds both ends of a chain: COMPARE squares a sine off, FLIP reads the bits as a wave, and MIX adds the sine back | 3,125 | 1 |
-| 3 | FASTER before COMPARE, so the beats come at the target's rate, and AND with a pattern pairs them | 7,776 | 2 |
+| 1 | A signal meets its own MIRROR: MIN of the two is a rise and fall, and MAX of the MIRROR with a digit holds it at a floor | 1,024 | 1 |
+| 2 | One input feeds both ends of a chain: COMPARE squares a sine off, FLIP reads the bits as a wave, and MIX adds the sine back | 1,024 | 1 |
+| 3 | FASTER before COMPARE, so the beats come at the target's rate, and AND with a pattern pairs them | 3,125 | 2 |
 | 4 | MIN cuts off the top and MAX the bottom; COMPARE shares MIN's limit | 15,625 | 2 |
-| 5 | No FLIP: two LATERs put a one-cycle sine half a loop late, which is the same as upside down, then MIX and COMPARE | 117,649 | 2 |
-| 6 | One signal in both of GATE's inputs keeps only its top half; again on the flipped wave, and MIX adds the two | 279,936 | 2 |
-| 7 | Three separate machines, five blocks: sort out which blocks belong together | 2,097,152 | 2 |
+| 5 | One signal in both of GATE's inputs keeps only its top half; again on the flipped wave, and MIX adds the two | 16,384 | 2 |
+| 6 | No FLIP: two LATERs put a one-cycle sine half a loop late, which is the same as upside down, then MIX and COMPARE | 46,656 | 2 |
+| 7 | Three separate machines, five blocks: sort out which blocks belong together | 2,097,152 | 1 |
 
 The circuits with two solutions have two alike blocks that can swap, or one block whose inputs can swap without changing what it sends.
 
@@ -253,17 +253,17 @@ The circuits with two solutions have two alike blocks that can swap, or one bloc
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | A count read as a bit is 0 until the first switch-on and 1 after it, so COUNT drives GATE and AND | 7,776 | 1 |
-| 2 | A count read as a level by MIX climbs in steps; MAX holds it at a floor | 7,776 | 1 |
-| 3 | DIFF of two waves read as digits is how far apart they are; COMPARE and COUNT read the gap | 7,776 | 1 |
-| 4 | A quiet sine sped up twice rides on a slow one in MIX, and COMPARE lights while the sum is high | 117,649 | 2 |
+| 1 | A count read as a bit is 0 until the first switch-on and 1 after it, so COUNT drives GATE and AND | 3,125 | 1 |
+| 2 | A count read as a level by MIX climbs in steps; MAX holds it at a floor | 3,125 | 1 |
+| 3 | DIFF of two waves read as digits is how far apart they are; COMPARE and COUNT read the gap | 3,125 | 1 |
+| 4 | A quiet sine sped up twice rides on a slow one in MIX, and COMPARE lights while the sum is high | 46,656 | 2 |
 | 5 | One saw read three ways: NOT then AND, XOR, and DIFF from 9 | 279,936 | 2 |
 | 6 | MAJORITY of two bit patterns and COMPARE's pulse, then NOT | 46,656 | 1 |
-| 7 | MIDDLE holds a saw between a digit and its MIRROR (Unmarked 4's two blocks in one), then FLIP | 7,776 | 1 |
-| 8 | BETWEEN with the steady level on top and a wave and its FLIP as the bounds: lit while the wave is far from the middle; COUNT counts | 7,776 | 1 |
-| 9 | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 7,776 | 1 |
+| 7 | MIDDLE holds a saw between a digit and its MIRROR (Unmarked 4's two blocks in one), then FLIP | 1,024 | 1 |
+| 8 | BETWEEN with the steady level on top and a wave and its FLIP as the bounds: lit while the wave is far from the middle; COUNT counts | 1,024 | 1 |
+| 9 | SWITCH chooses between a sine and its sped-up copy, by a pattern NOT turns over | 1,024 | 1 |
 | 10 | PICK reads a digit as 1 unless it's 0, so the gap between two tunes chooses: X follows one pattern where the tunes agree and the other where they don't; Y is the gap MIRRORed | 46,656 | 1 |
-| 11 | VOLUME with a digit, as it's meant: COUNT climbs at each switch-on, MIRROR turns the climb into a fall, and the wave fades a step at a time | 2,401 | 1 |
+| 11 | VOLUME with a digit, as it's meant: COUNT climbs at each switch-on, MIRROR turns the climb into a fall, and the wave fades a step at a time | 256 | 1 |
 | 12 | The higher of two waves (COMPARE choosing for SWITCH), how many times they cross, and a gated saw | 1,679,616 | 2 |
 
 ### Chapter XII: Pulse
@@ -272,13 +272,13 @@ The circuits with two solutions have two alike blocks that can swap, or one bloc
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | MAJORITY needs a third vote: XOR of the same two inputs is 1 just where they disagree, so ties go to 1 and MAJORITY acts as OR; NOT makes it NOR | 46,656 | 1 |
-| 2 | PICK choosing between a pattern and its NOT, by a second pattern, is XOR, which isn't on the board; AND with a third | 46,656 | 2 |
-| 3 | No NOT: XOR marks where A and B differ, and AND with each keeps the steps where only that one is 1 | 46,656 | 2 |
+| 1 | MAJORITY needs a third vote: XOR of the same two inputs is 1 just where they disagree, so ties go to 1 and MAJORITY acts as OR; NOT makes it NOR | 4,096 | 1 |
+| 2 | No NOT: XOR marks where A and B differ, and AND with each keeps the steps where only that one is 1 | 4,096 | 2 |
+| 3 | PICK choosing between a pattern and its NOT, by a second pattern, is XOR, which isn't on the board; AND with a third | 15,625 | 2 |
 | 4 | No OR: NOT both inputs, AND them, and NOT the result; XOR with a third | 823,543 | 6 |
 | 5 | Count the 1s among three patterns that go through every mix: two XORs give the odd counts, and MAJORITY then NOT the counts under two | 1,679,616 | 6 |
 
-Pulse 2 can use either pattern as the chooser; in 3 and 4 alike blocks swap jobs; in 5 the two XORs can pair the inputs any way.
+Pulse 3 can use either pattern as the chooser; in 2 and 4 alike blocks swap jobs; in 5 the two XORs can pair the inputs any way.
 
 ### Chapter XIII: Cipher
 
@@ -286,13 +286,13 @@ Pulse 2 can use either pattern as the chooser; in 3 and 4 alike blocks swap jobs
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | Two DIFFs measure A against B and against C; MIN keeps the nearer | 46,656 | 2 |
-| 2 | Three copies of a tune, each with one wrong note: MIDDLE votes them right, then DIFF from a steady 4, and MIRROR | 46,656 | 1 |
-| 3 | No adding block: MIRROR B, take its DIFF from A, and MIRROR back, and that's A + B (it never passes 9) | 117,649 | 8 |
+| 1 | Two DIFFs measure A against B and against C; MIN keeps the nearer | 15,625 | 2 |
+| 2 | No adding block: MIRROR B, take its DIFF from A, and MIRROR back, and that's A + B (it never passes 9) | 15,625 | 8 |
+| 3 | Three copies of a tune, each with one wrong note: MIDDLE votes them right, then DIFF from a steady 4, and MIRROR | 46,656 | 1 |
 | 4 | DIFF of a tune and its own MIRROR is always odd; MIN with another tune, and MAX with a steady 6 | 279,936 | 1 |
 | 5 | MIDDLE with a steady 9 is MAX, and with a steady 0 is MIN; then MIRROR | 279,936 | 2 |
 
-In Cipher 1 and 5 alike blocks swap jobs. Cipher 3 can mirror either input first, and its two MIRRORs and two DIFFs can swap.
+In Cipher 1 and 5 alike blocks swap jobs. Cipher 2 can mirror either input first, and its two MIRRORs and two DIFFs can swap.
 
 ### Chapter XIV: Undertow
 
@@ -300,10 +300,10 @@ In Cipher 1 and 5 alike blocks swap jobs. Cipher 3 can mirror either input first
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | LATER waits a quarter of the loop, and after two FASTERs the sine goes round four times, so the wait is a whole cycle and LATER changes nothing; MIX with a saw | 16,807 | 2 |
-| 2 | VOLUME's top gives the shape and its bottom the height, so the same two waves give a different target each way round; FASTER and FLIP | 46,656 | 4 |
+| 1 | LATER waits a quarter of the loop, and after two FASTERs the sine goes round four times, so the wait is a whole cycle and LATER changes nothing; MIX of a saw and a square is a second output | 7,776 | 2 |
+| 2 | VOLUME's top gives the shape and its bottom the height, so the same two waves give a different target each way round; FASTER and FLIP | 15,625 | 4 |
 | 3 | Only VOLUME's bottom sets the height: a MIX at half height comes out as tall as a delayed saw, and quiet while the saw is below the middle | 46,656 | 1 |
-| 4 | Order matters: FASTER then LATER is a different wave from LATER then FASTER; MIX with a saw | 262,144 | 8 |
+| 4 | Order matters: FASTER then LATER is a different wave from LATER then FASTER; MIX with a saw | 46,656 | 8 |
 | 5 | VOLUME hears only the top half of its bottom wave; FLIP both inputs to hear the bottom half, and MIX the two, so the fast wave swells with every half of the slow one (A times B) | 1,679,616 | 8 |
 
 In Undertow 1, 2 and 5 alike blocks swap jobs, and in 5 a FLIP can go before or after VOLUME. Undertow 4 can also make X from two LATERs (a sine half a loop late is upside down) and FASTER, sharing a LATER with Y.
@@ -314,12 +314,12 @@ In Undertow 1, 2 and 5 alike blocks swap jobs, and in 5 a FLIP can go before or 
 
 | # | The trick | Wirings | Solutions |
 |---|---|---|---|
-| 1 | Hear a rising tune turned upside down and held at a floor; a rhythm cut by a wave's top half | 16,807 | 1 |
-| 2 | A loud square wave heard as a digit is 7 then 0: DIFF with a tune, and a rhythm XORed then clipped by it | 117,649 | 1 |
-| 3 | PICK hears a digit as 1 unless it's 0, so a tune's lowest notes (its 0s) choose between two rhythms, one turned over by NOT; MIN of two tunes plays the lower note (14 Nov 2026) | 117,649 | 1 |
-| 4 | Two inputs each go two places: MIN of a tune and a square, and a mirrored tune turned to a beat | 117,649 | 1 |
-| 5 | Both targets follow one input's rhythm: COMPARE then MIRROR, and NOT then DIFF | 262,144 | 1 |
-| 6 | One target climbs step by step: start there. The other is a falling tune turned over by MIRROR, heard as beats by AND | 823,543 | 1 |
+| 1 | Hear a rising tune turned upside down and held at a floor; a rhythm cut by a wave's top half | 7,776 | 1 |
+| 2 | A loud square wave heard as a digit is 7 then 0: DIFF with a tune, and a rhythm XORed then clipped by it | 15,625 | 1 |
+| 3 | Two inputs each go two places: MIN of a tune and a square, and a mirrored tune turned to a beat | 15,625 | 1 |
+| 4 | Both targets follow one input's rhythm: COMPARE then MIRROR, and NOT then DIFF | 46,656 | 1 |
+| 5 | One target climbs step by step: start there. The other is a falling tune turned over by MIRROR, heard as beats by AND | 823,543 | 1 |
+| 6 | PICK hears a digit as 1 unless it's 0, and MIRROR turns a tune's highest notes (its 9s) into 0s, so those steps choose between two rhythms, one turned over by NOT; MIN of two tunes plays the lower note (14 Nov 2026; the finale since every input became solid) | 2,097,152 | 1 |
 
 ## Look and sound
 
@@ -412,7 +412,7 @@ Each kind of signal has four blocks, and each set starts with one that flips the
 
 Bit and digit blocks work step by step, reading each input as their own kind. Wave blocks read each input as a wave, except the on/off input of GATE and SWITCH, read as a bit, and VOLUME's bottom input, read as a digit. COUNT reads its input as a bit. So every block always sends its own type, and its label says which (`ComponentTests.EveryBlockAlwaysSendsItsOwnKind`). Until 12 Nov 2026 GATE and SWITCH sent whatever type their top input was; they became wave blocks when labels started naming the type.
 
-VOLUME and PICK (added 12 Nov 2026) come in late in Blackbox, PICK in 10 and VOLUME in 11, and turn up again in Pulse, Undertow and Lights Out 3 (14 Nov 2026, from fella). `KindCatalog.Unplaced` is for a kind that works before any circuit uses it; the test that every block is taught skips those. It's empty now.
+VOLUME and PICK (added 12 Nov 2026) come in late in Blackbox, PICK in 10 and VOLUME in 11, and turn up again in Pulse, Undertow and the Lights Out finale (14 Nov 2026, from fella). `KindCatalog.Unplaced` is for a kind that works before any circuit uses it; the test that every block is taught skips those. It's empty now.
 
 The blocks with three inputs come last, late in Blackbox, one to a circuit at first: MAJORITY and MIDDLE are three-input cousins of the bit and digit blocks, BETWEEN reads all three as waves like COMPARE, SWITCH is a wave block like GATE, reading its bottom input as a bit, and PICK is SWITCH's cousin for bits. VOLUME follows them, the one two-input block new in Build.
 

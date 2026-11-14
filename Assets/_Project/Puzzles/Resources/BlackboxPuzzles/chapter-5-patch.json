@@ -13,9 +13,6 @@
           "signal": "decimal 0505"
         },
         "B": {
-          "signal": "decimal 3"
-        },
-        "C": {
           "signal": "binary 0011"
         }
       },
@@ -34,7 +31,7 @@
       },
       "solution": [
         "A -> g.0",
-        "C -> g.1",
+        "B -> g.1",
         "g -> h",
         "h -> X"
       ]
@@ -44,12 +41,9 @@
       "hint": "A digit block reads a wave by its height above the middle: an A7 wave peaks at 7, and below the middle is 0.",
       "inputs": {
         "A": {
-          "signal": "binary 0110"
-        },
-        "B": {
           "signal": "decimal 4"
         },
-        "C": {
+        "B": {
           "signal": "wave saw f1 a7"
         }
       },
@@ -67,9 +61,9 @@
         }
       },
       "solution": [
-        "C -> g",
+        "B -> g",
         "g -> h.0",
-        "B -> h.1",
+        "A -> h.1",
         "h -> X"
       ]
     },
@@ -81,9 +75,6 @@
           "signal": "decimal 1357"
         },
         "B": {
-          "signal": "binary 0110"
-        },
-        "C": {
           "signal": "decimal 9"
         }
       },
@@ -98,30 +89,28 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> g",
         "g -> h.0",
-        "C -> h.1",
-        "h -> X"
+        "B -> h.1",
+        "h -> X",
+        "g -> Y"
       ]
     },
     {
       "id": "patch-04",
-      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0. One input already looks like part of the answer, but every block has to be used.",
+      "hint": "A wave block reads a bit as the top for 1 and the bottom for 0.",
       "inputs": {
         "A": {
           "signal": "binary 0110"
         },
         "B": {
           "signal": "wave saw f1 a7"
-        },
-        "C": {
-          "signal": "decimal 0369"
-        },
-        "D": {
-          "signal": "binary 0011"
         }
       },
       "blocks": {
@@ -143,13 +132,17 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "A -> g",
         "g -> h.0",
         "B -> h.1",
-        "h -> X"
+        "h -> X",
+        "g -> Y"
       ]
     },
     {

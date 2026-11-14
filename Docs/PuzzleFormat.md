@@ -173,9 +173,9 @@ A chapter with `"mode": "wiring"` holds wired circuits. The player gets the inpu
 * every output's device does the same as its target does (see [Devices](#devices)),
 * every input port of every block has a wire,
 * every block with a solid outline leads to an output, through other blocks or straight there, and
-* so does every input marked `"required"`.
+* so does every input not marked `"optional"`.
 
-Inputs are optional, and drawn dotted, unless the circuit marks one `"required": true`: then it's solid and has to be used. Blocks are solid unless marked `"optional": true`: a dotted block may be left out or used, and the outline doesn't say which. The loader refuses a `solution` that leaves a solid block or a required input out, or that wires up an optional block that then leads nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled by the type of signal they send, B for a bit, D for a digit and W for a wave, numbered per letter down each column of the board in turn (B1, B2, D1, W1...). The label comes from the kind, so a file never gives one. A block shows only its label and its ports.
+Inputs and blocks are solid, and have to be used, unless the circuit marks one `"optional": true`: a dotted input or block may be left out or used, and the outline doesn't say which. Every shipped circuit uses all of its inputs (since 14 Nov 2026; until then inputs were optional unless marked `"required"`, which the loader now refuses). The loader refuses a `solution` that leaves a solid block or input out, or that wires up an optional block that then leads nowhere. Blocks have no settings: each kind does one thing. Blocks are labelled by the type of signal they send, B for a bit, D for a digit and W for a wave, numbered per letter down each column of the board in turn (B1, B2, D1, W1...). The label comes from the kind, so a file never gives one. A block shows only its label and its ports.
 
 ```json
 {
@@ -197,11 +197,11 @@ Inputs are optional, and drawn dotted, unless the circuit marks one `"required":
 
 | Key | Meaning |
 |---|---|
-| `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. Add `"required": true` for a solid input the answer has to use; `"optional"` is refused, since inputs are optional already. |
+| `inputs` | Each input is a signal (below), written alone or as `{ "signal": ..., "at": [col, row] }`. Inputs are fixed: no `value`, `adjustable` or `target`. Every input is solid and the answer has to use it, unless it's marked `"optional": true` (dotted, and it may be left out). `"required"` is refused, since inputs are required already. |
 | `blocks` | Each block is its kind alone, `"AND"`, or `{ "kind": "AND", "at": [col, row] }`. A `state` is refused: blocks have no settings. Any kind can be wired, and every kind reads any signal (see [Mixing kinds](#mixing-kinds)). Add `"optional": true` for a dotted block that may be left out, and `"listen": true` for a listen-only block: what it sends is only heard, never drawn, and a speaker beside its label marks it. Every block and output wired after it, however far on, is only heard too, until the circuit is solved. |
 | `outputs` | Each output is a device name, or `{ "device": "display", "at": [col, row] }`. The default device is `display`, and for now it is the only one the loader accepts (see [Devices](#devices)). |
 | `solution` | The intended wiring, as wires. It must keep the rules above. The targets come from it: each output wants what the solution sends it. |
-| `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts fully wired with one wire wrong, the second half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |
+| `start` | Optional. Wires already in place when the circuit first opens, for teaching: the first circuit of each Learn chapter starts with the wire into its block drawn, so the player draws the last one; the second is half wired. The player can move or remove them, and **Reset** in the pause menu puts them back. |
 | `goal` | Optional. The default goal names every output and its device, and states the rules. |
 
 There are no probes in a wired circuit: to see what a block sends, the player wires it to an output. Leave out `at` and the loader lays the board out: inputs on the left, blocks in one column (up to 3 blocks), two (up to 8) or three, in file order, and outputs on the right. Keep a circuit to 8 blocks or fewer.
@@ -273,7 +273,7 @@ STEPS is set aside for now, with stepped waves: the loader refuses a circuit tha
 * **The goal must be clear.** Every target is written into the goal sentence and shown on the board. If the sentence gets long, the circuit is probably asking too much at once.
 * **It must not be solved at the start.** The validator checks this.
 * **Prefer one solution**, especially in a chapter's last circuit. Targets on blocks are the tool for ruling out the routes you didn't mean. The checker counts swapped wires into a block that treats its inputs alike (AND, MIX, BETWEEN's two bounds...) as one answer.
-* **Give the player something to think about.** Past Part One, avoid circuits that are two inputs, one block and one output: chain two blocks or more, and add a spare input that looks useful. **BLACKBOX → Validate Puzzles** reports how many wirings solve each circuit.
+* **Give the player something to think about.** Past Part One, avoid circuits that are two inputs, one block and one output: chain two blocks or more, and give the player a choice: a second output that taps the middle of a chain, or inputs that could go to more than one place. Every input has to be used, so a spare input can't be the choice. **BLACKBOX → Validate Puzzles** reports how many wirings solve each circuit.
 * **Make the player look inside.** If a circuit can be solved by trying every input, give it more blocks and fewer probes, or targets that depend on each other.
 * **Introduce one thing at a time.** A new kind should first appear where it is the only unknown, or where the player can change an input that reaches it.
 * **Keep the hint about controls.** The circuit itself should teach the rule.

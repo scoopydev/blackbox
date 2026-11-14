@@ -27,10 +27,10 @@ namespace Blackbox.Puzzles
         public int? Target;
         /// <summary>
         /// In a circuit the player wires: drawn with a dotted outline, and may be left
-        /// out. Inputs are optional unless the circuit marks one required: a solid
-        /// input has to lead to an output. Blocks are required unless the circuit
-        /// marks one optional; the answer may use an optional block or leave it out,
-        /// so a dotted block doesn't say whether it's needed. Outputs are never optional.
+        /// out. Inputs and blocks are required, solid, unless the circuit marks one
+        /// optional (since 14 Nov 2026; until then inputs were optional unless marked
+        /// required). The answer may use an optional block or leave it out, so a
+        /// dotted block doesn't say whether it's needed. Outputs are never optional.
         /// </summary>
         public bool Optional;
     }

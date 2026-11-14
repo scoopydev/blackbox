@@ -19,9 +19,6 @@
         },
         "C": {
           "signal": "decimal 70615243"
-        },
-        "D": {
-          "signal": "decimal 4"
         }
       },
       "blocks": {
@@ -52,6 +49,50 @@
     },
     {
       "id": "cipher-02",
+      "hint": "X is A plus B at every step. No block adds, so look for blocks that can between them.",
+      "inputs": {
+        "A": {
+          "signal": "decimal 41302153"
+        },
+        "B": {
+          "signal": "decimal 25416231"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "MIRROR"
+        },
+        "h": {
+          "kind": "DIFF"
+        },
+        "k": {
+          "kind": "DIFF"
+        },
+        "m": {
+          "kind": "MIRROR"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "B -> m",
+        "A -> k.0",
+        "m -> k.1",
+        "k -> g",
+        "g -> X",
+        "A -> h.0",
+        "B -> h.1",
+        "h -> Y"
+      ]
+    },
+    {
+      "id": "cipher-03",
       "hint": "Three of the inputs play the same tune, each with one wrong note. Both targets start from the tune played right.",
       "inputs": {
         "A": {
@@ -95,56 +136,6 @@
         "h -> X",
         "k -> g",
         "g -> Y"
-      ]
-    },
-    {
-      "id": "cipher-03",
-      "hint": "X is A plus B at every step. No block adds, so look for blocks that can between them.",
-      "inputs": {
-        "A": {
-          "signal": "decimal 41302153"
-        },
-        "B": {
-          "signal": "decimal 25416231"
-        },
-        "C": {
-          "signal": "decimal 63527148"
-        },
-        "D": {
-          "signal": "decimal 5"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "MIRROR"
-        },
-        "h": {
-          "kind": "DIFF"
-        },
-        "k": {
-          "kind": "DIFF"
-        },
-        "m": {
-          "kind": "MIRROR"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        },
-        "Y": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "B -> m",
-        "A -> k.0",
-        "m -> k.1",
-        "k -> g",
-        "g -> X",
-        "A -> h.0",
-        "B -> h.1",
-        "h -> Y"
       ]
     },
     {

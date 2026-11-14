@@ -457,10 +457,10 @@ namespace Blackbox.Puzzles
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': {Media.Key(node.Signal.Medium)} signals are set aside for now, so no circuit may use them.");
                 if (v.IsObject && (v.Has("adjustable") || v.Has("target") || v.Has("value")))
                     throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs of a wired circuit are fixed signals, so they take no \"value\", \"adjustable\" or \"target\".");
-                // Inputs are optional, and dotted, unless the circuit needs one: then it's solid and must be used.
-                if (v.IsObject && v.Has("optional"))
-                    throw new PuzzleFormatException($"{where}: input '{m.Key}': inputs are optional unless marked \"required\": true.");
-                node.Optional = !(v.IsObject && v["required"].AsBool(false));
+                // Inputs are solid, and must be used, unless the circuit marks one optional: then it's dotted and may be left out.
+                if (v.IsObject && v.Has("required"))
+                    throw new PuzzleFormatException($"{where}: input '{m.Key}': every input is required unless marked \"optional\": true.");
+                node.Optional = v.IsObject && v["optional"].AsBool(false);
                 p.Inputs.Add(node);
             }
 

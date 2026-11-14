@@ -9,12 +9,9 @@
   "circuits": [
     {
       "id": "forms-01",
-      "hint": "These wires are drawn already. Run it, then move {g}'s input to the other shape.",
+      "hint": "One wire is drawn already. Draw the other, from {g} to X, then run it.",
       "inputs": {
         "A": {
-          "signal": "shape solid pink triangle"
-        },
-        "B": {
           "signal": "shape hollow amber square"
         }
       },
@@ -29,11 +26,10 @@
         }
       },
       "start": [
-        "A -> g",
-        "g -> X"
+        "A -> g"
       ],
       "solution": [
-        "B -> g",
+        "A -> g",
         "g -> X"
       ]
     },
@@ -101,9 +97,6 @@
       "inputs": {
         "A": {
           "signal": "shape solid triangle"
-        },
-        "B": {
-          "signal": "shape hollow pink hexagon"
         }
       },
       "blocks": {

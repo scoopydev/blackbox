@@ -11,16 +11,13 @@
       "hint": "Every block has to be used, but the target needs {h} to change nothing. A quarter of a loop is a long wait for a slow wave, and not for a fast one.",
       "inputs": {
         "A": {
-          "signal": "wave saw f1 a7"
+          "signal": "wave sine f1 a7"
         },
         "B": {
-          "signal": "wave sine f1 a7"
+          "signal": "wave saw f1 a7"
         },
         "C": {
           "signal": "wave square f2 a4"
-        },
-        "D": {
-          "signal": "wave sine f3 a6"
         }
       },
       "blocks": {
@@ -40,15 +37,19 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
-        "B -> m",
+        "A -> m",
         "m -> k",
         "k -> h",
-        "h -> g.0",
-        "A -> g.1",
-        "g -> X"
+        "h -> X",
+        "B -> g.0",
+        "C -> g.1",
+        "g -> Y"
       ]
     },
     {
@@ -60,9 +61,6 @@
         },
         "B": {
           "signal": "wave saw f1 a9"
-        },
-        "C": {
-          "signal": "wave square f1 a5"
         }
       },
       "blocks": {
@@ -150,12 +148,6 @@
         },
         "B": {
           "signal": "wave saw f1 a6"
-        },
-        "C": {
-          "signal": "wave square f2 a4"
-        },
-        "D": {
-          "signal": "wave sine f3 a5"
         }
       },
       "blocks": {

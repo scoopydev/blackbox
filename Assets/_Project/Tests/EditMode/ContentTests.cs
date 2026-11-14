@@ -223,29 +223,29 @@ namespace Blackbox.Tests
         [Test]
         public void SolidOutlinesMarkWhatHasToBeUsed()
         {
-            // Inputs are dotted unless a circuit needs one, and a solid input is
-            // always in the answer. Blocks are solid unless marked optional; the answer
-            // may use a dotted block or leave it out. Outline is the chapter that
-            // teaches both, so all of its circuits have one or the other.
+            // Every input is solid and in the answer: a circuit could mark one
+            // optional, but none does. Blocks are solid unless marked optional; the
+            // answer may use a dotted block or leave it out. Outline is the chapter
+            // that teaches dotted blocks, so all of its circuits have one.
             var all = TestContent.Library.AllPuzzles.Where(p => p.Wiring).ToList();
             foreach (var p in all)
             {
                 var used = WiringSession.UsedNodes(p, p.Solution);
                 for (int i = 0; i < p.Inputs.Count; i++)
-                    if (!p.Inputs[i].Optional) Assert.That(used[i], Is.True, $"{p.Id}: solid input {p.Inputs[i].Id} is in the answer");
+                {
+                    Assert.That(p.Inputs[i].Optional, Is.False, $"{p.Id}: input {p.Inputs[i].Id} is solid");
+                    Assert.That(used[i], Is.True, $"{p.Id}: input {p.Inputs[i].Id} is in the answer");
+                }
                 for (int b = 0; b < p.Blocks.Count; b++)
                     if (!p.Blocks[b].Optional) Assert.That(used[p.Inputs.Count + b], Is.True, $"{p.Id}: solid block {p.Blocks[b].Id} is in the answer");
             }
-            Assert.That(all.Where(p => p.Chapter.Id != "outline").SelectMany(p => p.Inputs).All(i => i.Optional), Is.True, "outside Outline every input is dotted");
             var outline = TestContent.Library.Chapters.Single(c => c.Id == "outline").Puzzles;
-            Assert.That(outline.All(p => p.Inputs.Any(i => !i.Optional) || p.Blocks.Any(b => b.Optional)), Is.True, "every Outline circuit has a solid input or a dotted block");
-            Assert.That(outline[0].Inputs.Count(i => !i.Optional), Is.EqualTo(1), "Outline opens on one solid input");
-            Assert.That(outline[0].Hint, Does.Contain("solid"), "and says what it means");
+            Assert.That(outline.All(p => p.Blocks.Any(b => b.Optional)), Is.True, "every Outline circuit has a dotted block");
+            Assert.That(outline[0].Hint, Does.Contain("dotted"), "Outline opens by saying what a dotted outline means");
             Assert.That(outline.Any(p => p.Blocks.Any(b => b.Optional && WiringSession.UsedNodes(p, p.Solution)[p.Inputs.Count + b.Index])), Is.True, "some answer uses a dotted block");
             Assert.That(outline.Any(p => p.Blocks.Any(b => b.Optional && !WiringSession.UsedNodes(p, p.Solution)[p.Inputs.Count + b.Index])), Is.True, "and some answer leaves one out");
-            var first = all[0];
-            Assert.That(first.Inputs.All(i => i.Optional), Is.True, "the first circuit's inputs are dotted");
-            Assert.That(first.Hint, Does.Contain("dotted"), "and its hint says what the dotted outline means");
+            var before = TestContent.Library.Chapters.TakeWhile(c => c.Id != "outline").SelectMany(c => c.Puzzles);
+            Assert.That(before.SelectMany(p => p.Blocks).Any(b => b.Optional), Is.False, "no dotted block before Outline");
         }
 
         [Test]
@@ -291,13 +291,13 @@ namespace Blackbox.Tests
             int Node(string id) => session.NodeOf(p.AllNodes.Single(n => n.Id == id));
             foreach (var id in new[] { "g", "h", "k", "m", "X", "Y" })
                 Assert.That(p.Heard(Node(id), driver), Is.True, $"{id} is only heard");
-            foreach (var id in new[] { "A", "B", "C", "D" })
+            foreach (var id in new[] { "A", "B", "C" })
                 Assert.That(p.Heard(Node(id), driver), Is.False, $"{id} is drawn");
             Assert.That(p.Heard(Node("k")), Is.False, "k isn't listen-only itself");
 
             // Fed from inputs alone, k is drawn again, and so is the output it feeds.
-            driver[Node("k")][0] = Node("C");
-            driver[Node("k")][1] = Node("D");
+            driver[Node("k")][0] = Node("A");
+            driver[Node("k")][1] = Node("C");
             Assert.That(p.Heard(Node("k"), driver), Is.False);
             Assert.That(p.Heard(Node("X"), driver), Is.False);
             Assert.That(p.Heard(Node("Y"), driver), Is.True, "Y still comes from h through m");
@@ -475,19 +475,21 @@ namespace Blackbox.Tests
         [Test]
         public void EachLearnChapterTeachesWiringStepByStep()
         {
-            // The first circuit comes wired and needs one wire moved; the second is
-            // half wired; from the third on, the player draws every wire. Ticker
-            // carries on from Tally's digits, so the player draws every wire there.
+            // The first circuit comes with one wire drawn and the player draws the
+            // last; the second is half wired; from the third on, the player draws
+            // every wire. Ticker carries on from Tally's digits, so the player draws
+            // every wire there.
             foreach (var chapter in LearnChapters.Where(c => c.Id != "ticker"))
             {
                 var first = chapter.Puzzles[0];
                 var second = chapter.Puzzles[1];
                 Assert.That(first.Blocks.Count, Is.EqualTo(1), first.Id);
-                var whole = new WiringSession(first);
-                var report = whole.Check();
-                Assert.That(report.EmptyBlocks, Is.Empty, $"{first.Id} starts with every block input wired");
-                Assert.That(report.UnwiredOutputs, Is.Empty, $"{first.Id} starts with every output wired");
-                Assert.That(report.Solved, Is.False, $"{first.Id} needs a wire moved");
+                var almost = new WiringSession(first);
+                Assert.That(almost.WireCount, Is.EqualTo(1), $"{first.Id} starts with one wire drawn");
+                var report = almost.Check();
+                Assert.That(report.EmptyBlocks, Is.Empty, $"{first.Id} starts with its block's input wired");
+                Assert.That(report.UnwiredOutputs, Is.Not.Empty, $"{first.Id} leaves the last wire, to the output, for the player");
+                Assert.That(report.Solved, Is.False, $"{first.Id} needs that wire drawn");
 
                 var half = new WiringSession(second);
                 Assert.That(half.WireCount, Is.GreaterThan(0), $"{second.Id} starts half wired");

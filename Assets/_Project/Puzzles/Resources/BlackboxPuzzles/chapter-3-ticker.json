@@ -14,9 +14,6 @@
       "inputs": {
         "A": {
           "signal": "decimal 1234"
-        },
-        "B": {
-          "signal": "decimal 6"
         }
       },
       "blocks": {
@@ -63,16 +60,13 @@
     },
     {
       "id": "ticker-03",
-      "hint": "Not every input is needed. Compare the target with each one, a step at a time.",
+      "hint": "Compare the target with each input, a step at a time.",
       "inputs": {
         "A": {
           "signal": "decimal 6420"
         },
         "B": {
           "signal": "decimal 4826"
-        },
-        "C": {
-          "signal": "decimal 2468"
         }
       },
       "blocks": {
@@ -86,13 +80,17 @@
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
         "B -> h.0",
         "A -> h.1",
         "h -> g",
-        "g -> X"
+        "g -> X",
+        "h -> Y"
       ]
     },
     {
@@ -132,16 +130,13 @@
     },
     {
       "id": "ticker-05",
-      "hint": "A signal can have more steps. Here one signal is needed in two places.",
+      "hint": "A signal can have more steps. Here one signal is needed in three places.",
       "inputs": {
         "A": {
           "signal": "decimal 02468642"
         },
         "B": {
           "signal": "decimal 01234567"
-        },
-        "C": {
-          "signal": "decimal 3"
         }
       },
       "blocks": {
@@ -150,10 +145,16 @@
         },
         "h": {
           "kind": "MIRROR"
+        },
+        "k": {
+          "kind": "MAX"
         }
       },
       "outputs": {
         "X": {
+          "device": "display"
+        },
+        "Y": {
           "device": "display"
         }
       },
@@ -161,7 +162,10 @@
         "A -> h",
         "A -> g.0",
         "h -> g.1",
-        "g -> X"
+        "g -> X",
+        "A -> k.0",
+        "B -> k.1",
+        "k -> Y"
       ]
     },
     {

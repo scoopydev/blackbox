@@ -15,9 +15,6 @@
         },
         "B": {
           "signal": "decimal 4"
-        },
-        "C": {
-          "signal": "decimal 5"
         }
       },
       "blocks": {
@@ -44,7 +41,7 @@
         "A -> h.0",
         "g -> h.1",
         "h -> X",
-        "A -> k.0",
+        "B -> k.0",
         "g -> k.1",
         "k -> Y"
       ]
@@ -58,9 +55,6 @@
         },
         "B": {
           "signal": "decimal 4"
-        },
-        "C": {
-          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -104,9 +98,6 @@
         },
         "C": {
           "signal": "binary 11001100"
-        },
-        "D": {
-          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -192,6 +183,44 @@
     },
     {
       "id": "unmarked-05",
+      "hint": "Try one signal in both of a block's inputs.",
+      "inputs": {
+        "A": {
+          "signal": "wave sine f2 a7"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "GATE"
+        },
+        "h": {
+          "kind": "GATE"
+        },
+        "k": {
+          "kind": "FLIP"
+        },
+        "m": {
+          "kind": "MIX"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> g.0",
+        "A -> g.1",
+        "A -> k",
+        "k -> h.0",
+        "k -> h.1",
+        "g -> m.0",
+        "h -> m.1",
+        "m -> X"
+      ]
+    },
+    {
+      "id": "unmarked-06",
       "hint": "No block here turns a wave upside down, but the target needs one that is. What else changes where a wave is in the loop?",
       "inputs": {
         "A": {
@@ -202,9 +231,6 @@
         },
         "C": {
           "signal": "decimal 5"
-        },
-        "D": {
-          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -254,50 +280,6 @@
         "k -> m.0",
         "C -> m.1",
         "m -> Y"
-      ]
-    },
-    {
-      "id": "unmarked-06",
-      "hint": "Try one signal in both of a block's inputs.",
-      "inputs": {
-        "A": {
-          "signal": "wave sine f2 a7"
-        },
-        "B": {
-          "signal": "binary 0011"
-        },
-        "C": {
-          "signal": "decimal 5"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "GATE"
-        },
-        "h": {
-          "kind": "GATE"
-        },
-        "k": {
-          "kind": "FLIP"
-        },
-        "m": {
-          "kind": "MIX"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> g.0",
-        "A -> g.1",
-        "A -> k",
-        "k -> h.0",
-        "k -> h.1",
-        "g -> m.0",
-        "h -> m.1",
-        "m -> X"
       ]
     },
     {

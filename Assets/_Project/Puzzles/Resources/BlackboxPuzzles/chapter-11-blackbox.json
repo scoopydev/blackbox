@@ -17,9 +17,6 @@
           "signal": "wave sine f4 a7"
         },
         "C": {
-          "signal": "decimal 3"
-        },
-        "D": {
           "signal": "binary 01100110"
         }
       },
@@ -64,7 +61,7 @@
         "g -> h.1",
         "h -> Y",
         "g -> k.0",
-        "D -> k.1",
+        "C -> k.1",
         "k -> Z"
       ]
     },
@@ -80,9 +77,6 @@
         },
         "C": {
           "signal": "decimal 6"
-        },
-        "D": {
-          "signal": "binary 0011"
         }
       },
       "blocks": {
@@ -138,9 +132,6 @@
         },
         "C": {
           "signal": "decimal 4"
-        },
-        "D": {
-          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -200,9 +191,6 @@
         },
         "C": {
           "signal": "decimal 6"
-        },
-        "D": {
-          "signal": "binary 0101"
         }
       },
       "blocks": {
@@ -374,12 +362,6 @@
         },
         "B": {
           "signal": "decimal 3"
-        },
-        "C": {
-          "signal": "decimal 5"
-        },
-        "D": {
-          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -432,12 +414,6 @@
         },
         "B": {
           "signal": "decimal 7"
-        },
-        "C": {
-          "signal": "decimal 3"
-        },
-        "D": {
-          "signal": "binary 0110"
         }
       },
       "blocks": {
@@ -490,12 +466,6 @@
         },
         "B": {
           "signal": "binary 1001"
-        },
-        "C": {
-          "signal": "wave saw f1 a7"
-        },
-        "D": {
-          "signal": "decimal 6"
         }
       },
       "blocks": {
@@ -595,15 +565,6 @@
         },
         "B": {
           "signal": "binary 01010101"
-        },
-        "C": {
-          "signal": "decimal 2468"
-        },
-        "D": {
-          "signal": "wave saw f1 a7"
-        },
-        "E": {
-          "signal": "binary 0011"
         }
       },
       "blocks": {

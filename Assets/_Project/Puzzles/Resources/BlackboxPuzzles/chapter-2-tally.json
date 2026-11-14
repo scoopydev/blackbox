@@ -9,12 +9,9 @@
   "circuits": [
     {
       "id": "tally-01",
-      "hint": "These wires are drawn already. Run it, then move {g}'s input to the other digit.",
+      "hint": "One wire is drawn already. Draw the other, from {g} to X, then run it.",
       "inputs": {
         "A": {
-          "signal": "decimal 4"
-        },
-        "B": {
           "signal": "decimal 6"
         }
       },
@@ -29,11 +26,10 @@
         }
       },
       "start": [
-        "A -> g",
-        "g -> X"
+        "A -> g"
       ],
       "solution": [
-        "B -> g",
+        "A -> g",
         "g -> X"
       ]
     },
@@ -73,13 +69,10 @@
       "hint": "The order the blocks come in matters.",
       "inputs": {
         "A": {
-          "signal": "decimal 6"
+          "signal": "decimal 2"
         },
         "B": {
-          "signal": "decimal 8"
-        },
-        "C": {
-          "signal": "decimal 5"
+          "signal": "decimal 3"
         }
       },
       "blocks": {
@@ -87,20 +80,23 @@
           "kind": "DIFF"
         },
         "h": {
-          "kind": "MAX"
+          "kind": "MIRROR"
         }
       },
       "outputs": {
         "X": {
           "device": "display"
+        },
+        "Y": {
+          "device": "display"
         }
       },
       "solution": [
-        "A -> h.0",
-        "B -> h.1",
+        "A -> h",
         "h -> g.0",
-        "C -> g.1",
-        "g -> X"
+        "B -> g.1",
+        "g -> X",
+        "h -> Y"
       ]
     },
     {

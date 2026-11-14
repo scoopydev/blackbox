@@ -579,7 +579,7 @@ namespace Blackbox.UI.Screens
                 "Block letters determine output type: B = Bit, D = Digit, W = Wave.",
                 "Solve a circuit to reveal its block rules.",
                 "Click and drag to move blocks around.",
-                "A solid outline must be used. A dotted input or block may be left out.",
+                "Every input must be used, and so must every block with a solid outline. A dotted block may be left out.",
                 "Speaker blocks are only heard, and so is everything wired after them until the circuit is solved: click to listen.",
             } : new List<string>
             {

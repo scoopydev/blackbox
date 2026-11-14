@@ -11,16 +11,10 @@
       "hint": "{h} takes three votes, but X only ever depends on two of the inputs. Where could the third vote come from?",
       "inputs": {
         "A": {
-          "signal": "binary 0110100110010110"
-        },
-        "B": {
           "signal": "binary 0011101011000101"
         },
-        "C": {
+        "B": {
           "signal": "binary 0101110000111010"
-        },
-        "D": {
-          "signal": "binary 1100101001010011"
         }
       },
       "blocks": {
@@ -40,10 +34,10 @@
         }
       },
       "solution": [
-        "B -> k.0",
-        "C -> k.1",
-        "B -> h.0",
-        "C -> h.1",
+        "A -> k.0",
+        "B -> k.1",
+        "A -> h.0",
+        "B -> h.1",
         "k -> h.2",
         "h -> g",
         "g -> X"
@@ -51,53 +45,6 @@
     },
     {
       "id": "pulse-02",
-      "hint": "{h}'s bottom input decides which of the other two gets through. X needs a block that isn't on the board.",
-      "inputs": {
-        "A": {
-          "signal": "binary 0110100110010110"
-        },
-        "B": {
-          "signal": "binary 0011101011000101"
-        },
-        "C": {
-          "signal": "binary 0101110000111010"
-        },
-        "D": {
-          "signal": "binary 1100101001010011"
-        }
-      },
-      "blocks": {
-        "g": {
-          "kind": "AND"
-        },
-        "k": {
-          "kind": "NOT"
-        },
-        "h": {
-          "kind": "PICK"
-        }
-      },
-      "outputs": {
-        "X": {
-          "device": "display"
-        },
-        "Y": {
-          "device": "display"
-        }
-      },
-      "solution": [
-        "A -> k",
-        "k -> h.0",
-        "A -> h.1",
-        "B -> h.2",
-        "h -> X",
-        "h -> g.0",
-        "C -> g.1",
-        "g -> Y"
-      ]
-    },
-    {
-      "id": "pulse-03",
       "hint": "X is 1 only where A is 1 and B isn't, and Y the other way round. Nothing here turns a bit over, so find another way to tell where they differ.",
       "inputs": {
         "A": {
@@ -105,12 +52,6 @@
         },
         "B": {
           "signal": "binary 0011101011000101"
-        },
-        "C": {
-          "signal": "binary 0101110000111010"
-        },
-        "D": {
-          "signal": "binary 1100101001010011"
         }
       },
       "blocks": {
@@ -141,6 +82,50 @@
         "B -> k.0",
         "h -> k.1",
         "k -> Y"
+      ]
+    },
+    {
+      "id": "pulse-03",
+      "hint": "{h}'s bottom input decides which of the other two gets through. X needs a block that isn't on the board.",
+      "inputs": {
+        "A": {
+          "signal": "binary 0110100110010110"
+        },
+        "B": {
+          "signal": "binary 0011101011000101"
+        },
+        "C": {
+          "signal": "binary 0101110000111010"
+        }
+      },
+      "blocks": {
+        "g": {
+          "kind": "AND"
+        },
+        "k": {
+          "kind": "NOT"
+        },
+        "h": {
+          "kind": "PICK"
+        }
+      },
+      "outputs": {
+        "X": {
+          "device": "display"
+        },
+        "Y": {
+          "device": "display"
+        }
+      },
+      "solution": [
+        "A -> k",
+        "k -> h.0",
+        "A -> h.1",
+        "B -> h.2",
+        "h -> X",
+        "h -> g.0",
+        "C -> g.1",
+        "g -> Y"
       ]
     },
     {
