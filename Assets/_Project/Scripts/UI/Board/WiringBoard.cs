@@ -552,7 +552,7 @@ namespace Blackbox.UI.Board
             float halfW = block.Size.x * 0.5f, halfH = block.Size.y * 0.5f;
             float minX = area.xMin - VoidFrame.Width * 0.5f + halfW + 40f;
             float maxX = area.xMax - VoidFrame.Width * 0.5f - halfW - 40f;
-            float maxY = VoidFrame.Height * 0.5f - area.yMin - halfH - 44f;
+            float maxY = VoidFrame.Height * 0.5f - area.yMin - halfH - 60f;
             float minY = VoidFrame.Height * 0.5f - area.yMax + halfH + 30f;
             return new Vector2(Mathf.Clamp(at.x, minX, maxX), Mathf.Clamp(at.y, minY, maxY));
         }
@@ -1045,8 +1045,10 @@ namespace Blackbox.UI.Board
 
             var spec = def.Signal;
             bool wave = Media.IsWave(spec.Medium);
-            view._signal = SignalView.Create(rt, w - 36f * s, (wave ? 40f : 46f) * s);
-            view._signal.GetComponent<RectTransform>().Centered(0f, wave ? 6f * s : 0f, w - 36f * s, (wave ? 40f : 46f) * s);
+            // A wave gets nearly the card's full height, so its amplitude reads; its "A7" goes under it.
+            float signalH = (wave ? 50f : 46f) * s;
+            view._signal = SignalView.Create(rt, w - 36f * s, signalH);
+            view._signal.GetComponent<RectTransform>().Centered(0f, wave ? 6f * s : 0f, w - 36f * s, signalH);
             view._signal.ShowWaveSettings(inside: false);
             // In a dark circuit every signal is only heard.
             view._signal.HeardOnly = board.Puzzle.Dark;
@@ -1161,8 +1163,11 @@ namespace Blackbox.UI.Board
             }
             view.Out = PortView.Create(rt, new Vector2(w * 0.5f, 0f), c + new Vector2(w * 0.5f, 0f), node, -1, true, board);
 
-            view._readout = SignalView.Create(rt, 118f * s, 32f * s, "Sends");
-            view._readout.GetComponent<RectTransform>().Centered(0f, h * 0.5f + 24f * s, 118f * s, 32f * s);
+            // Tall enough that a wave's amplitude reads (A9 fills it, A1 is a ninth of that)
+            // with its "A7" underneath; the gap to a block on the row above is kept.
+            float readW = 134f * s, readH = 50f * s;
+            view._readout = SignalView.Create(rt, readW, readH, "Sends");
+            view._readout.GetComponent<RectTransform>().Centered(0f, h * 0.5f + 6f * s + readH * 0.5f, readW, readH);
             // The block's card is right under its signal, so a wave's settings go inside the box.
             view._readout.ShowWaveSettings(inside: true);
             view._readout.HeardOnly = board.Puzzle.Heard(node);

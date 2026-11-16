@@ -88,7 +88,7 @@ namespace Blackbox.UI.Board
             {
                 if (_caption == null)
                 {
-                    int size = _captionInside ? Mathf.Max(10, Mathf.RoundToInt(_h * 0.3f)) : Mathf.Max(9, Mathf.RoundToInt(_h * 0.2f));
+                    int size = _captionInside ? InsideCaptionSize : Mathf.Max(9, Mathf.RoundToInt(_h * 0.2f));
                     _caption = UIKit.Text(_rt, "", TextStyle.Label.WithSize(size).WithTracking(0.16f), TextAnchor.MiddleCenter, "Caption");
                     if (_captionInside) _caption.rectTransform.Centered(0f, -_h * 0.5f + CaptionRoom * 0.5f, _w + 60f, CaptionRoom);
                     else _caption.rectTransform.Centered(0f, -_h * 0.5f - 9f, _w + 60f, 16f);
@@ -98,8 +98,14 @@ namespace Blackbox.UI.Board
             }
         }
 
+        /// <summary>
+        /// The size of a caption inside the box: small and fixed, not a share of the
+        /// box, so a taller box gives its extra height to the line, not the caption.
+        /// </summary>
+        int InsideCaptionSize => Mathf.Clamp(Mathf.RoundToInt(_h * 0.22f), 10, 12);
+
         /// <summary>The height a caption inside the box takes from the bottom of the line.</summary>
-        float CaptionRoom => Mathf.Max(10, Mathf.RoundToInt(_h * 0.3f)) + 2f;
+        float CaptionRoom => InsideCaptionSize + 2f;
 
         /// <summary>
         /// Writes a wave's amplitude under it ("A7"), whatever made
@@ -273,8 +279,11 @@ namespace Blackbox.UI.Board
                     _graph.Min = -0.2f; _graph.Max = 1.2f; _graph.Stepped = true; _graph.Midline = false;
                     break;
                 default:
+                    // Always the full scale, never fitted to this wave: A9 reaches the
+                    // top and bottom of the box and every lower amplitude is that much
+                    // shorter, so heights compare across every box on the board.
                     _graph.SetLevels(t.Levels);
-                    _graph.Min = -Trace.Peak - 0.5f; _graph.Max = Trace.Peak + 0.5f;
+                    _graph.Min = -Trace.Peak; _graph.Max = Trace.Peak;
                     _graph.Stepped = m == Medium.Sampled;
                     _graph.Midline = true;
                     break;
@@ -596,7 +605,7 @@ namespace Blackbox.UI.Board
                     {
                         // A speaker's line is its sound: the signal read as a wave.
                         _graph.SetLevels(trace.As(Medium.Wave).Levels);
-                        _graph.Min = -Trace.Peak - 0.5f; _graph.Max = Trace.Peak + 0.5f;
+                        _graph.Min = -Trace.Peak; _graph.Max = Trace.Peak;
                         _graph.Stepped = trace.Medium != Medium.Wave;
                         _graph.Midline = true;
                     }
